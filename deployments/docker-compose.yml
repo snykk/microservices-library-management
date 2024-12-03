@@ -1,0 +1,174 @@
+services:
+    api-gateway:
+        build:
+            context: ./../api-gateway
+        ports:
+            - "8080:80"
+        depends_on:
+            - book-service
+            - author-service
+            - category-service
+            - user-service
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+
+    book-service:
+        build:
+            context: ./../book-service
+        networks:
+            - library-network
+        depends_on:
+            - book-db
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            DSN: "host=postgres port=5432 user=fikri password=12345678 dbname=bookdb sslmode=disable connect_timeout=5"
+
+    author-service:
+        build:
+            context: ./../author-service
+        networks:
+            - library-network
+        depends_on:
+            - author-db
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            DSN: "host=postgres port=5432 user=fikri password=12345678 dbname=authordb sslmode=disable connect_timeout=5"
+
+    category-service:
+        build:
+            context: ./../category-service
+        networks:
+            - library-network
+        depends_on:
+            - category-db
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            DSN: "host=postgres port=5432 user=fikri password=12345678 dbname=categorydb sslmode=disable connect_timeout=5"
+
+    user-service:
+        build:
+            context: ./../user-service
+        networks:
+            - library-network
+        depends_on:
+            - user-db
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            DSN: "host=postgres port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable connect_timeout=5"
+
+    auth-service:
+        build:
+            context: ./../auth-service
+        networks:
+            - library-network
+        depends_on:
+            - user-db
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            DSN: "host=postgres port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable connect_timeout=5"
+
+    book-db:
+        image: postgres:15
+        ports:
+            - "5433:5432"
+        environment:
+            POSTGRES_USER: fikri
+            POSTGRES_PASSWORD: 12345678
+            POSTGRES_DB: bookdb
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        volumes:
+            - book-db-data:/var/lib/postgresql/data
+
+    author-db:
+        image: postgres:15
+        ports:
+            - "5434:5432"
+        environment:
+            POSTGRES_USER: fikri
+            POSTGRES_PASSWORD: 12345678
+            POSTGRES_DB: authordb
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        volumes:
+            - author-db-data:/var/lib/postgresql/data
+
+    category-db:
+        image: postgres:15
+        ports:
+            - "5435:5432"
+        environment:
+            POSTGRES_USER: fikri
+            POSTGRES_PASSWORD: 12345678
+            POSTGRES_DB: categorydb
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        volumes:
+            - category-db-data:/var/lib/postgresql/data
+
+    user-db:
+        image: postgres:15
+        ports:
+            - "5436:5432"
+        environment:
+            POSTGRES_USER: fikri
+            POSTGRES_PASSWORD: 12345678
+            POSTGRES_DB: userdb
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        volumes:
+            - user-db-data:/var/lib/postgresql/data
+
+    redis:
+        image: redis:7.4.1-alpine
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+
+networks:
+    library-network:
+        driver: bridge
+
+volumes:
+    book-db-data:
+    author-db-data:
+    category-db-data:
+    user-db-data:
