@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package category_service;
+
+option go_package = "/category_service";
+
+service CategoryService {
+  rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
+  rpc GetCategory(GetCategoryRequest) returns (GetCategoryResponse);
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+  rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse);
+  rpc DeleteCategory(DeleteCategoryRequest) returns (DeleteCategoryResponse);
+}
+
+message Category {
+  string id = 1;
+  string name = 2;
+}
+
+message CreateCategoryRequest {
+  string name = 1;
+}
+
+message CreateCategoryResponse {
+  Category category = 1;
+}
+
+message GetCategoryRequest {
+  string id = 1;
+}
+
+message GetCategoryResponse {
+  Category category = 1;
+}
+
+message ListCategoriesRequest {}
+
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+}
+
+// UpdateCategory request and response
+message UpdateCategoryRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message UpdateCategoryResponse {
+  Category category = 1;
+}
+
+// DeleteCategory request and response
+message DeleteCategoryRequest {
+  string id = 1;
+}
+
+message DeleteCategoryResponse {
+  string message = 1;
+}

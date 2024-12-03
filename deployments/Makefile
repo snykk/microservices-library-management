@@ -5,12 +5,13 @@ AUTHOR_BINARY=authorApp
 BOOK_BINARY=bookApp
 CATEGORY_BINARY=categoryApp
 USER_BINARY=userApp
+AUTH_BINARY=authApp
 
 # Default target
 .PHONY: up down restart logs build clean help
 
 # Build binary project and start the application
-up_build: build_gateway build_author build_book build_category build_user
+up_build: build_gateway build_author build_book build_category build_user, build_auth
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Starting services..."
@@ -29,22 +30,27 @@ build_gateway:
 
 build_author:
 	@echo "Building author binary..."
-	cd ./author-service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTHOR_BINARY} .
+	cd ./author_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTHOR_BINARY} .
 	@echo "Done!"
 
 build_book:
 	@echo "Building book binary..."
-	cd ./book-service && env GOOS=linux CGO_ENABLED=0 go build -o ${BOOK_BINARY} .
+	cd ./book_service && env GOOS=linux CGO_ENABLED=0 go build -o ${BOOK_BINARY} .
 	@echo "Done!"
 
 build_category:
 	@echo "Building category binary..."
-	cd ./category-service && env GOOS=linux CGO_ENABLED=0 go build -o ${CATEGORY_BINARY} .
+	cd ./category_service && env GOOS=linux CGO_ENABLED=0 go build -o ${CATEGORY_BINARY} .
 	@echo "Done!"
 
 build_user:
 	@echo "Building user binary..."
-	cd ./user-service && env GOOS=linux CGO_ENABLED=0 go build -o ${USER_BINARY} .
+	cd ./user_service && env GOOS=linux CGO_ENABLED=0 go build -o ${USER_BINARY} .
+	@echo "Done!"
+
+build_auth:
+	@echo "Building auath binary..."
+	cd ./auath_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} .
 	@echo "Done!"
 
 # Restart the application
