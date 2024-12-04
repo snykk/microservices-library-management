@@ -50,6 +50,7 @@ services:
             replicas: 1
         environment:
             DSN: "host=author-db port=5432 user=fikri password=12345678 dbname=authordb sslmode=disable connect_timeout=5"
+            GRPC_PORT: "50051"
 
     category-service:
         build:
