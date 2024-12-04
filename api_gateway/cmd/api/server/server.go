@@ -3,7 +3,7 @@ package server
 import (
 	"api_gateway/internal/clients"
 	"api_gateway/internal/constants"
-	"api_gateway/internal/handlers"
+	"api_gateway/internal/routes"
 	"api_gateway/pkg/logger"
 	"context"
 	"fmt"
@@ -40,18 +40,9 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
-	authHandler := handlers.NewAuthHandler(authClient)
-
 	// routes
-	api := app.Group("/api")
-
-	route := api.Group("/auth")
-	route.Post("/register", authHandler.RegisterHandler)
-	route.Post("/send-otp", authHandler.SendOtpHandler)
-	route.Post("/verify-email", authHandler.VerifyEmailHandler)
-	route.Post("/login", authHandler.LoginHandler)
-	route.Post("/validate-token", authHandler.ValidateTokenHandler)
-	// routes.NewAuthRoute(api, authClient)
+	router := app.Group("/api")
+	routes.NewAuthRoute(router, authClient).Routes()
 
 	return &App{
 		HttpServer: app,
