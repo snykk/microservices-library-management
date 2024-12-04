@@ -1,12 +1,14 @@
 package grpc_server
 
 import (
-	"book_service/internal/exception"
 	"book_service/internal/models"
 	"book_service/internal/service"
 	protoBook "book_service/proto"
 	"context"
 	"fmt"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type bookGRPCServer struct {
@@ -28,7 +30,7 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 		Stock:      int(req.Stock),
 	})
 	if err != nil {
-		return nil, exception.GRPCErrorFormatter(err)
+		return nil, status.Error(codes.Internal, "failed to create new book")
 	}
 
 	return &protoBook.CreateBookResponse{
@@ -45,7 +47,7 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequest) (*protoBook.GetBookResponse, error) {
 	book, err := s.bookService.GetBook(ctx, &req.Id)
 	if err != nil {
-		return nil, exception.GRPCErrorFormatter(err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve book data with id '%s'", req.Id))
 	}
 
 	return &protoBook.GetBookResponse{
@@ -62,7 +64,7 @@ func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequ
 func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooksRequest) (*protoBook.ListBooksResponse, error) {
 	books, err := s.bookService.ListBooks(ctx)
 	if err != nil {
-		return nil, exception.GRPCErrorFormatter(err)
+		return nil, status.Error(codes.Internal, "failed to retrieve book list")
 	}
 
 	var protoBooks []*protoBook.Book
@@ -89,7 +91,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 		Stock:      int(req.Stock),
 	})
 	if err != nil {
-		return nil, exception.GRPCErrorFormatter(err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update book data with id '%s'", req.Id))
 	}
 
 	return &protoBook.UpdateBookResponse{
@@ -106,7 +108,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBookRequest) (*protoBook.DeleteBookResponse, error) {
 	err := s.bookService.DeleteBook(ctx, &req.Id)
 	if err != nil {
-		return nil, exception.GRPCErrorFormatter(err)
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete book dta with id '%s'", req.Id))
 	}
 
 	return &protoBook.DeleteBookResponse{Message: fmt.Sprintf("success delete book with id %s", req.Id)}, nil
