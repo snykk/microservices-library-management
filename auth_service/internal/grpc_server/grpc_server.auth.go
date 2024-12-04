@@ -1,6 +1,7 @@
 package grpc_server
 
 import (
+	"auth_service/internal/exception"
 	"auth_service/internal/models"
 	"auth_service/internal/service"
 	"auth_service/pkg/redis"
@@ -29,7 +30,7 @@ func (s *authServer) Register(ctx context.Context, req *protoAuth.RegisterReques
 		Password: req.Password,
 	})
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
 	user := result.User
@@ -55,7 +56,7 @@ func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest)
 	otpKey := fmt.Sprintf("user_otp:%s", req.Email)
 	err = s.redisCache.Set(otpKey, otpCode)
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
 	return &protoAuth.SendOTPResponse{
@@ -74,19 +75,19 @@ func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmail
 	otpKey := fmt.Sprintf("user_otp:%s", verifyEmailRequest.Email)
 	redisOtp, err := s.redisCache.Get(otpKey)
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
 	fmt.Println("otp key", otpKey)
 
 	result, err := s.authService.VerifyEmail(ctx, verifyEmailRequest, redisOtp)
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
-	err = s.redisCache.Del(req.Email)
+	err = s.redisCache.Del(otpKey)
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
 	return &protoAuth.VerifyEmailResponse{
@@ -100,7 +101,7 @@ func (s *authServer) Login(ctx context.Context, req *protoAuth.LoginRequest) (*p
 		Password: req.Password,
 	})
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
 	return &protoAuth.LoginResponse{
@@ -113,7 +114,7 @@ func (s *authServer) Login(ctx context.Context, req *protoAuth.LoginRequest) (*p
 func (s *authServer) ValidateToken(ctx context.Context, req *protoAuth.ValidateTokenRequest) (*protoAuth.ValidateTokenResponse, error) {
 	result, err := s.authService.ValidateToken(ctx, models.ValidateTokenRequest{Token: req.Token})
 	if err != nil {
-		return nil, err
+		return nil, exception.GRPCErrorFormatter(err)
 	}
 
 	return &protoAuth.ValidateTokenResponse{

@@ -7,7 +7,6 @@ import (
 	"auth_service/pkg/mailer"
 	"auth_service/pkg/utils"
 	"context"
-	"errors"
 	"time"
 )
 
@@ -36,12 +35,12 @@ func NewAuthService(repo repository.AuthRepository, jwtService jwt.JWTService, m
 func (s *authService) Register(ctx context.Context, req models.RegisterRequest) (models.RegisterResponse, error) {
 	_, err := s.repo.GetUserByEmail(req.Email)
 	if err == nil {
-		return models.RegisterResponse{}, errors.New("email already registered")
+		return models.RegisterResponse{}, ErrEmailAlreadyRegistered
 	}
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return models.RegisterResponse{}, errors.New("failed to hash password")
+		return models.RegisterResponse{}, ErrFailedHashPassword
 	}
 
 	user := models.UserRecord{
@@ -56,7 +55,7 @@ func (s *authService) Register(ctx context.Context, req models.RegisterRequest) 
 	// Create user
 	createdUser, err := s.repo.CreateUser(user)
 	if err != nil {
-		return models.RegisterResponse{}, err
+		return models.RegisterResponse{}, ErrCreateUser
 	}
 
 	return models.RegisterResponse{
@@ -67,20 +66,20 @@ func (s *authService) Register(ctx context.Context, req models.RegisterRequest) 
 func (s *authService) SendOTP(ctx context.Context, email string) (string, error) {
 	user, err := s.repo.GetUserByEmail(email)
 	if err != nil {
-		return "", err
+		return "", ErrGetUserByEmail
 	}
 
 	if user.Verified {
-		return "", errors.New("email already verified")
+		return "", ErrEmailAlreadyVerified
 	}
 
 	otp, err := utils.GenerateOTPCode(6)
 	if err != nil {
-		return "", err
+		return "", ErrGenerateOTPCode
 	}
 
 	if err = s.mailer.SendOTP(otp, email); err != nil {
-		return "", err
+		return "", ErrSendOtpWithMailer
 	}
 
 	return otp, nil
@@ -89,20 +88,20 @@ func (s *authService) SendOTP(ctx context.Context, email string) (string, error)
 func (s *authService) VerifyEmail(ctx context.Context, req models.VerifyEmailRequest, redisOtp string) (models.VerifyEmailResponse, error) {
 	user, err := s.repo.GetUserByEmail(req.Email)
 	if err != nil {
-		return models.VerifyEmailResponse{}, err
+		return models.VerifyEmailResponse{}, ErrGetUserByEmail
 	}
 
 	if user.Verified {
-		return models.VerifyEmailResponse{}, errors.New("email already verified")
+		return models.VerifyEmailResponse{}, ErrEmailAlreadyVerified
 	}
 
 	if req.OTP != redisOtp {
-		return models.VerifyEmailResponse{Message: "Invalid OTP"}, nil
+		return models.VerifyEmailResponse{}, ErrMismatchOTPCode
 	}
 
 	err = s.repo.UpdateUserVerification(req.Email, true)
 	if err != nil {
-		return models.VerifyEmailResponse{}, err
+		return models.VerifyEmailResponse{}, ErrUpdateUserVerification
 	}
 
 	return models.VerifyEmailResponse{Message: "Email verified successfully"}, nil
@@ -111,28 +110,28 @@ func (s *authService) VerifyEmail(ctx context.Context, req models.VerifyEmailReq
 func (s *authService) Login(ctx context.Context, req models.LoginRequest) (models.LoginResponse, error) {
 	user, err := s.repo.GetUserByEmail(req.Email)
 	if err != nil {
-		return models.LoginResponse{}, errors.New("user not found")
+		return models.LoginResponse{}, ErrGetUserByEmail
 	}
 
 	if !user.Verified {
-		return models.LoginResponse{}, errors.New("user email not verified")
+		return models.LoginResponse{}, ErrEmailNotVerified
 	}
 
 	// Check password
 	if err := utils.CheckPassword(user.Password, req.Password); err != nil {
-		return models.LoginResponse{}, errors.New("invalid password")
+		return models.LoginResponse{}, ErrInvalidPassword
 	}
 
 	// Generate Access Token
 	accessToken, err := s.jwtService.GenerateToken(user.ID, user.Role, user.Email)
 	if err != nil {
-		return models.LoginResponse{}, errors.New("error generating access token")
+		return models.LoginResponse{}, ErrGenerateAccessToken
 	}
 
 	// Generate Refresh Token
 	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID, user.Role, user.Email)
 	if err != nil {
-		return models.LoginResponse{}, errors.New("error generating refresh token")
+		return models.LoginResponse{}, ErrGenerateRefreshToken
 	}
 
 	return models.LoginResponse{
@@ -145,7 +144,7 @@ func (s *authService) Login(ctx context.Context, req models.LoginRequest) (model
 func (s *authService) ValidateToken(ctx context.Context, req models.ValidateTokenRequest) (models.ValidateTokenResponse, error) {
 	claims, err := s.jwtService.ParseToken(req.Token)
 	if err != nil {
-		return models.ValidateTokenResponse{Valid: false}, err
+		return models.ValidateTokenResponse{Valid: false}, ErrPareseToken
 	}
 
 	return models.ValidateTokenResponse{
