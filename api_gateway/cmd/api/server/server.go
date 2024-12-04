@@ -39,10 +39,15 @@ func NewApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	bookClient, err := clients.NewBookClient()
+	if err != nil {
+		return nil, err
+	}
 
 	// routes
 	router := app.Group("/api")
 	routes.NewAuthRoute(router, authClient).Routes()
+	routes.NewBookRoute(router, bookClient).Routes()
 
 	return &App{
 		HttpServer: app,
