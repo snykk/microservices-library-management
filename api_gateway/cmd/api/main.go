@@ -4,16 +4,28 @@ import (
 	"api_gateway/cmd/api/server"
 	"api_gateway/internal/constants"
 	"api_gateway/pkg/logger"
+	"log"
 	"runtime"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
+// func init() {
+// 	// if err := config.InitializeAppConfig(); err != nil {
+// 	// 	logger.Fatal(err.Error(), logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
+// 	// }
+// 	// logger.Info("configuration loaded", logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
+// }
+
 func init() {
-	// if err := config.InitializeAppConfig(); err != nil {
-	// 	logger.Fatal(err.Error(), logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
-	// }
-	// logger.Info("configuration loaded", logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
+	// Load Asia/Jakarta time zone globally
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		log.Fatalf("Failed to load timezone: %v", err)
+	}
+	// Set the local timezone globally
+	time.Local = loc
 }
 
 func main() {

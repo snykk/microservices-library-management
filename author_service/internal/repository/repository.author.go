@@ -4,6 +4,8 @@ import (
 	"author_service/internal/models"
 	"database/sql"
 	"errors"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type AuthorRepository interface {
@@ -15,25 +17,23 @@ type AuthorRepository interface {
 }
 
 type authorRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewAuthorRepository(db *sql.DB) AuthorRepository {
+func NewAuthorRepository(db *sqlx.DB) AuthorRepository {
 	return &authorRepository{
 		db: db,
 	}
 }
 
 func (r *authorRepository) CreateAuthor(req *models.AuthorRecord) (*models.AuthorRecord, error) {
-	query := `INSERT INTO authors (name, biography, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id, name, biography, created_at, updated_at`
+	query := `INSERT INTO authors (name, biography) VALUES ($1, $2) RETURNING id, name, biography, created_at, updated_at`
 
 	author := &models.AuthorRecord{}
 	err := r.db.QueryRow(
 		query,
 		req.Name,
 		req.Biography,
-		req.CreatedAt,
-		req.UpdatedAt,
 	).Scan(
 		&author.Id,
 		&author.Name,
@@ -49,11 +49,11 @@ func (r *authorRepository) CreateAuthor(req *models.AuthorRecord) (*models.Autho
 }
 
 func (r *authorRepository) GetAuthor(id *string) (*models.AuthorRecord, error) {
-	query := `SELECT id, name, biography FROM authors WHERE id = $1`
+	query := `SELECT id, name, biography, created_at, updated_at FROM authors WHERE id = $1`
 	row := r.db.QueryRow(query, *id)
 
 	author := &models.AuthorRecord{}
-	if err := row.Scan(&author.Id, &author.Name, &author.Biography); err != nil {
+	if err := row.Scan(&author.Id, &author.Name, &author.Biography, &author.CreatedAt, &author.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("author not found")
 		}
@@ -64,7 +64,7 @@ func (r *authorRepository) GetAuthor(id *string) (*models.AuthorRecord, error) {
 }
 
 func (r *authorRepository) ListAuthors() ([]*models.AuthorRecord, error) {
-	query := `SELECT id, name, biography FROM authors`
+	query := `SELECT id, name, biography, created_at, updated_at FROM authors`
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (r *authorRepository) ListAuthors() ([]*models.AuthorRecord, error) {
 	var authors []*models.AuthorRecord
 	for rows.Next() {
 		author := &models.AuthorRecord{}
-		if err := rows.Scan(&author.Id, &author.Name, &author.Biography); err != nil {
+		if err := rows.Scan(&author.Id, &author.Name, &author.Biography, &author.CreatedAt, &author.UpdatedAt); err != nil {
 			return nil, err
 		}
 		authors = append(authors, author)
@@ -87,11 +87,11 @@ func (r *authorRepository) ListAuthors() ([]*models.AuthorRecord, error) {
 }
 
 func (r *authorRepository) UpdateAuthor(req *models.AuthorRecord) (*models.AuthorRecord, error) {
-	query := `UPDATE authors SET name = $1, biography = $2 WHERE id = $3 RETURNING id, name, biography`
+	query := `UPDATE authors SET name = $1, biography = $2 WHERE id = $3 RETURNING id, name, biography, created_at, updated_at`
 	row := r.db.QueryRow(query, req.Name, req.Biography, req.Id)
 
 	author := &models.AuthorRecord{}
-	if err := row.Scan(&author.Id, &author.Name, &author.Biography); err != nil {
+	if err := row.Scan(&author.Id, &author.Name, &author.Biography, &author.CreatedAt, &author.UpdatedAt); err != nil {
 		return nil, err
 	}
 

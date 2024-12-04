@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS books (
     author_id UUID NOT NULL,
     category_id UUID NOT NULL,
     stock INT NOT NULL CHECK (stock >= 0),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Membuat trigger untuk memperbarui kolom updated_at

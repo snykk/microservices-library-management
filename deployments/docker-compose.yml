@@ -34,7 +34,7 @@ services:
             mode: replicated
             replicas: 1
         environment:
-            DSN: "host=book-db port=5432 user=fikri password=12345678 dbname=bookdb sslmode=disable connect_timeout=5"
+            DSN: "host=book-db port=5432 user=fikri password=12345678 dbname=bookdb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
             GRPC_PORT: "50051"
 
     author-service:
@@ -49,7 +49,7 @@ services:
             mode: replicated
             replicas: 1
         environment:
-            DSN: "host=author-db port=5432 user=fikri password=12345678 dbname=authordb sslmode=disable connect_timeout=5"
+            DSN: "host=author-db port=5432 user=fikri password=12345678 dbname=authordb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
             GRPC_PORT: "50051"
 
     category-service:
@@ -64,7 +64,7 @@ services:
             mode: replicated
             replicas: 1
         environment:
-            DSN: "host=category-db port=5432 user=fikri password=12345678 dbname=categorydb sslmode=disable connect_timeout=5"
+            DSN: "host=category-db port=5432 user=fikri password=12345678 dbname=categorydb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
             GRPC_PORT: "50051"
 
     user-service:
@@ -79,7 +79,7 @@ services:
             mode: replicated
             replicas: 1
         environment:
-            DSN: "host=user-db port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable connect_timeout=5"
+            DSN: "host=user-db port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
 
     auth-service:
         build:
@@ -93,7 +93,7 @@ services:
             mode: replicated
             replicas: 1
         environment:
-            DSN: "host=user-db port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable connect_timeout=5"
+            DSN: "host=user-db port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
             REDIS_HOST: "redis"
             REDIS_PASSWORD: "mypasswordtralala"
             REDIS_PORT: "6379"
@@ -113,6 +113,8 @@ services:
             POSTGRES_USER: fikri
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: bookdb
+            TZ: Asia/Jakarta
+
         networks:
             - library-network
         restart: always
@@ -131,6 +133,8 @@ services:
             POSTGRES_USER: fikri
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: authordb
+            TZ: Asia/Jakarta
+
         networks:
             - library-network
         restart: always
@@ -149,6 +153,8 @@ services:
             POSTGRES_USER: fikri
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: categorydb
+            TZ: Asia/Jakarta
+
         networks:
             - library-network
         restart: always
@@ -167,6 +173,8 @@ services:
             POSTGRES_USER: fikri
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: userdb
+            TZ: Asia/Jakarta
+
         networks:
             - library-network
         restart: always

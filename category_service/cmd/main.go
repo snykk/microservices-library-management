@@ -4,7 +4,6 @@ import (
 	"category_service/internal/grpc_server"
 	"category_service/internal/repository"
 	"category_service/internal/service"
-	"database/sql"
 	"log"
 	"net"
 	"os"
@@ -14,16 +13,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	_ "github.com/jackc/pgconn"
-	_ "github.com/jackc/pgx/v4"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 func main() {
 	grpcPort := os.Getenv("GRPC_PORT")
 	dsn := os.Getenv("DSN")
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

@@ -4,6 +4,8 @@ import (
 	"book_service/internal/models"
 	"database/sql"
 	"errors"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type BookRepository interface {
@@ -15,17 +17,17 @@ type BookRepository interface {
 }
 
 type bookRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewBookRepository(db *sql.DB) BookRepository {
+func NewBookRepository(db *sqlx.DB) BookRepository {
 	return &bookRepository{
 		db: db,
 	}
 }
 
 func (r *bookRepository) CreateBook(req *models.BookRecord) (*models.BookRecord, error) {
-	query := `INSERT INTO books (title, author_id, category_id, stock, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, title, author_id, category_id, stock, created_at, updated_at`
+	query := `INSERT INTO books (title, author_id, category_id, stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, title, author_id, category_id, stock, created_at, updated_at`
 
 	book := &models.BookRecord{}
 	err := r.db.QueryRow(
@@ -34,8 +36,6 @@ func (r *bookRepository) CreateBook(req *models.BookRecord) (*models.BookRecord,
 		req.AuthorId,
 		req.CategoryId,
 		req.Stock,
-		req.CreatedAt,
-		req.UpdatedAt,
 	).Scan(
 		&book.Id,
 		&book.Title,
@@ -53,11 +53,11 @@ func (r *bookRepository) CreateBook(req *models.BookRecord) (*models.BookRecord,
 }
 
 func (r *bookRepository) GetBook(id *string) (*models.BookRecord, error) {
-	query := `SELECT id, title, author_id, category_id, stock FROM books WHERE id = $1`
+	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE id = $1`
 	row := r.db.QueryRow(query, *id)
 
 	book := &models.BookRecord{}
-	if err := row.Scan(&book.Id, &book.Title, &book.AuthorId, &book.CategoryId, &book.Stock); err != nil {
+	if err := row.Scan(&book.Id, &book.Title, &book.AuthorId, &book.CategoryId, &book.Stock, &book.CreatedAt, &book.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("book not found")
 		}
@@ -68,7 +68,7 @@ func (r *bookRepository) GetBook(id *string) (*models.BookRecord, error) {
 }
 
 func (r *bookRepository) ListBooks() ([]*models.BookRecord, error) {
-	query := `SELECT id, title, author_id, category_id, stock FROM books`
+	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books`
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (r *bookRepository) ListBooks() ([]*models.BookRecord, error) {
 	var books []*models.BookRecord
 	for rows.Next() {
 		book := &models.BookRecord{}
-		if err := rows.Scan(&book.Id, &book.Title, &book.AuthorId, &book.CategoryId, &book.Stock); err != nil {
+		if err := rows.Scan(&book.Id, &book.Title, &book.AuthorId, &book.CategoryId, &book.Stock, &book.CreatedAt, &book.UpdatedAt); err != nil {
 			return nil, err
 		}
 		books = append(books, book)
@@ -91,11 +91,11 @@ func (r *bookRepository) ListBooks() ([]*models.BookRecord, error) {
 }
 
 func (r *bookRepository) UpdateBook(req *models.BookRecord) (*models.BookRecord, error) {
-	query := `UPDATE books SET title = $1, author_id = $2, category_id = $3, stock = $4 WHERE id = $5 RETURNING id, title, author_id, category_id, stock`
+	query := `UPDATE books SET title = $1, author_id = $2, category_id = $3, stock = $4 WHERE id = $5 RETURNING id, title, author_id, category_id, stock, created_at, updated_at`
 	row := r.db.QueryRow(query, req.Title, req.AuthorId, req.CategoryId, req.Stock, req.Id)
 
 	book := &models.BookRecord{}
-	if err := row.Scan(&book.Id, &book.Title, &book.AuthorId, &book.CategoryId, &book.Stock); err != nil {
+	if err := row.Scan(&book.Id, &book.Title, &book.AuthorId, &book.CategoryId, &book.Stock, &book.CreatedAt, &book.UpdatedAt); err != nil {
 		return nil, err
 	}
 

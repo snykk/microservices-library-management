@@ -7,7 +7,6 @@ import (
 	"auth_service/pkg/mailer"
 	"auth_service/pkg/utils"
 	"context"
-	"time"
 )
 
 type AuthService interface {
@@ -44,13 +43,11 @@ func (s *authService) Register(ctx context.Context, req *models.RegisterRequest)
 	}
 
 	user := models.UserRecord{
-		Email:     req.Email,
-		Username:  req.Username,
-		Password:  hashedPassword,
-		Verified:  false,
-		Role:      "user", // Default role
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Email:    req.Email,
+		Username: req.Username,
+		Password: hashedPassword,
+		Verified: false,
+		Role:     "user", // Default role
 	}
 	// Create user
 	createdUser, err := s.repo.CreateUser(&user)

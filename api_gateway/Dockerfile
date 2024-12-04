@@ -14,6 +14,10 @@
 # Stage 2: Runtime
 FROM alpine:latest
 
+RUN apk add --no-cache tzdata
+
+RUN cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && echo "Asia/Jakarta" > /etc/timezone
+
 RUN mkdir /app
 
 # COPY --from=builder /app/gatewayApp /app/
