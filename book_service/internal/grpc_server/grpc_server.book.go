@@ -23,7 +23,7 @@ func NewBookGRPCServer(bookService service.BookService) protoBook.BookServiceSer
 }
 
 func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBookRequest) (*protoBook.CreateBookResponse, error) {
-	book, err := s.bookService.CreateBook(ctx, &models.BookRequest{
+	createdBook, err := s.bookService.CreateBook(ctx, &models.BookRequest{
 		Title:      req.Title,
 		AuthorId:   req.AuthorId,
 		CategoryId: req.CategoryId,
@@ -35,11 +35,13 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 
 	return &protoBook.CreateBookResponse{
 		Book: &protoBook.Book{
-			Id:         book.Id,
-			Title:      book.Title,
-			AuthorId:   book.AuthorId,
-			CategoryId: book.CategoryId,
-			Stock:      int32(book.Stock),
+			Id:         createdBook.Id,
+			Title:      createdBook.Title,
+			AuthorId:   createdBook.AuthorId,
+			CategoryId: createdBook.CategoryId,
+			Stock:      int32(createdBook.Stock),
+			CreatedAt:  createdBook.CreatedAt.Unix(),
+			UpdatedAt:  createdBook.UpdatedAt.Unix(),
 		},
 	}, nil
 }
@@ -57,6 +59,8 @@ func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequ
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int32(book.Stock),
+			CreatedAt:  book.CreatedAt.Unix(),
+			UpdatedAt:  book.UpdatedAt.Unix(),
 		},
 	}, nil
 }
@@ -75,6 +79,8 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int32(book.Stock),
+			CreatedAt:  book.CreatedAt.Unix(),
+			UpdatedAt:  book.UpdatedAt.Unix(),
 		})
 	}
 
@@ -84,7 +90,7 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 }
 
 func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBookRequest) (*protoBook.UpdateBookResponse, error) {
-	book, err := s.bookService.UpdateBook(ctx, &req.Id, &models.BookRequest{
+	updatedBook, err := s.bookService.UpdateBook(ctx, &req.Id, &models.BookRequest{
 		Title:      req.Title,
 		AuthorId:   req.AuthorId,
 		CategoryId: req.CategoryId,
@@ -96,11 +102,13 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 
 	return &protoBook.UpdateBookResponse{
 		Book: &protoBook.Book{
-			Id:         book.Id,
-			Title:      book.Title,
-			AuthorId:   book.AuthorId,
-			CategoryId: book.CategoryId,
-			Stock:      int32(book.Stock),
+			Id:         updatedBook.Id,
+			Title:      updatedBook.Title,
+			AuthorId:   updatedBook.AuthorId,
+			CategoryId: updatedBook.CategoryId,
+			Stock:      int32(updatedBook.Stock),
+			CreatedAt:  updatedBook.CreatedAt.Unix(),
+			UpdatedAt:  updatedBook.UpdatedAt.Unix(),
 		},
 	}, nil
 }

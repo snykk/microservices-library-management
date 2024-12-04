@@ -4,6 +4,7 @@ import (
 	"api_gateway/internal/datatransfers"
 	protoBook "api_gateway/proto/book_service"
 	"context"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -22,7 +23,7 @@ type bookClient struct {
 }
 
 func NewBookClient() (BookClient, error) {
-	conn, err := grpc.Dial("book-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient("book-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +53,8 @@ func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookReque
 		AuthorId:   resp.Book.AuthorId,
 		CategoryId: resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
+		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
+		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
 	}, nil
 }
 
@@ -71,6 +74,8 @@ func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.Book
 		AuthorId:   resp.Book.AuthorId,
 		CategoryId: resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
+		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
+		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
 	}, nil
 }
 
@@ -90,6 +95,8 @@ func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookRespons
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int(book.Stock),
+			CreatedAt:  time.Unix(book.CreatedAt, 0),
+			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
 		})
 	}
 
@@ -116,6 +123,8 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 		AuthorId:   resp.Book.AuthorId,
 		CategoryId: resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
+		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
+		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
 	}, nil
 }
 

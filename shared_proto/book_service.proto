@@ -18,6 +18,8 @@ message Book {
   string author_id = 3;
   string category_id = 4;
   int32 stock = 5;
+  int64 createdAt = 6; // unix time
+  int64 updatedAt = 7; // unit time
 }
 
 message CreateBookRequest {
