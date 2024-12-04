@@ -12,6 +12,18 @@ service UserService {
     rpc UpdateUserStatus (UpdateUserStatusRequest) returns (UpdateUserStatusResponse);
 }
 
+// Message for user model
+message User {
+    string id = 1;
+    string email = 2;
+    string username = 3;
+    string password = 4;
+    bool verified = 5;
+    string role = 6;
+    int64 createdAt = 7; // unix time
+    int64 updatedAt = 8; // unit time
+}
+
 // Message untuk membuat pengguna
 message CreateUserRequest {
     string email = 1;
@@ -22,9 +34,7 @@ message CreateUserRequest {
 
 // Response untuk operasi create user
 message CreateUserResponse {
-    string userId = 1;
-    string email = 2;
-    string message = 3;
+    User user = 1;
 }
 
 // Message untuk mendapatkan detail pengguna berdasarkan ID
@@ -33,11 +43,7 @@ message GetUserByIdRequest {
 }
 
 message GetUserByIdResponse {
-    string userId = 1;
-    string email = 2;
-    string username = 3;
-    bool verified = 4;
-    string createdAt = 5;
+    User user = 1;
 }
 
 // Message untuk mendapatkan detail pengguna berdasarkan email
@@ -46,11 +52,7 @@ message GetUserByEmailRequest {
 }
 
 message GetUserByEmailResponse {
-    string userId = 1;
-    string email = 2;
-    string username = 3;
-    bool verified = 4;
-    string createdAt = 5;
+    User user = 1;
 }
 
 // Message untuk memperbarui status pengguna

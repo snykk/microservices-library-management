@@ -1,4 +1,4 @@
-package utils
+package datatransfers
 
 type Response struct {
 	Success bool        `json:"success"`

@@ -11,7 +11,14 @@ AUTH_BINARY=authApp
 .PHONY: up down restart logs build clean help
 
 # Build binary project and start the application
-up_build: build_gateway build_author build_book build_category build_user, build_auth
+up_build: build_gateway build_author build_book build_category build_user build_auth
+	@echo "Stopping docker images (if running...)"
+	docker-compose down
+	@echo "Starting services..."
+	docker-compose -f $(COMPOSE_FILE) up --build -d
+	@echo "Service started!"
+
+up:
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Starting services..."
@@ -25,32 +32,32 @@ down:
 
 build_gateway:
 	@echo "Building gateway binary..."
-	cd ./api-gateway && env GOOS=linux CGO_ENABLED=0 go build -o ${GATEWAY_BINARY} .
+	cd ../api_gateway && env GOOS=linux CGO_ENABLED=0 go build -o ${GATEWAY_BINARY} ./cmd/api
 	@echo "Done!"
 
 build_author:
 	@echo "Building author binary..."
-	cd ./author_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTHOR_BINARY} .
+	cd ../author_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTHOR_BINARY} ./cmd
 	@echo "Done!"
 
 build_book:
 	@echo "Building book binary..."
-	cd ./book_service && env GOOS=linux CGO_ENABLED=0 go build -o ${BOOK_BINARY} .
+	cd ../book_service && env GOOS=linux CGO_ENABLED=0 go build -o ${BOOK_BINARY} ./cmd
 	@echo "Done!"
 
 build_category:
 	@echo "Building category binary..."
-	cd ./category_service && env GOOS=linux CGO_ENABLED=0 go build -o ${CATEGORY_BINARY} .
+	cd ../category_service && env GOOS=linux CGO_ENABLED=0 go build -o ${CATEGORY_BINARY} ./cmd
 	@echo "Done!"
 
 build_user:
 	@echo "Building user binary..."
-	cd ./user_service && env GOOS=linux CGO_ENABLED=0 go build -o ${USER_BINARY} .
+	cd ../user_service && env GOOS=linux CGO_ENABLED=0 go build -o ${USER_BINARY} ./cmd
 	@echo "Done!"
 
 build_auth:
 	@echo "Building auath binary..."
-	cd ./auath_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} .
+	cd ../auth_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd
 	@echo "Done!"
 
 # Restart the application

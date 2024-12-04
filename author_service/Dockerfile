@@ -9,14 +9,14 @@
 
 # COPY . .
 
-# RUN go build -o authApp .
+# RUN go build -o authorApp .
 
 # Stage 2: Runtime
 FROM alpine:latest
 
 RUN mkdir /app
 
-# COPY --from=builder /app/authApp /app/
-COPY authApp /app/
+# COPY --from=builder /app/authorApp /app/
+COPY authorApp /app/
 
-CMD ["/app/authApp"]
+CMD ["/app/authorApp"]

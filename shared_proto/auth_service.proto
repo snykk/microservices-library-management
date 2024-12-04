@@ -13,6 +13,18 @@ service AuthService {
     rpc SendOTP (SendOTPRequest) returns (SendOTPResponse);             // Send or resend OTP
 }
 
+// Message for user model
+message User {
+    string id = 1;
+    string email = 2;
+    string username = 3;
+    string password = 4;
+    bool verified = 5;
+    string role = 6;
+    int64 createdAt = 7; // unix time
+    int64 updatedAt = 8; // unit time
+}
+
 // Message for user registration
 message RegisterRequest {
     string email = 1;
@@ -22,7 +34,7 @@ message RegisterRequest {
 
 // Response for user registration
 message RegisterResponse {
-    string message = 1;    // Success or error message
+    User user = 1;
 }
 
 // Message for email verification
@@ -62,7 +74,7 @@ message ValidateTokenResponse {
 
 // Message for logout
 message LogoutRequest {
-    string userId = 1;     // User ID initiating the logout
+    int64 userId = 1;     // User ID initiating the logout
 }
 
 // Response for logout
