@@ -11,11 +11,11 @@ import (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, req models.RegisterRequest) (models.RegisterResponse, error)
-	SendOTP(ctx context.Context, email string) (string, error)
-	VerifyEmail(ctx context.Context, req models.VerifyEmailRequest, redisOtp string) (models.VerifyEmailResponse, error)
-	Login(ctx context.Context, req models.LoginRequest) (models.LoginResponse, error)
-	ValidateToken(ctx context.Context, req models.ValidateTokenRequest) (models.ValidateTokenResponse, error)
+	Register(ctx context.Context, req *models.RegisterRequest) (*models.RegisterResponse, error)
+	SendOTP(ctx context.Context, email *string) (*string, error)
+	VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp *string) (*models.VerifyEmailResponse, error)
+	Login(ctx context.Context, req *models.LoginRequest) (*models.LoginResponse, error)
+	ValidateToken(ctx context.Context, req *models.ValidateTokenRequest) (*models.ValidateTokenResponse, error)
 }
 
 type authService struct {
@@ -32,15 +32,15 @@ func NewAuthService(repo repository.AuthRepository, jwtService jwt.JWTService, m
 	}
 }
 
-func (s *authService) Register(ctx context.Context, req models.RegisterRequest) (models.RegisterResponse, error) {
-	_, err := s.repo.GetUserByEmail(req.Email)
-	if err == nil {
-		return models.RegisterResponse{}, ErrEmailAlreadyRegistered
+func (s *authService) Register(ctx context.Context, req *models.RegisterRequest) (*models.RegisterResponse, error) {
+	userFromDB, _ := s.repo.GetUserByEmail(&req.Email)
+	if userFromDB != nil {
+		return nil, ErrEmailAlreadyRegistered
 	}
 
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return models.RegisterResponse{}, ErrFailedHashPassword
+		return nil, ErrFailedHashPassword
 	}
 
 	user := models.UserRecord{
@@ -53,101 +53,102 @@ func (s *authService) Register(ctx context.Context, req models.RegisterRequest) 
 		UpdatedAt: time.Now(),
 	}
 	// Create user
-	createdUser, err := s.repo.CreateUser(user)
+	createdUser, err := s.repo.CreateUser(&user)
 	if err != nil {
-		return models.RegisterResponse{}, ErrCreateUser
+		return nil, ErrCreateUser
 	}
 
-	return models.RegisterResponse{
-		User: createdUser,
+	return &models.RegisterResponse{
+		User: *createdUser,
 	}, nil
 }
 
-func (s *authService) SendOTP(ctx context.Context, email string) (string, error) {
+func (s *authService) SendOTP(ctx context.Context, email *string) (*string, error) {
 	user, err := s.repo.GetUserByEmail(email)
 	if err != nil {
-		return "", ErrGetUserByEmail
+		return nil, ErrGetUserByEmail
 	}
 
 	if user.Verified {
-		return "", ErrEmailAlreadyVerified
+		return nil, ErrEmailAlreadyVerified
 	}
 
 	otp, err := utils.GenerateOTPCode(6)
 	if err != nil {
-		return "", ErrGenerateOTPCode
+		return nil, ErrGenerateOTPCode
 	}
 
-	if err = s.mailer.SendOTP(otp, email); err != nil {
-		return "", ErrSendOtpWithMailer
+	if err = s.mailer.SendOTP(otp, *email); err != nil {
+		return nil, ErrSendOtpWithMailer
 	}
 
-	return otp, nil
+	return &otp, nil
 }
 
-func (s *authService) VerifyEmail(ctx context.Context, req models.VerifyEmailRequest, redisOtp string) (models.VerifyEmailResponse, error) {
-	user, err := s.repo.GetUserByEmail(req.Email)
+func (s *authService) VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp *string) (*models.VerifyEmailResponse, error) {
+	user, err := s.repo.GetUserByEmail(&req.Email)
 	if err != nil {
-		return models.VerifyEmailResponse{}, ErrGetUserByEmail
+		return nil, ErrGetUserByEmail
 	}
 
 	if user.Verified {
-		return models.VerifyEmailResponse{}, ErrEmailAlreadyVerified
+		return nil, ErrEmailAlreadyVerified
 	}
 
-	if req.OTP != redisOtp {
-		return models.VerifyEmailResponse{}, ErrMismatchOTPCode
+	if req.OTP != *redisOtp {
+		return nil, ErrMismatchOTPCode
 	}
 
-	err = s.repo.UpdateUserVerification(req.Email, true)
+	verified := true
+	err = s.repo.UpdateUserVerification(&req.Email, &verified)
 	if err != nil {
-		return models.VerifyEmailResponse{}, ErrUpdateUserVerification
+		return nil, ErrUpdateUserVerification
 	}
 
-	return models.VerifyEmailResponse{Message: "Email verified successfully"}, nil
+	return &models.VerifyEmailResponse{Message: "Email verified successfully"}, nil
 }
 
-func (s *authService) Login(ctx context.Context, req models.LoginRequest) (models.LoginResponse, error) {
-	user, err := s.repo.GetUserByEmail(req.Email)
+func (s *authService) Login(ctx context.Context, req *models.LoginRequest) (*models.LoginResponse, error) {
+	user, err := s.repo.GetUserByEmail(&req.Email)
 	if err != nil {
-		return models.LoginResponse{}, ErrGetUserByEmail
+		return nil, ErrGetUserByEmail
 	}
 
 	if !user.Verified {
-		return models.LoginResponse{}, ErrEmailNotVerified
+		return nil, ErrEmailNotVerified
 	}
 
 	// Check password
 	if err := utils.CheckPassword(user.Password, req.Password); err != nil {
-		return models.LoginResponse{}, ErrInvalidPassword
+		return nil, ErrInvalidPassword
 	}
 
 	// Generate Access Token
 	accessToken, err := s.jwtService.GenerateToken(user.ID, user.Role, user.Email)
 	if err != nil {
-		return models.LoginResponse{}, ErrGenerateAccessToken
+		return nil, ErrGenerateAccessToken
 	}
 
 	// Generate Refresh Token
 	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID, user.Role, user.Email)
 	if err != nil {
-		return models.LoginResponse{}, ErrGenerateRefreshToken
+		return nil, ErrGenerateRefreshToken
 	}
 
-	return models.LoginResponse{
+	return &models.LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		Message:      "Login successful",
 	}, nil
 }
 
-func (s *authService) ValidateToken(ctx context.Context, req models.ValidateTokenRequest) (models.ValidateTokenResponse, error) {
+func (s *authService) ValidateToken(ctx context.Context, req *models.ValidateTokenRequest) (*models.ValidateTokenResponse, error) {
 	claims, err := s.jwtService.ParseToken(req.Token)
 	if err != nil {
-		return models.ValidateTokenResponse{Valid: false}, ErrPareseToken
+		return nil, ErrPareseToken
 	}
 
-	return models.ValidateTokenResponse{
+	return &models.ValidateTokenResponse{
 		Valid:  true,
 		UserID: claims.UserID,
 	}, nil
