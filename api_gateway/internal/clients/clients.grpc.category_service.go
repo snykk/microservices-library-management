@@ -4,6 +4,7 @@ import (
 	"api_gateway/internal/datatransfers"
 	protoCategory "api_gateway/proto/category_service"
 	"context"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -44,8 +45,10 @@ func (c *categoryClient) CreateCategory(ctx context.Context, dto datatransfers.C
 	}
 
 	return datatransfers.CategoryResponse{
-		Id:   resp.Category.Id,
-		Name: resp.Category.Name,
+		Id:        resp.Category.Id,
+		Name:      resp.Category.Name,
+		CreatedAt: time.Unix(resp.Category.CreatedAt, 0),
+		UpdatedAt: time.Unix(resp.Category.UpdatedAt, 0),
 	}, nil
 }
 
@@ -60,8 +63,10 @@ func (c *categoryClient) GetCategory(ctx context.Context, id string) (datatransf
 	}
 
 	return datatransfers.CategoryResponse{
-		Id:   resp.Category.Id,
-		Name: resp.Category.Name,
+		Id:        resp.Category.Id,
+		Name:      resp.Category.Name,
+		CreatedAt: time.Unix(resp.Category.CreatedAt, 0),
+		UpdatedAt: time.Unix(resp.Category.UpdatedAt, 0),
 	}, nil
 }
 
@@ -76,8 +81,10 @@ func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.Ca
 	var categories []datatransfers.CategoryResponse
 	for _, category := range resp.Categories {
 		categories = append(categories, datatransfers.CategoryResponse{
-			Id:   category.Id,
-			Name: category.Name,
+			Id:        category.Id,
+			Name:      category.Name,
+			CreatedAt: time.Unix(category.CreatedAt, 0),
+			UpdatedAt: time.Unix(category.UpdatedAt, 0),
 		})
 	}
 
@@ -96,8 +103,10 @@ func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, 
 	}
 
 	return datatransfers.CategoryResponse{
-		Id:   resp.Category.Id,
-		Name: resp.Category.Name,
+		Id:        resp.Category.Id,
+		Name:      resp.Category.Name,
+		CreatedAt: time.Unix(resp.Category.CreatedAt, 0),
+		UpdatedAt: time.Unix(resp.Category.UpdatedAt, 0),
 	}, nil
 }
 

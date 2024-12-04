@@ -23,7 +23,7 @@ func NewCategoryGRPCServer(categoryService service.CategoryService) protoCategor
 }
 
 func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCategory.CreateCategoryRequest) (*protoCategory.CreateCategoryResponse, error) {
-	category, err := s.categoryService.CreateCategory(ctx, &models.CategoryRequest{
+	createdCategory, err := s.categoryService.CreateCategory(ctx, &models.CategoryRequest{
 		Name: req.Name,
 	})
 	if err != nil {
@@ -32,8 +32,10 @@ func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCateg
 
 	return &protoCategory.CreateCategoryResponse{
 		Category: &protoCategory.Category{
-			Id:   category.Id,
-			Name: category.Name,
+			Id:        createdCategory.Id,
+			Name:      createdCategory.Name,
+			CreatedAt: createdCategory.CreatedAt.Unix(),
+			UpdatedAt: createdCategory.UpdatedAt.Unix(),
 		},
 	}, nil
 }
@@ -46,8 +48,10 @@ func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory
 
 	return &protoCategory.GetCategoryResponse{
 		Category: &protoCategory.Category{
-			Id:   category.Id,
-			Name: category.Name,
+			Id:        category.Id,
+			Name:      category.Name,
+			CreatedAt: category.CreatedAt.Unix(),
+			UpdatedAt: category.UpdatedAt.Unix(),
 		},
 	}, nil
 }
@@ -61,8 +65,10 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 	var protoCategories []*protoCategory.Category
 	for _, category := range categories {
 		protoCategories = append(protoCategories, &protoCategory.Category{
-			Id:   category.Id,
-			Name: category.Name,
+			Id:        category.Id,
+			Name:      category.Name,
+			CreatedAt: category.CreatedAt.Unix(),
+			UpdatedAt: category.UpdatedAt.Unix(),
 		})
 	}
 
@@ -72,7 +78,7 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCategory.UpdateCategoryRequest) (*protoCategory.UpdateCategoryResponse, error) {
-	category, err := s.categoryService.UpdateCategory(ctx, &req.Id, &models.CategoryRequest{
+	updatedCategory, err := s.categoryService.UpdateCategory(ctx, &req.Id, &models.CategoryRequest{
 		Name: req.Name,
 	})
 	if err != nil {
@@ -81,8 +87,10 @@ func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCateg
 
 	return &protoCategory.UpdateCategoryResponse{
 		Category: &protoCategory.Category{
-			Id:   category.Id,
-			Name: category.Name,
+			Id:        updatedCategory.Id,
+			Name:      updatedCategory.Name,
+			CreatedAt: updatedCategory.CreatedAt.Unix(),
+			UpdatedAt: updatedCategory.UpdatedAt.Unix(),
 		},
 	}, nil
 }
