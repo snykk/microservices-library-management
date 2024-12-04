@@ -64,6 +64,7 @@ services:
             replicas: 1
         environment:
             DSN: "host=category-db port=5432 user=fikri password=12345678 dbname=categorydb sslmode=disable connect_timeout=5"
+            GRPC_PORT: "50051"
 
     user-service:
         build:
