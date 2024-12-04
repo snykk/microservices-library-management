@@ -120,6 +120,7 @@ services:
             replicas: 1
         volumes:
             - book-db-data:/var/lib/postgresql/data
+            - ./sql/book-init.sql:/docker-entrypoint-initdb.d/init.sql
 
     author-db:
         image: postgres:15
@@ -137,6 +138,7 @@ services:
             replicas: 1
         volumes:
             - author-db-data:/var/lib/postgresql/data
+            - ./sql/author-init.sql:/docker-entrypoint-initdb.d/init.sql
 
     category-db:
         image: postgres:15
@@ -154,6 +156,7 @@ services:
             replicas: 1
         volumes:
             - category-db-data:/var/lib/postgresql/data
+            - ./sql/category-init.sql:/docker-entrypoint-initdb.d/init.sql
 
     user-db:
         image: postgres:15
@@ -171,6 +174,7 @@ services:
             replicas: 1
         volumes:
             - user-db-data:/var/lib/postgresql/data
+            - ./sql/user-init.sql:/docker-entrypoint-initdb.d/init.sql
 
     redis:
         image: redis:7.4.1-alpine
