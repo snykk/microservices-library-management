@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package loan_service;
+
+option go_package = "/loan_service";
+
+service LoanService {
+    rpc CreateLoan(CreateLoanRequest) returns (LoanResponse);
+    rpc GetLoan(GetLoanRequest) returns (LoanResponse);
+    rpc UpdateLoanStatus(UpdateLoanStatusRequest) returns (LoanResponse);
+    rpc ListLoans(ListLoansRequest) returns (ListLoansResponse);
+}
+
+// Loan message to represent loan data
+message Loan {
+    string id = 1;
+    string user_id = 2;
+    string book_id = 3;
+    int64 loan_date = 4;   // unix time
+    int64 return_date = 5; // unix time
+    string status = 6;     // Loan status (e.g., BORROWED, RETURNED, LOST)
+    int64 createdAt = 7;   // unix time
+    int64 updatedAt = 8;   // unit time
+}
+
+message CreateLoanRequest {
+    string user_id = 1;
+    string book_id = 2;
+}
+
+message GetLoanRequest {
+    string id = 1;
+}
+
+message UpdateLoanStatusRequest {
+    string id = 1;
+    string status = 2;      // New loan status (e.g., RETURNED, LOST)
+    int64 return_date = 3;  // unix time
+}
+
+message ListLoansRequest {
+    string user_id = 1;     // User ID
+}
+
+message LoanResponse {
+    Loan loan = 1;
+}
+
+message ListLoansResponse {
+    repeated Loan loans = 1; // List of loans
+}

@@ -1,0 +1,75 @@
+package handlers
+
+import (
+	"api_gateway/internal/clients"
+	"api_gateway/internal/datatransfers"
+	"api_gateway/pkg/utils"
+	"fmt"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+type LoanHandler struct {
+	client clients.LoanClient
+}
+
+func NewLoanHandler(client clients.LoanClient) LoanHandler {
+	return LoanHandler{
+		client: client,
+	}
+}
+
+func (l *LoanHandler) CreateLoanHandler(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	var req datatransfers.LoanRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	resp, err := l.client.CreateLoan(c.Context(), userID, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to create loan", err))
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(datatransfers.ResponseSuccess("Loan created successfully", resp))
+}
+
+func (l *LoanHandler) GetLoanHandler(c *fiber.Ctx) error {
+	loanId := c.Params("id")
+
+	resp, err := l.client.GetLoan(c.Context(), loanId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get loan", err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Loan data with id '%s' fetched successfully", loanId), resp))
+}
+
+func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
+	loanId := c.Params("id")
+	var req datatransfers.LoanStatusUpdateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	req.ReturnDate = time.Now()
+	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, req.Status, req.ReturnDate)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update loan status", err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Loan status updated successfully", resp))
+}
+
+func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
+	userId := c.Locals("userID").(string)
+
+	resp, err := l.client.ListLoans(c.Context(), userId)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list loans", err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("Loan list fetched successfully", resp))
+}
