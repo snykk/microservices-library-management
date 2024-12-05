@@ -30,10 +30,13 @@ func (r *loanRoutes) Routes() {
 	// Public routes (authentication required)
 	route.Use(r.authMiddleware.Authenticate())
 	route.Post("", r.handler.CreateLoanHandler)
-	route.Get("/:id", r.handler.GetLoanHandler)
-	route.Get("", r.handler.ListLoansHandler)
+	route.Get("", r.handler.ListUserLoansHandler)
 
 	// Admin routes (authentication and authorization required)
 	adminOnly := r.authMiddleware.HasAuthority([]string{"admin"})
 	route.Patch("/:id/status", adminOnly, r.handler.UpdateLoanStatusHandler)
+	route.Get("/all", adminOnly, r.handler.ListLoansHandler)
+
+	// avoid wildcard effect on `/all` endpoint
+	route.Get("/:id", r.handler.GetLoanHandler)
 }

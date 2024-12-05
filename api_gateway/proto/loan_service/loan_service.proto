@@ -8,7 +8,8 @@ service LoanService {
     rpc CreateLoan(CreateLoanRequest) returns (LoanResponse);
     rpc GetLoan(GetLoanRequest) returns (LoanResponse);
     rpc UpdateLoanStatus(UpdateLoanStatusRequest) returns (LoanResponse);
-    rpc ListLoans(ListLoansRequest) returns (ListLoansResponse);
+    rpc ListUserLoans(ListUserLoansRequest) returns (ListLoansResponse);
+    rpc ListLoans(ListLoansRequest) returns (ListLoansResponse); // Admin purpose
 }
 
 // Loan message to represent loan data
@@ -38,9 +39,11 @@ message UpdateLoanStatusRequest {
     int64 return_date = 3;  // unix time
 }
 
-message ListLoansRequest {
+message ListUserLoansRequest {
     string user_id = 1;     // User ID
 }
+
+message ListLoansRequest{}
 
 message LoanResponse {
     Loan loan = 1;

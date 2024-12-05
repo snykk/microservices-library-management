@@ -13,7 +13,8 @@ type LoanRepository interface {
 	CreateLoan(ctx context.Context, loan *models.LoanRecord) (*models.LoanRecord, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, error)
 	UpdateLoanStatus(ctx context.Context, loan *models.LoanRecord) (*models.LoanRecord, error)
-	ListLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error)
+	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error)
+	ListLoans(ctx context.Context) ([]*models.LoanRecord, error)
 }
 
 type loanRepository struct {
@@ -94,8 +95,8 @@ func (r *loanRepository) UpdateLoanStatus(ctx context.Context, req *models.LoanR
 	return loan, nil
 }
 
-// ListLoans fetches all loans associated with a specific user
-func (r *loanRepository) ListLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error) {
+// ListUserLoans fetches all loans associated with a specific user
+func (r *loanRepository) ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error) {
 	query := `
 		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
 		FROM loans
@@ -104,6 +105,19 @@ func (r *loanRepository) ListLoans(ctx context.Context, userId string) ([]*model
 
 	var loans []*models.LoanRecord
 	if err := r.db.SelectContext(ctx, &loans, query, userId); err != nil {
+		return nil, err
+	}
+	return loans, nil
+}
+
+func (r *loanRepository) ListLoans(ctx context.Context) ([]*models.LoanRecord, error) {
+	query := `
+		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
+		FROM loans
+	`
+
+	var loans []*models.LoanRecord
+	if err := r.db.SelectContext(ctx, &loans, query); err != nil {
 		return nil, err
 	}
 	return loans, nil

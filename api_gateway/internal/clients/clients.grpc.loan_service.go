@@ -4,7 +4,6 @@ import (
 	"api_gateway/internal/datatransfers"
 	protoLoan "api_gateway/proto/loan_service"
 	"context"
-	"fmt"
 	"time"
 
 	"google.golang.org/grpc"
@@ -15,7 +14,8 @@ type LoanClient interface {
 	CreateLoan(ctx context.Context, userId string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error)
 	GetLoan(ctx context.Context, id string) (datatransfers.LoanResponse, error)
 	UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
-	ListLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error)
+	ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error)
+	ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error)
 }
 
 type loanClient struct {
@@ -115,17 +115,44 @@ func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string
 	return loanResponse, nil
 }
 
-func (l *loanClient) ListLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error) {
-	reqProto := protoLoan.ListLoansRequest{
+func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error) {
+	reqProto := protoLoan.ListUserLoansRequest{
 		UserId: userId,
 	}
 
-	resp, err := l.client.ListLoans(ctx, &reqProto)
+	resp, err := l.client.ListUserLoans(ctx, &reqProto)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("ini resp:", resp)
+	var loans []datatransfers.LoanResponse
+	for _, loan := range resp.Loans {
+		loanResponse := datatransfers.LoanResponse{
+			Id:        loan.Id,
+			UserId:    loan.UserId,
+			BookId:    loan.BookId,
+			LoanDate:  time.Unix(loan.LoanDate, 0),
+			Status:    loan.Status,
+			CreatedAt: time.Unix(loan.CreatedAt, 0),
+			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
+		}
+
+		if loan.ReturnDate != 0 {
+			returnDate := time.Unix(loan.ReturnDate, 0)
+			loanResponse.ReturnDate = &returnDate
+		}
+
+		loans = append(loans, loanResponse)
+	}
+
+	return loans, nil
+}
+
+func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error) {
+	resp, err := l.client.ListLoans(ctx, &protoLoan.ListLoansRequest{})
+	if err != nil {
+		return nil, err
+	}
 
 	var loans []datatransfers.LoanResponse
 	for _, loan := range resp.Loans {

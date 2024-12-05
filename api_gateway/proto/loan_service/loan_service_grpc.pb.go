@@ -25,6 +25,7 @@ type LoanServiceClient interface {
 	CreateLoan(ctx context.Context, in *CreateLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error)
 	GetLoan(ctx context.Context, in *GetLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error)
 	UpdateLoanStatus(ctx context.Context, in *UpdateLoanStatusRequest, opts ...grpc.CallOption) (*LoanResponse, error)
+	ListUserLoans(ctx context.Context, in *ListUserLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
 	ListLoans(ctx context.Context, in *ListLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
 }
 
@@ -63,6 +64,15 @@ func (c *loanServiceClient) UpdateLoanStatus(ctx context.Context, in *UpdateLoan
 	return out, nil
 }
 
+func (c *loanServiceClient) ListUserLoans(ctx context.Context, in *ListUserLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error) {
+	out := new(ListLoansResponse)
+	err := c.cc.Invoke(ctx, "/loan_service.LoanService/ListUserLoans", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *loanServiceClient) ListLoans(ctx context.Context, in *ListLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error) {
 	out := new(ListLoansResponse)
 	err := c.cc.Invoke(ctx, "/loan_service.LoanService/ListLoans", in, out, opts...)
@@ -79,6 +89,7 @@ type LoanServiceServer interface {
 	CreateLoan(context.Context, *CreateLoanRequest) (*LoanResponse, error)
 	GetLoan(context.Context, *GetLoanRequest) (*LoanResponse, error)
 	UpdateLoanStatus(context.Context, *UpdateLoanStatusRequest) (*LoanResponse, error)
+	ListUserLoans(context.Context, *ListUserLoansRequest) (*ListLoansResponse, error)
 	ListLoans(context.Context, *ListLoansRequest) (*ListLoansResponse, error)
 	mustEmbedUnimplementedLoanServiceServer()
 }
@@ -95,6 +106,9 @@ func (UnimplementedLoanServiceServer) GetLoan(context.Context, *GetLoanRequest) 
 }
 func (UnimplementedLoanServiceServer) UpdateLoanStatus(context.Context, *UpdateLoanStatusRequest) (*LoanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateLoanStatus not implemented")
+}
+func (UnimplementedLoanServiceServer) ListUserLoans(context.Context, *ListUserLoansRequest) (*ListLoansResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUserLoans not implemented")
 }
 func (UnimplementedLoanServiceServer) ListLoans(context.Context, *ListLoansRequest) (*ListLoansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListLoans not implemented")
@@ -166,6 +180,24 @@ func _LoanService_UpdateLoanStatus_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LoanService_ListUserLoans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserLoansRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoanServiceServer).ListUserLoans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loan_service.LoanService/ListUserLoans",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoanServiceServer).ListUserLoans(ctx, req.(*ListUserLoansRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LoanService_ListLoans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListLoansRequest)
 	if err := dec(in); err != nil {
@@ -202,6 +234,10 @@ var LoanService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateLoanStatus",
 			Handler:    _LoanService_UpdateLoanStatus_Handler,
+		},
+		{
+			MethodName: "ListUserLoans",
+			Handler:    _LoanService_ListUserLoans_Handler,
 		},
 		{
 			MethodName: "ListLoans",

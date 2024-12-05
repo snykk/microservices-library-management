@@ -63,13 +63,22 @@ func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Loan status updated successfully", resp))
 }
 
-func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
+func (l *LoanHandler) ListUserLoansHandler(c *fiber.Ctx) error {
 	userId := c.Locals("userID").(string)
 
-	resp, err := l.client.ListLoans(c.Context(), userId)
+	resp, err := l.client.ListUserLoans(c.Context(), userId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list loans", err))
 	}
 
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("Loan list fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("List user loans fetched successfully", resp))
+}
+
+func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
+	resp, err := l.client.ListLoans(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list loans", err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("List loans fetched successfully", resp))
 }

@@ -95,8 +95,44 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 	}, nil
 }
 
+func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListUserLoansRequest) (*protoLoan.ListLoansResponse, error) {
+	loans, err := s.loanService.ListUserLoans(ctx, req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to list loans")
+	}
+
+	fmt.Println("setelah listloan")
+
+	var protoLoans []*protoLoan.Loan
+	for _, loan := range loans {
+		var returnDate int64
+		if loan.ReturnDate != nil {
+			returnDate = loan.ReturnDate.Unix()
+		} else {
+			returnDate = 0
+		}
+
+		protoLoans = append(protoLoans, &protoLoan.Loan{
+			Id:         loan.Id,
+			UserId:     loan.UserId,
+			BookId:     loan.BookId,
+			LoanDate:   loan.LoanDate.Unix(),
+			ReturnDate: returnDate,
+			Status:     loan.Status,
+			CreatedAt:  loan.CreatedAt.Unix(),
+			UpdatedAt:  loan.UpdatedAt.Unix(),
+		})
+	}
+
+	fmt.Println("success")
+
+	return &protoLoan.ListLoansResponse{
+		Loans: protoLoans,
+	}, nil
+}
+
 func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoansRequest) (*protoLoan.ListLoansResponse, error) {
-	loans, err := s.loanService.ListLoans(ctx, req.UserId)
+	loans, err := s.loanService.ListLoans(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to list loans")
 	}

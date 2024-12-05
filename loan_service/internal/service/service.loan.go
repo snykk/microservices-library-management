@@ -12,7 +12,8 @@ type LoanService interface {
 	CreateLoan(ctx context.Context, userId, bookId string) (*models.LoanRecord, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, error)
 	UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, error)
-	ListLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error)
+	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error)
+	ListLoans(ctx context.Context) ([]*models.LoanRecord, error)
 }
 
 type loanService struct {
@@ -49,6 +50,10 @@ func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, r
 	return s.repo.UpdateLoanStatus(ctx, loan)
 }
 
-func (s *loanService) ListLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error) {
-	return s.repo.ListLoans(ctx, userId)
+func (s *loanService) ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error) {
+	return s.repo.ListUserLoans(ctx, userId)
+}
+
+func (s *loanService) ListLoans(ctx context.Context) ([]*models.LoanRecord, error) {
+	return s.repo.ListLoans(ctx)
 }
