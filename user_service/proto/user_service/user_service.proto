@@ -4,7 +4,6 @@ package user_service;
 
 option go_package = "/user_service";
 
-// Service untuk User
 service UserService {
     rpc GetUserById (GetUserByIdRequest) returns (GetUserByIdResponse);
     rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
@@ -23,7 +22,6 @@ message User {
     int64 updatedAt = 8; // unit time
 }
 
-// Message untuk mendapatkan detail pengguna berdasarkan ID
 message GetUserByIdRequest {
     string userId = 1;
 }
@@ -32,7 +30,6 @@ message GetUserByIdResponse {
     User user = 1;
 }
 
-// Message untuk mendapatkan detail pengguna berdasarkan email
 message GetUserByEmailRequest {
     string email = 1;
 }

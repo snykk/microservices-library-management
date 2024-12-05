@@ -124,7 +124,6 @@ func (x *User) GetUpdatedAt() int64 {
 	return 0
 }
 
-// Message untuk mendapatkan detail pengguna berdasarkan ID
 type GetUserByIdRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -219,7 +218,6 @@ func (x *GetUserByIdResponse) GetUser() *User {
 	return nil
 }
 
-// Message untuk mendapatkan detail pengguna berdasarkan email
 type GetUserByEmailRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
