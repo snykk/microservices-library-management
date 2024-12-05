@@ -27,7 +27,7 @@ func NewBookRepository(db *sqlx.DB) BookRepository {
 }
 
 func (r *bookRepository) CreateBook(req *models.BookRecord) (*models.BookRecord, error) {
-	query := `INSERT INTO books (title, author_id, category_id, stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, title, author_id, category_id, stock, created_at, updated_at`
+	query := `INSERT INTO books (title, author_id, category_id, stock) VALUES ($1, $2, $3, $4) RETURNING id, title, author_id, category_id, stock, created_at, updated_at`
 
 	book := &models.BookRecord{}
 	err := r.db.QueryRow(
