@@ -5,12 +5,12 @@ package auth_service;
 option go_package = "/auth_service";
 
 service AuthService {
-    rpc Register (RegisterRequest) returns (RegisterResponse);          // User registration
-    rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse); // Email verification
-    rpc Login (LoginRequest) returns (LoginResponse);                   // User login
-    rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse); // Token validation
-    rpc Logout (LogoutRequest) returns (LogoutResponse);                // User logout
-    rpc SendOTP (SendOTPRequest) returns (SendOTPResponse);             // Send or resend OTP
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+    rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse);
+    rpc Login (LoginRequest) returns (LoginResponse);
+    rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+    rpc Logout (LogoutRequest) returns (LogoutResponse);
+    rpc SendOTP (SendOTPRequest) returns (SendOTPResponse);
 }
 
 // Message for user model
@@ -25,40 +25,36 @@ message User {
     int64 updatedAt = 8; // unit time
 }
 
-// Message for user registration
 message RegisterRequest {
     string email = 1;
     string username = 2;
     string password = 3;
 }
 
-// Response for user registration
 message RegisterResponse {
     User user = 1;
 }
 
-// Message for email verification
 message VerifyEmailRequest {
     string email = 1;
     string otp = 2;        // One-Time Password sent to the user's email
 }
 
-// Response for email verification
 message VerifyEmailResponse {
-    string message = 1;    // Success or error message
+    string message = 1;
 }
 
 // Message for login
 message LoginRequest {
-    string email = 1;      // User's email address
-    string password = 2;   // User's password
+    string email = 1;
+    string password = 2;
 }
 
 // Response for login
 message LoginResponse {
     string accessToken = 1;    // Access token for the session
     string refreshToken = 2;   // Refresh token for renewing the session
-    string message = 3;        // Success or error message
+    string message = 3;
 }
 
 // Message for token validation
@@ -69,7 +65,8 @@ message ValidateTokenRequest {
 // Response for token validation
 message ValidateTokenResponse {
     bool valid = 1;        // Indicates whether the token is valid
-    string userId = 2;     // User ID associated with the token (if valid)
+    string userId = 2;
+    string role = 3;
 }
 
 // Message for logout

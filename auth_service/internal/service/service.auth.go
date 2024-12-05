@@ -148,5 +148,6 @@ func (s *authService) ValidateToken(ctx context.Context, req *models.ValidateTok
 	return &models.ValidateTokenResponse{
 		Valid:  true,
 		UserID: claims.UserID,
+		Role:   claims.Role,
 	}, nil
 }

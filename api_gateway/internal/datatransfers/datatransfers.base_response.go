@@ -4,6 +4,7 @@ type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+	Error   string      `json:"error,omitempty"`
 }
 
 func ResponseSuccess(message string, data interface{}) Response {
@@ -18,6 +19,6 @@ func ResponseError(message string, err error) Response {
 	return Response{
 		Success: false,
 		Message: message,
-		Data:    err.Error(),
+		Error:   err.Error(),
 	}
 }

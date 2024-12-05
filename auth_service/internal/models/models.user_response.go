@@ -17,4 +17,5 @@ type VerifyEmailResponse struct {
 type ValidateTokenResponse struct {
 	Valid  bool
 	UserID string
+	Role   string
 }

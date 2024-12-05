@@ -29,7 +29,7 @@ func (r *authRepository) Close() {
 
 func (r *authRepository) CreateUser(user *models.UserRecord) (*models.UserRecord, error) {
 	query := `INSERT INTO users (id, email, username, password, verified, role)
-	          VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7) 
+	          VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5) 
 	          RETURNING id, email, username, password, verified, role, created_at, updated_at`
 
 	var newUser models.UserRecord

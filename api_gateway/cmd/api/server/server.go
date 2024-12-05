@@ -3,6 +3,7 @@ package server
 import (
 	"api_gateway/internal/clients"
 	"api_gateway/internal/constants"
+	"api_gateway/internal/middlewares"
 	"api_gateway/internal/routes"
 	"api_gateway/pkg/logger"
 	"context"
@@ -24,17 +25,13 @@ type App struct {
 }
 
 func NewApp() (*App, error) {
-	// setup fiber app
+	// Setup fiber app
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	})
 
-	// middlewares
-	app.Use(cors.New())
-	app.Use(loggerFiber.New())
-
-	// client gRPC
+	// Client gRPC
 	authClient, err := clients.NewAuthClient()
 	if err != nil {
 		return nil, err
@@ -52,12 +49,19 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
+	// Fiber middlewares
+	app.Use(cors.New())
+	app.Use(loggerFiber.New())
+
+	// Authentication middleware
+	authMiddleware := middlewares.NewAuthMiddleware(authClient)
+
 	// routes
 	router := app.Group("/api")
 	routes.NewAuthRoute(router, authClient).Routes()
-	routes.NewBookRoute(router, bookClient).Routes()
-	routes.NewCategoryRoute(router, categoryClient).Routes()
-	routes.NewAuthorRoute(router, authorClient).Routes()
+	routes.NewBookRoute(router, bookClient, authMiddleware).Routes()
+	routes.NewCategoryRoute(router, categoryClient, authMiddleware).Routes()
+	routes.NewAuthorRoute(router, authorClient, authMiddleware).Routes()
 
 	return &App{
 		HttpServer: app,
