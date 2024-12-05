@@ -3,6 +3,7 @@ package grpc_server
 import (
 	"context"
 	"fmt"
+	"loan_service/internal/clients"
 	"loan_service/internal/service"
 	protoLoan "loan_service/proto/loan_service"
 	"time"
@@ -13,16 +14,24 @@ import (
 
 type loanGRPCServer struct {
 	loanService service.LoanService
+	bookClient  clients.BookClient
 	protoLoan.UnimplementedLoanServiceServer
 }
 
-func NewLoanGRPCServer(loanService service.LoanService) protoLoan.LoanServiceServer {
+func NewLoanGRPCServer(loanService service.LoanService, bookClient clients.BookClient) protoLoan.LoanServiceServer {
 	return &loanGRPCServer{
 		loanService: loanService,
+		bookClient:  bookClient,
 	}
 }
 
 func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLoanRequest) (*protoLoan.LoanResponse, error) {
+	// check book existence
+	book, _ := s.bookClient.GetBook(ctx, req.BookId)
+	if book == nil {
+		return nil, status.Error(codes.NotFound, "book not found")
+	}
+
 	loan, err := s.loanService.CreateLoan(ctx, req.UserId, req.BookId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to create loan")

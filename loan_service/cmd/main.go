@@ -1,6 +1,7 @@
 package main
 
 import (
+	"loan_service/internal/clients"
 	"loan_service/internal/grpc_server"
 	"loan_service/internal/repository"
 	"loan_service/internal/service"
@@ -42,8 +43,14 @@ func main() {
 		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
 	}
 
+	// Client
+	bookClient, err := clients.NewBookClient()
+	if err != nil {
+		log.Fatalf("Failed to establish book client connection %v", err)
+	}
+
 	grpcServer := grpc.NewServer()
-	loanServer := grpc_server.NewLoanGRPCServer(loanService)
+	loanServer := grpc_server.NewLoanGRPCServer(loanService, bookClient)
 	protoLoan.RegisterLoanServiceServer(grpcServer, loanServer)
 
 	// Enable gRPC reflection for debugging
