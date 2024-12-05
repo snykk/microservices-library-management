@@ -1,0 +1,5 @@
+INSERT INTO categories (id, name, created_at, updated_at)
+VALUES
+    ('a556f178-600d-86f2-e7f6-b88f621f7843', 'Programming', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('b667e289-700e-97f3-f8f7-b99f732f7844', 'Design', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('c778f390-800f-a8f4-a9f8-b00f843f7845', 'Algorithms', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

@@ -124,6 +124,7 @@ services:
         volumes:
             - book-db-data:/var/lib/postgresql/data
             - ./sql/book-init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./sql/book-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
 
     author-db:
         image: postgres:15
@@ -144,6 +145,7 @@ services:
         volumes:
             - author-db-data:/var/lib/postgresql/data
             - ./sql/author-init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./sql/author-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
 
     category-db:
         image: postgres:15
@@ -164,6 +166,7 @@ services:
         volumes:
             - category-db-data:/var/lib/postgresql/data
             - ./sql/category-init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./sql/category-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
 
     user-db:
         image: postgres:15
@@ -184,6 +187,7 @@ services:
         volumes:
             - user-db-data:/var/lib/postgresql/data
             - ./sql/user-init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./sql/user-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
 
     redis:
         image: redis:7.4.1-alpine
