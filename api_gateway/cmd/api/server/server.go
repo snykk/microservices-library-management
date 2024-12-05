@@ -48,6 +48,10 @@ func NewApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	userClient, err := clients.NewUserClient()
+	if err != nil {
+		return nil, err
+	}
 
 	// Fiber middlewares
 	app.Use(cors.New())
@@ -62,6 +66,7 @@ func NewApp() (*App, error) {
 	routes.NewBookRoute(router, bookClient, authMiddleware).Routes()
 	routes.NewCategoryRoute(router, categoryClient, authMiddleware).Routes()
 	routes.NewAuthorRoute(router, authorClient, authMiddleware).Routes()
+	routes.NewUserRoute(router, userClient, authMiddleware).Routes()
 
 	return &App{
 		HttpServer: app,
