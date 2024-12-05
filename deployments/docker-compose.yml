@@ -80,6 +80,7 @@ services:
             replicas: 1
         environment:
             DSN: "host=user-db port=5432 user=fikri password=12345678 dbname=userdb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
+            GRPC_PORT: "50051"
 
     auth-service:
         build:
