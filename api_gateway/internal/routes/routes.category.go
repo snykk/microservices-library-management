@@ -14,7 +14,7 @@ type categoryRoutes struct {
 	handler        handlers.CategoryHandler
 }
 
-func NewCategoryRoute(router fiber.Router, client clients.CategoryClient, authMiddleware middlewares.AuthMiddleware) *categoryRoutes {
+func NewCategoryRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.CategoryClient) *categoryRoutes {
 	handler := handlers.NewCategoryHandler(client)
 
 	return &categoryRoutes{

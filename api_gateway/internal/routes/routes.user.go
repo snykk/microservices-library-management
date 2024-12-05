@@ -14,7 +14,7 @@ type userRoute struct {
 	handler        handlers.UserHandler
 }
 
-func NewUserRoute(router fiber.Router, client clients.UserClient, authMiddleware middlewares.AuthMiddleware) *userRoute {
+func NewUserRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.UserClient) *userRoute {
 	handler := handlers.NewUserHandler(client)
 
 	return &userRoute{

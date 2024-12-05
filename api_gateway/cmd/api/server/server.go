@@ -63,10 +63,10 @@ func NewApp() (*App, error) {
 	// routes
 	router := app.Group("/api")
 	routes.NewAuthRoute(router, authClient).Routes()
-	routes.NewBookRoute(router, bookClient, authMiddleware).Routes()
-	routes.NewCategoryRoute(router, categoryClient, authMiddleware).Routes()
-	routes.NewAuthorRoute(router, authorClient, authMiddleware).Routes()
-	routes.NewUserRoute(router, userClient, authMiddleware).Routes()
+	routes.NewBookRoute(router, authMiddleware, bookClient, authorClient, categoryClient).Routes()
+	routes.NewCategoryRoute(router, authMiddleware, categoryClient).Routes()
+	routes.NewAuthorRoute(router, authMiddleware, authorClient).Routes()
+	routes.NewUserRoute(router, authMiddleware, userClient).Routes()
 
 	return &App{
 		HttpServer: app,

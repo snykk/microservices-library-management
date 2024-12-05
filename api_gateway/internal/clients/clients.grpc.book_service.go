@@ -50,8 +50,8 @@ func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookReque
 	return datatransfers.BookResponse{
 		Id:         resp.Book.Id,
 		Title:      resp.Book.Title,
-		AuthorId:   resp.Book.AuthorId,
-		CategoryId: resp.Book.CategoryId,
+		AuthorId:   &resp.Book.AuthorId,
+		CategoryId: &resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
 		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
@@ -71,8 +71,8 @@ func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.Book
 	return datatransfers.BookResponse{
 		Id:         resp.Book.Id,
 		Title:      resp.Book.Title,
-		AuthorId:   resp.Book.AuthorId,
-		CategoryId: resp.Book.CategoryId,
+		AuthorId:   &resp.Book.AuthorId,
+		CategoryId: &resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
 		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
@@ -92,8 +92,8 @@ func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookRespons
 		books = append(books, datatransfers.BookResponse{
 			Id:         book.Id,
 			Title:      book.Title,
-			AuthorId:   book.AuthorId,
-			CategoryId: book.CategoryId,
+			AuthorId:   &book.AuthorId,
+			CategoryId: &book.CategoryId,
 			Stock:      int(book.Stock),
 			CreatedAt:  time.Unix(book.CreatedAt, 0),
 			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
@@ -120,8 +120,8 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 	return datatransfers.BookResponse{
 		Id:         resp.Book.Id,
 		Title:      resp.Book.Title,
-		AuthorId:   resp.Book.AuthorId,
-		CategoryId: resp.Book.CategoryId,
+		AuthorId:   &resp.Book.AuthorId,
+		CategoryId: &resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
 		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
