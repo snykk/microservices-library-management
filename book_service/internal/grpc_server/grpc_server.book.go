@@ -155,6 +155,18 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 }
 
 func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBookRequest) (*protoBook.UpdateBookResponse, error) {
+	// check author existence
+	author, _ := s.authorClient.GetAuthor(ctx, req.AuthorId)
+	if author == nil {
+		return nil, status.Error(codes.NotFound, "author not found")
+	}
+
+	// check category existence
+	category, _ := s.categoryClient.GetCategory(ctx, req.CategoryId)
+	if category == nil {
+		return nil, status.Error(codes.NotFound, "category not found")
+	}
+
 	updatedBook, err := s.bookService.UpdateBook(ctx, &req.Id, &models.BookRequest{
 		Title:      req.Title,
 		AuthorId:   req.AuthorId,
