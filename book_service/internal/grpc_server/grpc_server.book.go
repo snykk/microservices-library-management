@@ -63,6 +63,54 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 	}, nil
 }
 
+func (s *bookGRPCServer) GetBooksByAuthorId(ctx context.Context, req *protoBook.GetBooksByAuthorRequest) (*protoBook.ListBooksResponse, error) {
+	books, err := s.bookService.GetBookByAuthorId(ctx, &req.AuthorId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to retrieve books by author id")
+	}
+
+	var protoBooks []*protoBook.Book
+	for _, book := range books {
+		protoBooks = append(protoBooks, &protoBook.Book{
+			Id:         book.Id,
+			Title:      book.Title,
+			AuthorId:   book.AuthorId,
+			CategoryId: book.CategoryId,
+			Stock:      int32(book.Stock),
+			CreatedAt:  book.CreatedAt.Unix(),
+			UpdatedAt:  book.UpdatedAt.Unix(),
+		})
+	}
+
+	return &protoBook.ListBooksResponse{
+		Books: protoBooks,
+	}, nil
+}
+
+func (s *bookGRPCServer) GetBooksByCategoryId(ctx context.Context, req *protoBook.GetBooksByCategoryRequest) (*protoBook.ListBooksResponse, error) {
+	books, err := s.bookService.GetBookByCategoryId(ctx, &req.CategoryId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to retrieve books by category id")
+	}
+
+	var protoBooks []*protoBook.Book
+	for _, book := range books {
+		protoBooks = append(protoBooks, &protoBook.Book{
+			Id:         book.Id,
+			Title:      book.Title,
+			AuthorId:   book.AuthorId,
+			CategoryId: book.CategoryId,
+			Stock:      int32(book.Stock),
+			CreatedAt:  book.CreatedAt.Unix(),
+			UpdatedAt:  book.UpdatedAt.Unix(),
+		})
+	}
+
+	return &protoBook.ListBooksResponse{
+		Books: protoBooks,
+	}, nil
+}
+
 func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequest) (*protoBook.GetBookResponse, error) {
 	book, err := s.bookService.GetBook(ctx, &req.Id)
 	if err != nil {

@@ -13,6 +13,8 @@ import (
 type BookClient interface {
 	CreateBook(ctx context.Context, dto datatransfers.BookRequest) (datatransfers.BookResponse, error)
 	GetBook(ctx context.Context, id string) (datatransfers.BookResponse, error)
+	GetBooksByAuthorId(ctx context.Context, authorId string) ([]datatransfers.BookResponse, error)
+	GetBooksByCategoryId(ctx context.Context, categoryId string) ([]datatransfers.BookResponse, error)
 	ListBooks(ctx context.Context) ([]datatransfers.BookResponse, error)
 	UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookRequest) (datatransfers.BookResponse, error)
 	DeleteBook(ctx context.Context, id string) error
@@ -139,4 +141,56 @@ func (b *bookClient) DeleteBook(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string) ([]datatransfers.BookResponse, error) {
+	reqProto := protoBook.GetBooksByCategoryRequest{
+		CategoryId: categoryId,
+	}
+
+	resp, err := b.client.GetBooksByCategory(ctx, &reqProto)
+	if err != nil {
+		return nil, err
+	}
+
+	var books []datatransfers.BookResponse
+	for _, book := range resp.Books {
+		books = append(books, datatransfers.BookResponse{
+			Id:         book.Id,
+			Title:      book.Title,
+			AuthorId:   &book.AuthorId,
+			CategoryId: &book.CategoryId,
+			Stock:      int(book.Stock),
+			CreatedAt:  time.Unix(book.CreatedAt, 0),
+			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
+		})
+	}
+
+	return books, nil
+}
+
+func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string) ([]datatransfers.BookResponse, error) {
+	reqProto := protoBook.GetBooksByAuthorRequest{
+		AuthorId: authorId,
+	}
+
+	resp, err := b.client.GetBooksByAuthor(ctx, &reqProto)
+	if err != nil {
+		return nil, err
+	}
+
+	var books []datatransfers.BookResponse
+	for _, book := range resp.Books {
+		books = append(books, datatransfers.BookResponse{
+			Id:         book.Id,
+			Title:      book.Title,
+			AuthorId:   &book.AuthorId,
+			CategoryId: &book.CategoryId,
+			Stock:      int(book.Stock),
+			CreatedAt:  time.Unix(book.CreatedAt, 0),
+			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
+		})
+	}
+
+	return books, nil
 }

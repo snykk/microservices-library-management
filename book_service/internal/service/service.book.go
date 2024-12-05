@@ -9,6 +9,8 @@ import (
 type BookService interface {
 	CreateBook(ctx context.Context, req *models.BookRequest) (*models.BookRecord, error)
 	GetBook(ctx context.Context, id *string) (*models.BookRecord, error)
+	GetBookByAuthorId(ctx context.Context, authorId *string) ([]*models.BookRecord, error)
+	GetBookByCategoryId(ctx context.Context, categoryId *string) ([]*models.BookRecord, error)
 	ListBooks(ctx context.Context) ([]*models.BookRecord, error)
 	UpdateBook(ctx context.Context, id *string, req *models.BookRequest) (*models.BookRecord, error)
 	DeleteBook(ctx context.Context, id *string) error
@@ -35,6 +37,14 @@ func (s *bookService) CreateBook(ctx context.Context, req *models.BookRequest) (
 
 func (s *bookService) GetBook(ctx context.Context, id *string) (*models.BookRecord, error) {
 	return s.repo.GetBook(id)
+}
+
+func (s *bookService) GetBookByAuthorId(ctx context.Context, authorId *string) ([]*models.BookRecord, error) {
+	return s.repo.GetBookByAuthorId(authorId)
+}
+
+func (s *bookService) GetBookByCategoryId(ctx context.Context, categoryId *string) ([]*models.BookRecord, error) {
+	return s.repo.GetBookByCategoryId(categoryId)
 }
 
 func (s *bookService) ListBooks(ctx context.Context) ([]*models.BookRecord, error) {

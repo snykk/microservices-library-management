@@ -31,6 +31,8 @@ func (r *bookRoutes) Routes() {
 	route.Use(r.authMiddleware.Authenticate())
 	route.Get("", r.handler.GetAllBooksHandler)
 	route.Get("/:id", r.handler.GetBookByIdHandler)
+	route.Get("/author/:authorId", r.handler.GetBooksByAuthorIdHandler)
+	route.Get("/category/:categoryId", r.handler.GetBooksByCategoryIdHandler)
 
 	// Admin routes (authentication and authorization required)
 	adminOnly := r.authMiddleware.HasAuthority([]string{"admin"})

@@ -7,10 +7,13 @@ option go_package = "/book_service";
 service BookService {
   rpc CreateBook(CreateBookRequest) returns (CreateBookResponse);
   rpc GetBook(GetBookRequest) returns (GetBookResponse);
+  rpc GetBooksByAuthor(GetBooksByAuthorRequest) returns (ListBooksResponse);
+  rpc GetBooksByCategory(GetBooksByCategoryRequest) returns (ListBooksResponse);
   rpc ListBooks(ListBooksRequest) returns (ListBooksResponse);
   rpc UpdateBook(UpdateBookRequest) returns (UpdateBookResponse);
   rpc DeleteBook(DeleteBookRequest) returns (DeleteBookResponse);
 }
+
 
 message Book {
   string id = 1;
@@ -41,6 +44,14 @@ message GetBookResponse {
   Book book = 1;
 }
 
+message GetBooksByAuthorRequest {
+  string author_id = 1;
+}
+
+message GetBooksByCategoryRequest {
+  string category_id = 1;
+}
+
 message ListBooksRequest {}
 
 message ListBooksResponse {
@@ -66,3 +77,4 @@ message DeleteBookRequest {
 message DeleteBookResponse {
   string message = 1;
 }
+
