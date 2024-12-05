@@ -16,6 +16,8 @@ type LoanClient interface {
 	UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
 	ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error)
 	ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error)
+	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error)
+	GetLoansByStatus(ctx context.Context, status string) ([]datatransfers.LoanResponse, error)
 }
 
 type loanClient struct {
@@ -150,6 +152,73 @@ func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatr
 
 func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error) {
 	resp, err := l.client.ListLoans(ctx, &protoLoan.ListLoansRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	var loans []datatransfers.LoanResponse
+	for _, loan := range resp.Loans {
+		loanResponse := datatransfers.LoanResponse{
+			Id:        loan.Id,
+			UserId:    loan.UserId,
+			BookId:    loan.BookId,
+			LoanDate:  time.Unix(loan.LoanDate, 0),
+			Status:    loan.Status,
+			CreatedAt: time.Unix(loan.CreatedAt, 0),
+			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
+		}
+
+		if loan.ReturnDate != 0 {
+			returnDate := time.Unix(loan.ReturnDate, 0)
+			loanResponse.ReturnDate = &returnDate
+		}
+
+		loans = append(loans, loanResponse)
+	}
+
+	return loans, nil
+}
+
+func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error) {
+	reqProto := protoLoan.GetUserLoansByStatusRequest{
+		UserId: userId,
+		Status: status,
+	}
+
+	resp, err := l.client.GetUserLoansByStatus(ctx, &reqProto)
+	if err != nil {
+		return nil, err
+	}
+
+	var loans []datatransfers.LoanResponse
+	for _, loan := range resp.Loans {
+		loanResponse := datatransfers.LoanResponse{
+			Id:        loan.Id,
+			UserId:    loan.UserId,
+			BookId:    loan.BookId,
+			LoanDate:  time.Unix(loan.LoanDate, 0),
+			Status:    loan.Status,
+			CreatedAt: time.Unix(loan.CreatedAt, 0),
+			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
+		}
+
+		if loan.ReturnDate != 0 {
+			returnDate := time.Unix(loan.ReturnDate, 0)
+			loanResponse.ReturnDate = &returnDate
+		}
+
+		loans = append(loans, loanResponse)
+	}
+
+	return loans, nil
+}
+
+func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]datatransfers.LoanResponse, error) {
+	reqProto := protoLoan.GetLoansByStatusRequest{
+		Status: status,
+	}
+
+	resp, err := l.client.GetLoansByStatus(ctx, &reqProto)
 	if err != nil {
 		return nil, err
 	}

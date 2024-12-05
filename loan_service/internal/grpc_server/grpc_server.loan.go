@@ -166,3 +166,69 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 		Loans: protoLoans,
 	}, nil
 }
+
+func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoan.GetUserLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
+	// Call service layer to get uer loans by status
+	loans, err := s.loanService.GetUserLoansByStatus(ctx, req.UserId, req.Status)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get user loans by status")
+	}
+
+	var protoLoans []*protoLoan.Loan
+	for _, loan := range loans {
+		var returnDate int64
+		if loan.ReturnDate != nil {
+			returnDate = loan.ReturnDate.Unix()
+		} else {
+			returnDate = 0
+		}
+
+		protoLoans = append(protoLoans, &protoLoan.Loan{
+			Id:         loan.Id,
+			UserId:     loan.UserId,
+			BookId:     loan.BookId,
+			LoanDate:   loan.LoanDate.Unix(),
+			ReturnDate: returnDate,
+			Status:     loan.Status,
+			CreatedAt:  loan.CreatedAt.Unix(),
+			UpdatedAt:  loan.UpdatedAt.Unix(),
+		})
+	}
+
+	return &protoLoan.ListLoansResponse{
+		Loans: protoLoans,
+	}, nil
+}
+
+func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.GetLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
+	// Call service layer to get loans by status
+	loans, err := s.loanService.GetLoansByStatus(ctx, req.Status)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get loans by status")
+	}
+
+	var protoLoans []*protoLoan.Loan
+	for _, loan := range loans {
+		var returnDate int64
+		if loan.ReturnDate != nil {
+			returnDate = loan.ReturnDate.Unix()
+		} else {
+			returnDate = 0
+		}
+
+		protoLoans = append(protoLoans, &protoLoan.Loan{
+			Id:         loan.Id,
+			UserId:     loan.UserId,
+			BookId:     loan.BookId,
+			LoanDate:   loan.LoanDate.Unix(),
+			ReturnDate: returnDate,
+			Status:     loan.Status,
+			CreatedAt:  loan.CreatedAt.Unix(),
+			UpdatedAt:  loan.UpdatedAt.Unix(),
+		})
+	}
+
+	return &protoLoan.ListLoansResponse{
+		Loans: protoLoans,
+	}, nil
+}

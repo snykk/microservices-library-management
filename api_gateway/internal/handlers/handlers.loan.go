@@ -66,7 +66,19 @@ func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
 func (l *LoanHandler) ListUserLoansHandler(c *fiber.Ctx) error {
 	userId := c.Locals("userID").(string)
 
-	resp, err := l.client.ListUserLoans(c.Context(), userId)
+	status := c.Query("status")
+
+	var (
+		resp []datatransfers.LoanResponse
+		err  error
+	)
+
+	if status != "" {
+		resp, err = l.client.GetUserLoansByStatus(c.Context(), userId, status)
+	} else {
+		resp, err = l.client.ListUserLoans(c.Context(), userId)
+	}
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list loans", err))
 	}
@@ -75,7 +87,19 @@ func (l *LoanHandler) ListUserLoansHandler(c *fiber.Ctx) error {
 }
 
 func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
-	resp, err := l.client.ListLoans(c.Context())
+	status := c.Query("status")
+
+	var (
+		resp []datatransfers.LoanResponse
+		err  error
+	)
+
+	if status != "" {
+		resp, err = l.client.GetLoansByStatus(c.Context(), status)
+	} else {
+		resp, err = l.client.ListLoans(c.Context())
+	}
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list loans", err))
 	}

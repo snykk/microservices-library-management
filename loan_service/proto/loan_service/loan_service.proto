@@ -10,6 +10,8 @@ service LoanService {
     rpc UpdateLoanStatus(UpdateLoanStatusRequest) returns (LoanResponse);
     rpc ListUserLoans(ListUserLoansRequest) returns (ListLoansResponse);
     rpc ListLoans(ListLoansRequest) returns (ListLoansResponse); // Admin purpose
+    rpc GetUserLoansByStatus(GetUserLoansByStatusRequest) returns (ListLoansResponse);
+    rpc GetLoansByStatus(GetLoansByStatusRequest) returns (ListLoansResponse);
 }
 
 // Loan message to represent loan data
@@ -51,4 +53,13 @@ message LoanResponse {
 
 message ListLoansResponse {
     repeated Loan loans = 1; // List of loans
+}
+
+message GetUserLoansByStatusRequest {
+    string user_id = 1;
+    string status = 2; // Loan status to filter by (e.g., BORROWED, RETURNED, LOST)
+}
+
+message GetLoansByStatusRequest {
+    string status = 1; // Loan status to filter by (e.g., BORROWED, RETURNED, LOST)
 }

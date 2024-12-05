@@ -27,6 +27,8 @@ type LoanServiceClient interface {
 	UpdateLoanStatus(ctx context.Context, in *UpdateLoanStatusRequest, opts ...grpc.CallOption) (*LoanResponse, error)
 	ListUserLoans(ctx context.Context, in *ListUserLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
 	ListLoans(ctx context.Context, in *ListLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
+	GetUserLoansByStatus(ctx context.Context, in *GetUserLoansByStatusRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
+	GetLoansByStatus(ctx context.Context, in *GetLoansByStatusRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
 }
 
 type loanServiceClient struct {
@@ -82,6 +84,24 @@ func (c *loanServiceClient) ListLoans(ctx context.Context, in *ListLoansRequest,
 	return out, nil
 }
 
+func (c *loanServiceClient) GetUserLoansByStatus(ctx context.Context, in *GetUserLoansByStatusRequest, opts ...grpc.CallOption) (*ListLoansResponse, error) {
+	out := new(ListLoansResponse)
+	err := c.cc.Invoke(ctx, "/loan_service.LoanService/GetUserLoansByStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *loanServiceClient) GetLoansByStatus(ctx context.Context, in *GetLoansByStatusRequest, opts ...grpc.CallOption) (*ListLoansResponse, error) {
+	out := new(ListLoansResponse)
+	err := c.cc.Invoke(ctx, "/loan_service.LoanService/GetLoansByStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LoanServiceServer is the server API for LoanService service.
 // All implementations must embed UnimplementedLoanServiceServer
 // for forward compatibility
@@ -91,6 +111,8 @@ type LoanServiceServer interface {
 	UpdateLoanStatus(context.Context, *UpdateLoanStatusRequest) (*LoanResponse, error)
 	ListUserLoans(context.Context, *ListUserLoansRequest) (*ListLoansResponse, error)
 	ListLoans(context.Context, *ListLoansRequest) (*ListLoansResponse, error)
+	GetUserLoansByStatus(context.Context, *GetUserLoansByStatusRequest) (*ListLoansResponse, error)
+	GetLoansByStatus(context.Context, *GetLoansByStatusRequest) (*ListLoansResponse, error)
 	mustEmbedUnimplementedLoanServiceServer()
 }
 
@@ -112,6 +134,12 @@ func (UnimplementedLoanServiceServer) ListUserLoans(context.Context, *ListUserLo
 }
 func (UnimplementedLoanServiceServer) ListLoans(context.Context, *ListLoansRequest) (*ListLoansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListLoans not implemented")
+}
+func (UnimplementedLoanServiceServer) GetUserLoansByStatus(context.Context, *GetUserLoansByStatusRequest) (*ListLoansResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserLoansByStatus not implemented")
+}
+func (UnimplementedLoanServiceServer) GetLoansByStatus(context.Context, *GetLoansByStatusRequest) (*ListLoansResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLoansByStatus not implemented")
 }
 func (UnimplementedLoanServiceServer) mustEmbedUnimplementedLoanServiceServer() {}
 
@@ -216,6 +244,42 @@ func _LoanService_ListLoans_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LoanService_GetUserLoansByStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserLoansByStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoanServiceServer).GetUserLoansByStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loan_service.LoanService/GetUserLoansByStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoanServiceServer).GetUserLoansByStatus(ctx, req.(*GetUserLoansByStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LoanService_GetLoansByStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLoansByStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoanServiceServer).GetLoansByStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loan_service.LoanService/GetLoansByStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoanServiceServer).GetLoansByStatus(ctx, req.(*GetLoansByStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LoanService_ServiceDesc is the grpc.ServiceDesc for LoanService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +306,14 @@ var LoanService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListLoans",
 			Handler:    _LoanService_ListLoans_Handler,
+		},
+		{
+			MethodName: "GetUserLoansByStatus",
+			Handler:    _LoanService_GetUserLoansByStatus_Handler,
+		},
+		{
+			MethodName: "GetLoansByStatus",
+			Handler:    _LoanService_GetLoansByStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
