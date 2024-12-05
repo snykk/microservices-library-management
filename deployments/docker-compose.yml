@@ -106,6 +106,21 @@ services:
             - email_sender
             - email_password
 
+    loan-service:
+        build:
+            context: ./../loan_service
+        networks:
+            - library-network
+        depends_on:
+            - loan-db
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            DSN: "host=loan-db port=5432 user=fikri password=12345678 dbname=loandb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
+            GRPC_PORT: "50051"
+
     book-db:
         image: postgres:15
         ports:
@@ -190,6 +205,26 @@ services:
             - ./sql/user-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/user-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
 
+    loan-db:
+        image: postgres:15
+        ports:
+            - "5437:5432"
+        environment:
+            POSTGRES_USER: fikri
+            POSTGRES_PASSWORD: 12345678
+            POSTGRES_DB: loandb
+            TZ: Asia/Jakarta
+
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        volumes:
+            - loan-db-data:/var/lib/postgresql/data
+            - ./sql/loan-init.sql:/docker-entrypoint-initdb.d/init.sql
+
     redis:
         image: redis:7.4.1-alpine
         networks:
@@ -209,6 +244,7 @@ volumes:
     author-db-data:
     category-db-data:
     user-db-data:
+    loan-db-data:
 
 secrets:
     email_sender:

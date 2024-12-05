@@ -5,7 +5,7 @@ PROTO_DIR = shared_proto
 API_GATEWAY_PROTO = api_gateway/proto
 
 # List of services to generate
-SERVICES = auth_service user_service author_service category_service book_service
+SERVICES = auth_service user_service author_service category_service book_service loan_service
 
 # Default target: Display help
 .PHONY: help
