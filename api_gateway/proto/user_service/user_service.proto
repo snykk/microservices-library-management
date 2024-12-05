@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package user_service;
+
+option go_package = "/user_service";
+
+// Service untuk User
+service UserService {
+    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+    rpc GetUserById (GetUserByIdRequest) returns (GetUserByIdResponse);
+    rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
+    rpc UpdateUserStatus (UpdateUserStatusRequest) returns (UpdateUserStatusResponse);
+}
+
+// Message for user model
+message User {
+    string id = 1;
+    string email = 2;
+    string username = 3;
+    string password = 4;
+    bool verified = 5;
+    string role = 6;
+    int64 createdAt = 7; // unix time
+    int64 updatedAt = 8; // unit time
+}
+
+// Message untuk membuat pengguna
+message CreateUserRequest {
+    string email = 1;
+    string username = 2;
+    string password = 3;
+    bool verified = 4; // Status verifikasi pengguna
+}
+
+// Response untuk operasi create user
+message CreateUserResponse {
+    User user = 1;
+}
+
+// Message untuk mendapatkan detail pengguna berdasarkan ID
+message GetUserByIdRequest {
+    string userId = 1;
+}
+
+message GetUserByIdResponse {
+    User user = 1;
+}
+
+// Message untuk mendapatkan detail pengguna berdasarkan email
+message GetUserByEmailRequest {
+    string email = 1;
+}
+
+message GetUserByEmailResponse {
+    User user = 1;
+}
+
+// Message untuk memperbarui status pengguna
+message UpdateUserStatusRequest {
+    string userId = 1;
+    bool verified = 2;
+}
+
+message UpdateUserStatusResponse {
+    string message = 1;
+}

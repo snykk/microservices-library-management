@@ -3,7 +3,7 @@ package grpc_server
 import (
 	"book_service/internal/models"
 	"book_service/internal/service"
-	protoBook "book_service/proto"
+	protoBook "book_service/proto/book_service"
 	"context"
 	"fmt"
 

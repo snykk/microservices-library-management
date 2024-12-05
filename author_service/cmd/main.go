@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	protoAuthor "author_service/proto"
+	protoAuthor "author_service/proto/author_service"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

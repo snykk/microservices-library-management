@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	protoBook "book_service/proto"
+	protoBook "book_service/proto/book_service"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

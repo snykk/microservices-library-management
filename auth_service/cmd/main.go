@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 
-	protoAuth "auth_service/proto"
+	protoAuth "auth_service/proto/auth_service"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

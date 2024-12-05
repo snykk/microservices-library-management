@@ -3,7 +3,7 @@ package grpc_server
 import (
 	"author_service/internal/models"
 	"author_service/internal/service"
-	protoAuthor "author_service/proto"
+	protoAuthor "author_service/proto/author_service"
 	"context"
 	"fmt"
 

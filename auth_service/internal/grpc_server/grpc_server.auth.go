@@ -5,7 +5,7 @@ import (
 	"auth_service/internal/models"
 	"auth_service/internal/service"
 	"auth_service/pkg/redis"
-	protoAuth "auth_service/proto"
+	protoAuth "auth_service/proto/auth_service"
 	"context"
 	"fmt"
 )

@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	protoCategory "category_service/proto"
+	protoCategory "category_service/proto/category_service"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

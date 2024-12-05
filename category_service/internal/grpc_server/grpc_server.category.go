@@ -3,7 +3,7 @@ package grpc_server
 import (
 	"category_service/internal/models"
 	"category_service/internal/service"
-	protoCategory "category_service/proto"
+	protoCategory "category_service/proto/category_service"
 	"context"
 	"fmt"
 
