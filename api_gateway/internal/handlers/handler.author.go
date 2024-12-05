@@ -10,12 +10,14 @@ import (
 )
 
 type AuthorHandler struct {
-	client clients.AuthorClient
+	client     clients.AuthorClient
+	bookClient clients.BookClient
 }
 
-func NewAuthorHandler(client clients.AuthorClient) AuthorHandler {
+func NewAuthorHandler(client clients.AuthorClient, bookClient clients.BookClient) AuthorHandler {
 	return AuthorHandler{
-		client: client,
+		client:     client,
+		bookClient: bookClient,
 	}
 }
 
@@ -36,18 +38,38 @@ func (a *AuthorHandler) CreateAuthorHandler(c *fiber.Ctx) error {
 func (a *AuthorHandler) GetAuthorByIdHandler(c *fiber.Ctx) error {
 	authorId := c.Params("id")
 
+	includeBooks := c.Query("includeBooks", "false") == "true"
+
 	resp, err := a.client.GetAuthor(c.Context(), authorId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get author", err))
+	}
+
+	if includeBooks {
+		books, err := a.bookClient.GetBooksByAuthorId(c.Context(), resp.Id)
+		if err == nil {
+			resp.Books = &books
+		}
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Author data with id '%s' fetched successfully", authorId), resp))
 }
 
 func (a *AuthorHandler) GetAllAuthorsHandler(c *fiber.Ctx) error {
+	includeBooks := c.Query("includeBooks", "false") == "true"
+
 	resp, err := a.client.ListAuthors(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list authors", err))
+	}
+
+	if includeBooks {
+		for i := range resp {
+			books, err := a.bookClient.GetBooksByAuthorId(c.Context(), resp[i].Id)
+			if err == nil {
+				resp[i].Books = &books
+			}
+		}
 	}
 
 	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("Author data fetched successfully", resp))

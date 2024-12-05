@@ -64,8 +64,8 @@ func NewApp() (*App, error) {
 	router := app.Group("/api")
 	routes.NewAuthRoute(router, authClient).Routes()
 	routes.NewBookRoute(router, authMiddleware, bookClient, authorClient, categoryClient).Routes()
-	routes.NewCategoryRoute(router, authMiddleware, categoryClient).Routes()
-	routes.NewAuthorRoute(router, authMiddleware, authorClient).Routes()
+	routes.NewCategoryRoute(router, authMiddleware, categoryClient, bookClient).Routes()
+	routes.NewAuthorRoute(router, authMiddleware, authorClient, bookClient).Routes()
 	routes.NewUserRoute(router, authMiddleware, userClient).Routes()
 
 	return &App{

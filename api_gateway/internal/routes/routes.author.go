@@ -14,8 +14,8 @@ type authorRoutes struct {
 	handler        handlers.AuthorHandler
 }
 
-func NewAuthorRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.AuthorClient) *authorRoutes {
-	handler := handlers.NewAuthorHandler(client)
+func NewAuthorRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.AuthorClient, bookClient clients.BookClient) *authorRoutes {
+	handler := handlers.NewAuthorHandler(client, bookClient)
 
 	return &authorRoutes{
 		router:         router,

@@ -63,7 +63,7 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 	}, nil
 }
 
-func (s *bookGRPCServer) GetBooksByAuthorId(ctx context.Context, req *protoBook.GetBooksByAuthorRequest) (*protoBook.ListBooksResponse, error) {
+func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.GetBooksByAuthorRequest) (*protoBook.ListBooksResponse, error) {
 	books, err := s.bookService.GetBookByAuthorId(ctx, &req.AuthorId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve books by author id")
@@ -87,7 +87,7 @@ func (s *bookGRPCServer) GetBooksByAuthorId(ctx context.Context, req *protoBook.
 	}, nil
 }
 
-func (s *bookGRPCServer) GetBooksByCategoryId(ctx context.Context, req *protoBook.GetBooksByCategoryRequest) (*protoBook.ListBooksResponse, error) {
+func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.GetBooksByCategoryRequest) (*protoBook.ListBooksResponse, error) {
 	books, err := s.bookService.GetBookByCategoryId(ctx, &req.CategoryId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve books by category id")
