@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package author_service;
+
+option go_package = "/author_service";
+
+service AuthorService {
+  rpc CreateAuthor(CreateAuthorRequest) returns (CreateAuthorResponse);
+  rpc GetAuthor(GetAuthorRequest) returns (GetAuthorResponse);
+  rpc ListAuthors(ListAuthorsRequest) returns (ListAuthorsResponse);
+  rpc UpdateAuthor(UpdateAuthorRequest) returns (UpdateAuthorResponse);
+  rpc DeleteAuthor(DeleteAuthorRequest) returns (DeleteAuthorResponse);
+}
+
+message Author {
+  string id = 1;
+  string name = 2;
+  string biography = 3;
+  int64 createdAt = 4; // unix time
+  int64 updatedAt = 5; // unit time
+}
+
+message CreateAuthorRequest {
+  string name = 1;
+  string biography = 2;
+}
+
+message CreateAuthorResponse {
+  Author author = 1;
+}
+
+message GetAuthorRequest {
+  string id = 1;
+}
+
+message GetAuthorResponse {
+  Author author = 1;
+}
+
+message ListAuthorsRequest {}
+
+message ListAuthorsResponse {
+  repeated Author authors = 1;
+}
+
+// UpdateAuthor request and response
+message UpdateAuthorRequest {
+  string id = 1;
+  string name = 2;
+  string biography = 3;
+}
+
+message UpdateAuthorResponse {
+  Author author = 1;
+}
+
+// DeleteAuthor request and response
+message DeleteAuthorRequest {
+  string id = 1;
+}
+
+message DeleteAuthorResponse {
+  string message = 1;
+}

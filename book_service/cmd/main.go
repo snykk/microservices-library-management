@@ -1,6 +1,7 @@
 package main
 
 import (
+	"book_service/internal/clients"
 	"book_service/internal/grpc_server"
 	"book_service/internal/repository"
 	"book_service/internal/service"
@@ -32,6 +33,16 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 
+	// Clients
+	authorClient, err := clients.NewAuthorClient()
+	if err != nil {
+		log.Fatalf("Failed to establish author client connection %v", err)
+	}
+	categoryClient, err := clients.NewCategoryClient()
+	if err != nil {
+		log.Fatalf("Failed to establish category client connection %v", err)
+	}
+
 	// Repository and Service Layer
 	bookRepo := repository.NewBookRepository(db)
 	bookService := service.NewBookService(bookRepo)
@@ -43,7 +54,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	bookServer := grpc_server.NewBookGRPCServer(bookService)
+	bookServer := grpc_server.NewBookGRPCServer(bookService, authorClient, categoryClient)
 	protoBook.RegisterBookServiceServer(grpcServer, bookServer)
 
 	// Enable gRPC reflection for debugging

@@ -1,6 +1,7 @@
 package grpc_server
 
 import (
+	"book_service/internal/clients"
 	"book_service/internal/models"
 	"book_service/internal/service"
 	protoBook "book_service/proto/book_service"
@@ -12,17 +13,33 @@ import (
 )
 
 type bookGRPCServer struct {
-	bookService service.BookService
+	bookService    service.BookService
+	authorClient   clients.AuthorClient
+	categoryClient clients.CategoryClient
 	protoBook.UnimplementedBookServiceServer
 }
 
-func NewBookGRPCServer(bookService service.BookService) protoBook.BookServiceServer {
+func NewBookGRPCServer(bookService service.BookService, authorClient clients.AuthorClient, categoryClient clients.CategoryClient) protoBook.BookServiceServer {
 	return &bookGRPCServer{
-		bookService: bookService,
+		bookService:    bookService,
+		authorClient:   authorClient,
+		categoryClient: categoryClient,
 	}
 }
 
 func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBookRequest) (*protoBook.CreateBookResponse, error) {
+	// check author existence
+	author, _ := s.authorClient.GetAuthor(ctx, req.AuthorId)
+	if author == nil {
+		return nil, status.Error(codes.NotFound, "author not found")
+	}
+
+	// check category existence
+	category, _ := s.categoryClient.GetCategory(ctx, req.CategoryId)
+	if category == nil {
+		return nil, status.Error(codes.NotFound, "category not found")
+	}
+
 	createdBook, err := s.bookService.CreateBook(ctx, &models.BookRequest{
 		Title:      req.Title,
 		AuthorId:   req.AuthorId,
