@@ -32,9 +32,9 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 		return nil, status.Error(codes.NotFound, "book not found")
 	}
 
-	loan, err := s.loanService.CreateLoan(ctx, req.UserId, req.BookId)
+	loan, code, err := s.loanService.CreateLoan(ctx, req.UserId, req.BookId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to create loan")
+		return nil, status.Error(code, err.Error())
 	}
 
 	return &protoLoan.LoanResponse{
@@ -51,9 +51,9 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 }
 
 func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequest) (*protoLoan.LoanResponse, error) {
-	loan, err := s.loanService.GetLoan(ctx, req.Id)
+	loan, code, err := s.loanService.GetLoan(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "loan not found")
+		return nil, status.Error(code, err.Error())
 	}
 
 	var returnDate int64
@@ -78,9 +78,9 @@ func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequ
 }
 
 func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.UpdateLoanStatusRequest) (*protoLoan.LoanResponse, error) {
-	loan, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, time.Unix(req.ReturnDate, 0))
+	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, time.Unix(req.ReturnDate, 0))
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to update loan status")
+		return nil, status.Error(code, err.Error())
 	}
 
 	var returnDate int64
@@ -105,9 +105,9 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 }
 
 func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListUserLoansRequest) (*protoLoan.ListLoansResponse, error) {
-	loans, err := s.loanService.ListUserLoans(ctx, req.UserId)
+	loans, code, err := s.loanService.ListUserLoans(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to list loans")
+		return nil, status.Error(code, err.Error())
 	}
 
 	fmt.Println("setelah listloan")
@@ -141,9 +141,9 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 }
 
 func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoansRequest) (*protoLoan.ListLoansResponse, error) {
-	loans, err := s.loanService.ListLoans(ctx)
+	loans, code, err := s.loanService.ListLoans(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to list loans")
+		return nil, status.Error(code, err.Error())
 	}
 
 	fmt.Println("setelah listloan")
@@ -178,9 +178,9 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 
 func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoan.GetUserLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
 	// Call service layer to get uer loans by status
-	loans, err := s.loanService.GetUserLoansByStatus(ctx, req.UserId, req.Status)
+	loans, code, err := s.loanService.GetUserLoansByStatus(ctx, req.UserId, req.Status)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to get user loans by status")
+		return nil, status.Error(code, err.Error())
 	}
 
 	var protoLoans []*protoLoan.Loan
@@ -211,9 +211,9 @@ func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoa
 
 func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.GetLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
 	// Call service layer to get loans by status
-	loans, err := s.loanService.GetLoansByStatus(ctx, req.Status)
+	loans, code, err := s.loanService.GetLoansByStatus(ctx, req.Status)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to get loans by status")
+		return nil, status.Error(code, err.Error())
 	}
 
 	var protoLoans []*protoLoan.Loan
