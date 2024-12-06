@@ -13,6 +13,6 @@ A simple library management system built with Go to manage books, authors, categ
 -   [ ] Search Feature using Elasticsearch
 -   [ ] Logger
 -   [ ] Unit Test
--   [ ] Email Notification (RabbitMQ Integration)
+-   [x] Email Notification (RabbitMQ Integration)
 -   [ ] Tidy and Refactor Code
 -   [ ] API Documentation (APISpec)

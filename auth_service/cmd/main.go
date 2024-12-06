@@ -6,6 +6,7 @@ import (
 	"auth_service/internal/service"
 	"auth_service/pkg/jwt"
 	"auth_service/pkg/mailer"
+	"auth_service/pkg/rabbitmq"
 	"auth_service/pkg/redis"
 	"database/sql"
 	"fmt"
@@ -23,6 +24,8 @@ import (
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func init() {
@@ -35,9 +38,30 @@ func main() {
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	grpcPort := os.Getenv("GRPC_PORT")
 	jwtSecret := os.Getenv("JWT_SECRET")
-	// emailSender := os.Getenv("EMAIL_SENDER")
-	// emailPasswordBytes := os.Getenv("EMAIL_PASSWORD")
+	dsn := os.Getenv("DSN")
+	rabbitMQURL := os.Getenv("RABBITMQ_URL")
 
+	// Connect to RabbitMQ
+	conn, err := amqp.Dial(rabbitMQURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	// Initialize publisher
+	publisher, err := rabbitmq.NewPublisher(conn)
+	if err != nil {
+		log.Fatalf("Failed to initialize publisher: %v", err)
+	}
+	defer publisher.Close()
+
+	// Declare exchanges
+	err = publisher.DeclareExchange("email_exchange", "direct")
+	if err != nil {
+		log.Fatalf("Failed to declare exchange: %v", err)
+	}
+
+	// Email service env
 	emailSenderBytes, err := ioutil.ReadFile(os.Getenv("EMAIL_SENDER_CONTAINER_FILE"))
 	if err != nil {
 		log.Fatalf("Error reading email sender secret: %v", err)
@@ -50,8 +74,6 @@ func main() {
 
 	fmt.Println("email sender", string(emailSenderBytes))
 	fmt.Println("email password", string(emailPasswordBytes))
-
-	dsn := os.Getenv("DSN")
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -75,7 +97,7 @@ func main() {
 
 	// Repository and Service Layer
 	authRepo := repository.NewAuthRepository(db)
-	authService := service.NewAuthService(authRepo, jwtService, mailerService)
+	authService := service.NewAuthService(authRepo, jwtService, mailerService, publisher)
 
 	// gRPC Server
 	lis, err := net.Listen("tcp", ":"+grpcPort)

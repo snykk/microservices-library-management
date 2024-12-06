@@ -5,8 +5,11 @@ import (
 	"auth_service/internal/repository"
 	"auth_service/pkg/jwt"
 	"auth_service/pkg/mailer"
+	"auth_service/pkg/rabbitmq"
 	"auth_service/pkg/utils"
 	"context"
+	"encoding/json"
+	"log"
 )
 
 type AuthService interface {
@@ -21,13 +24,15 @@ type authService struct {
 	repo       repository.AuthRepository
 	jwtService jwt.JWTService
 	mailer     mailer.OTPMailer
+	publisher  *rabbitmq.Publisher
 }
 
-func NewAuthService(repo repository.AuthRepository, jwtService jwt.JWTService, mailer mailer.OTPMailer) AuthService {
+func NewAuthService(repo repository.AuthRepository, jwtService jwt.JWTService, mailer mailer.OTPMailer, publisher *rabbitmq.Publisher) AuthService {
 	return &authService{
 		repo:       repo,
 		jwtService: jwtService,
 		mailer:     mailer,
+		publisher:  publisher,
 	}
 }
 
@@ -75,8 +80,25 @@ func (s *authService) SendOTP(ctx context.Context, email string) (*string, error
 		return nil, ErrGenerateOTPCode
 	}
 
-	if err = s.mailer.SendOTP(otp, email); err != nil { // todo: use rabbitmq to enhance response time
-		return nil, ErrSendOtpWithMailer
+	// if err = s.mailer.SendOTP(otp, email); err != nil { // todo: use rabbitmq to enhance response time
+	// 	return nil, ErrSendOtpWithMailer
+	// }
+
+	// Prepare message
+	message := map[string]string{
+		"email": email,
+		"otp":   otp,
+	}
+
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		return nil, ErrMarshalOTPMessage
+	}
+
+	// Publish to RabbitMQ
+	err = s.publisher.Publish("email_exchange", "otp_code", messageBytes)
+	if err != nil {
+		log.Fatalf("Failed to publish message: %v", err)
 	}
 
 	return &otp, nil
