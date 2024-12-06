@@ -89,6 +89,7 @@ services:
             - library-network
         depends_on:
             - user-db
+            - rabbitmq
         restart: always
         deploy:
             mode: replicated
@@ -102,6 +103,26 @@ services:
             JWT_SECRET: "supersecretkeywjerjrqwowijfoqjfoaqjdoajflakjoewjroewijrwwoijoj"
             EMAIL_SENDER_CONTAINER_FILE: "/run/secrets/email_sender"
             EMAIL_PASSWORD_CONTAINER_FILE: "/run/secrets/email_password"
+            RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
+        secrets:
+            - email_sender
+            - email_password
+
+    mailer-service:
+        build:
+            context: ./../mailer_service
+        networks:
+            - library-network
+        depends_on:
+            - rabbitmq
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            EMAIL_SENDER_CONTAINER_FILE: "/run/secrets/email_sender"
+            EMAIL_PASSWORD_CONTAINER_FILE: "/run/secrets/email_password"
+            RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
         secrets:
             - email_sender
             - email_password
@@ -234,6 +255,22 @@ services:
             mode: replicated
             replicas: 1
         command: ["redis-server", "--requirepass", "mypasswordtralala"]
+
+    rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        container_name: rabbitmq
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        networks:
+            - library-network
+        environment:
+            RABBITMQ_DEFAULT_USER: user
+            RABBITMQ_DEFAULT_PASS: password
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
 
 networks:
     library-network:
