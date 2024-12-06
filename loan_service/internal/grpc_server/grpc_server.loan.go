@@ -2,7 +2,6 @@ package grpc_server
 
 import (
 	"context"
-	"fmt"
 	"loan_service/internal/clients"
 	"loan_service/internal/service"
 	protoLoan "loan_service/proto/loan_service"
@@ -131,8 +130,6 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 		return nil, status.Error(code, err.Error())
 	}
 
-	fmt.Println("setelah listloan")
-
 	var protoLoans []*protoLoan.Loan
 	for _, loan := range loans {
 		var returnDate int64
@@ -153,8 +150,6 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		})
 	}
-
-	fmt.Println("success")
 
 	return &protoLoan.ListLoansResponse{
 		Loans: protoLoans,
@@ -167,8 +162,6 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 		return nil, status.Error(code, err.Error())
 	}
 
-	fmt.Println("setelah listloan")
-
 	var protoLoans []*protoLoan.Loan
 	for _, loan := range loans {
 		var returnDate int64
@@ -189,8 +182,6 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		})
 	}
-
-	fmt.Println("success")
 
 	return &protoLoan.ListLoansResponse{
 		Loans: protoLoans,

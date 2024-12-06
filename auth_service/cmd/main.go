@@ -72,9 +72,6 @@ func main() {
 		log.Fatalf("Error reading email password secret: %v", err)
 	}
 
-	fmt.Println("email sender", string(emailSenderBytes))
-	fmt.Println("email password", string(emailPasswordBytes))
-
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)

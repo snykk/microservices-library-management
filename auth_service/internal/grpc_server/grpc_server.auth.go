@@ -70,15 +70,11 @@ func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmail
 		OTP:   req.Otp,
 	}
 
-	fmt.Println("verify req", verifyEmailRequest)
-
 	otpKey := fmt.Sprintf("user_otp:%s", verifyEmailRequest.Email)
 	redisOtp, err := s.redisCache.Get(otpKey)
 	if err != nil {
 		return nil, exception.GRPCErrorFormatter(err)
 	}
-
-	fmt.Println("otp key", otpKey)
 
 	result, err := s.authService.VerifyEmail(ctx, &verifyEmailRequest, redisOtp)
 	if err != nil {
