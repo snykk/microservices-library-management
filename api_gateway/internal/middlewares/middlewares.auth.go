@@ -44,6 +44,7 @@ func (m *AuthMiddleware) Authenticate() fiber.Handler {
 		// Pass role and userID to context
 		c.Locals("role", res.Role)
 		c.Locals("userID", res.UserID)
+		c.Locals("email", res.Email)
 
 		return c.Next()
 	}

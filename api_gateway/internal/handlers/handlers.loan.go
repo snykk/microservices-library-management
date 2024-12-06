@@ -22,13 +22,14 @@ func NewLoanHandler(client clients.LoanClient) LoanHandler {
 
 func (l *LoanHandler) CreateLoanHandler(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(string)
+	userEmail := c.Locals("email").(string)
 
 	var req datatransfers.LoanRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
 	}
 
-	resp, err := l.client.CreateLoan(c.Context(), userID, req)
+	resp, err := l.client.CreateLoan(c.Context(), userID, userEmail, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to create loan", err))
 	}
@@ -38,14 +39,12 @@ func (l *LoanHandler) CreateLoanHandler(c *fiber.Ctx) error {
 
 func (l *LoanHandler) ReturnLoanHandler(c *fiber.Ctx) error {
 	loanId := c.Params("id")
+	userID := c.Locals("userID").(string)
+	userEmail := c.Locals("email").(string)
 
-	var req datatransfers.LoanStatusUpdateRequest
-
-	req.ReturnDate = time.Now()
-	req.Status = "RETURNED"
-	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, c.Locals("userID").(string), c.Locals("role").(string), req.Status, req.ReturnDate)
+	resp, err := l.client.ReturnLoan(c.Context(), loanId, userID, userEmail, time.Now())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update loan status", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to return loan", err))
 	}
 
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Loan status updated successfully", resp))
@@ -70,7 +69,7 @@ func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
 	}
 
 	req.ReturnDate = time.Now()
-	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, c.Locals("userID").(string), c.Locals("role").(string), req.Status, req.ReturnDate)
+	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, req.Status, req.ReturnDate)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update loan status", err))
 	}

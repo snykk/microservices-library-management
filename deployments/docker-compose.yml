@@ -141,6 +141,7 @@ services:
         environment:
             DSN: "host=loan-db port=5432 user=fikri password=12345678 dbname=loandb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
             GRPC_PORT: "50051"
+            RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
 
     book-db:
         image: postgres:15

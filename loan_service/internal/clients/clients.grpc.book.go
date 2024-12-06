@@ -31,6 +31,12 @@ func NewBookClient() (BookClient, error) {
 	}, nil
 }
 
+type BookResponse struct { // simplify struct to optimize memory
+	Id    string
+	Title string
+	Stock int
+}
+
 func (a *bookClient) GetBook(ctx context.Context, id string) (*BookResponse, error) {
 	reqProto := protoBook.GetBookRequest{
 		Id: id,
@@ -43,6 +49,7 @@ func (a *bookClient) GetBook(ctx context.Context, id string) (*BookResponse, err
 
 	return &BookResponse{
 		Id:    resp.Book.Id,
+		Title: resp.Book.Title,
 		Stock: int(resp.Book.Stock),
 	}, nil
 }
@@ -75,9 +82,4 @@ func (a *bookClient) DecrementBookStock(ctx context.Context, id string) error {
 	_, err := a.client.DecrementBookStock(ctx, &reqProto)
 
 	return err
-}
-
-type BookResponse struct { // simplify struct to optimize memory
-	Id    string
-	Stock int
 }

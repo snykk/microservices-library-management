@@ -9,7 +9,6 @@ import (
 	"auth_service/pkg/utils"
 	"context"
 	"encoding/json"
-	"log"
 )
 
 type AuthService interface {
@@ -98,7 +97,7 @@ func (s *authService) SendOTP(ctx context.Context, email string) (*string, error
 	// Publish to RabbitMQ
 	err = s.publisher.Publish("email_exchange", "otp_code", messageBytes)
 	if err != nil {
-		log.Fatalf("Failed to publish message: %v", err)
+		return nil, ErrPublishToQueue
 	}
 
 	return &otp, nil
@@ -171,5 +170,6 @@ func (s *authService) ValidateToken(ctx context.Context, req *models.ValidateTok
 		Valid:  true,
 		UserID: claims.UserID,
 		Role:   claims.Role,
+		Email:  claims.Email,
 	}, nil
 }

@@ -4,18 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"loan_service/internal/clients"
 	"loan_service/internal/models"
 	"loan_service/internal/repository"
+	"loan_service/pkg/rabbitmq"
 	"time"
 
 	"google.golang.org/grpc/codes"
 )
 
 type LoanService interface {
-	CreateLoan(ctx context.Context, userId, bookId string) (*models.LoanRecord, codes.Code, error)
+	CreateLoan(ctx context.Context, userId, email string, book *clients.BookResponse) (*models.LoanRecord, codes.Code, error)
+	ReturnLoan(ctx context.Context, id, userId, email, bookTitle string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error)
 	GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error)
-	UpdateLoanStatus(ctx context.Context, id, userId, role, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
+	UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
 	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, codes.Code, error)
 	ListLoans(ctx context.Context) ([]*models.LoanRecord, codes.Code, error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, codes.Code, error)
@@ -23,26 +26,56 @@ type LoanService interface {
 }
 
 type loanService struct {
-	repo repository.LoanRepository
+	repo      repository.LoanRepository
+	publisher *rabbitmq.Publisher
 }
 
-func NewLoanService(repo repository.LoanRepository) LoanService {
-	return &loanService{repo: repo}
+func NewLoanService(repo repository.LoanRepository, publsisher *rabbitmq.Publisher) LoanService {
+	return &loanService{
+		repo:      repo,
+		publisher: publsisher,
+	}
 }
 
-func (s *loanService) CreateLoan(ctx context.Context, userId, bookId string) (*models.LoanRecord, codes.Code, error) {
+func (s *loanService) CreateLoan(ctx context.Context, userId, email string, book *clients.BookResponse) (*models.LoanRecord, codes.Code, error) {
 	loan := &models.LoanRecord{
 		UserId:   userId,
-		BookId:   bookId,
+		BookId:   book.Id,
 		LoanDate: time.Now(),
 		Status:   "BORROWED",
 	}
 
 	createdLoan, err := s.repo.CreateLoan(ctx, loan)
 	if err != nil {
-		return nil, codes.Internal, errors.New("failet to create new loan")
+		return nil, codes.Internal, errors.New("failed to create new loan")
+	}
+
+	err = s.publisher.Publish("email_exchange", "loan_notification", models.LoanNotificationMessage{
+		Email: email,
+		Book:  book.Title,
+		Due:   time.Now().AddDate(0, 0, 7),
+	})
+	if err != nil {
+		return nil, codes.Internal, errors.New("failed to publish loan notification to queue")
 	}
 	return createdLoan, codes.OK, nil
+}
+
+func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email, bookTitle string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
+	loan, err := s.repo.ReturnLoan(ctx, id)
+	if err != nil {
+		return nil, codes.Internal, fmt.Errorf("failed to return loan with id %s", id)
+	}
+
+	err = s.publisher.Publish("email_exchange", "return_notification", models.ReturnNotificationMessage{
+		Email: email,
+		Book:  bookTitle,
+	})
+	if err != nil {
+		return nil, codes.Internal, errors.New("failed to publish loan notification to queue")
+	}
+
+	return loan, codes.OK, nil
 }
 
 func (s *loanService) GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error) {
@@ -61,14 +94,10 @@ func (s *loanService) GetLoanByBookIdAndUserId(ctx context.Context, bookId, user
 	return loan, codes.OK, nil
 }
 
-func (s *loanService) UpdateLoanStatus(ctx context.Context, id, userId, role, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
+func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
 	loan, err := s.repo.GetLoan(ctx, id)
 	if err != nil {
 		return nil, codes.NotFound, errors.New("loan not found")
-	}
-
-	if loan.UserId != userId && role != "admin" {
-		return nil, codes.PermissionDenied, errors.New("you dont have access to update this loan")
 	}
 
 	if loan.Status == status {

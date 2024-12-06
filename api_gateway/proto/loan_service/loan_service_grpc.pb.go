@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LoanServiceClient interface {
 	CreateLoan(ctx context.Context, in *CreateLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error)
+	ReturnLoan(ctx context.Context, in *ReturnLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error)
 	GetLoan(ctx context.Context, in *GetLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error)
 	UpdateLoanStatus(ctx context.Context, in *UpdateLoanStatusRequest, opts ...grpc.CallOption) (*LoanResponse, error)
 	ListUserLoans(ctx context.Context, in *ListUserLoansRequest, opts ...grpc.CallOption) (*ListLoansResponse, error)
@@ -42,6 +43,15 @@ func NewLoanServiceClient(cc grpc.ClientConnInterface) LoanServiceClient {
 func (c *loanServiceClient) CreateLoan(ctx context.Context, in *CreateLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error) {
 	out := new(LoanResponse)
 	err := c.cc.Invoke(ctx, "/loan_service.LoanService/CreateLoan", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *loanServiceClient) ReturnLoan(ctx context.Context, in *ReturnLoanRequest, opts ...grpc.CallOption) (*LoanResponse, error) {
+	out := new(LoanResponse)
+	err := c.cc.Invoke(ctx, "/loan_service.LoanService/ReturnLoan", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +117,7 @@ func (c *loanServiceClient) GetLoansByStatus(ctx context.Context, in *GetLoansBy
 // for forward compatibility
 type LoanServiceServer interface {
 	CreateLoan(context.Context, *CreateLoanRequest) (*LoanResponse, error)
+	ReturnLoan(context.Context, *ReturnLoanRequest) (*LoanResponse, error)
 	GetLoan(context.Context, *GetLoanRequest) (*LoanResponse, error)
 	UpdateLoanStatus(context.Context, *UpdateLoanStatusRequest) (*LoanResponse, error)
 	ListUserLoans(context.Context, *ListUserLoansRequest) (*ListLoansResponse, error)
@@ -122,6 +133,9 @@ type UnimplementedLoanServiceServer struct {
 
 func (UnimplementedLoanServiceServer) CreateLoan(context.Context, *CreateLoanRequest) (*LoanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateLoan not implemented")
+}
+func (UnimplementedLoanServiceServer) ReturnLoan(context.Context, *ReturnLoanRequest) (*LoanResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReturnLoan not implemented")
 }
 func (UnimplementedLoanServiceServer) GetLoan(context.Context, *GetLoanRequest) (*LoanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLoan not implemented")
@@ -168,6 +182,24 @@ func _LoanService_CreateLoan_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LoanServiceServer).CreateLoan(ctx, req.(*CreateLoanRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LoanService_ReturnLoan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReturnLoanRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoanServiceServer).ReturnLoan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/loan_service.LoanService/ReturnLoan",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoanServiceServer).ReturnLoan(ctx, req.(*ReturnLoanRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -290,6 +322,10 @@ var LoanService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateLoan",
 			Handler:    _LoanService_CreateLoan_Handler,
+		},
+		{
+			MethodName: "ReturnLoan",
+			Handler:    _LoanService_ReturnLoan_Handler,
 		},
 		{
 			MethodName: "GetLoan",

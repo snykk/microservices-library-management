@@ -11,7 +11,7 @@ import (
 
 type MailerService interface {
 	SendOTP(email, otp string) error
-	SendLoanNotification(email, book, due string) error
+	SendLoanNotification(email, book string, due time.Time) error
 	SendReturnNotification(email, book string) error
 }
 
@@ -80,7 +80,7 @@ func (ms *mailerService) SendOTP(email, otp string) error {
 }
 
 // SendLoanNotification sends a loan notification email
-func (ms *mailerService) SendLoanNotification(email, book, due string) error {
+func (ms *mailerService) SendLoanNotification(email, book string, due time.Time) error {
 	data := map[string]interface{}{
 		"Book": book,
 		"Due":  due,

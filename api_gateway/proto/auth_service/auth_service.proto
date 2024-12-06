@@ -67,6 +67,7 @@ message ValidateTokenResponse {
     bool valid = 1;        // Indicates whether the token is valid
     string userId = 2;
     string role = 3;
+    string email = 4;
 }
 
 // Message for logout

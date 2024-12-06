@@ -2,6 +2,7 @@ package grpc_server
 
 import (
 	"context"
+	"fmt"
 	"loan_service/internal/clients"
 	"loan_service/internal/service"
 	protoLoan "loan_service/proto/loan_service"
@@ -37,7 +38,7 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 	}
 
 	if book.Stock == 0 {
-		return nil, status.Error(codes.Unavailable, "book stock is not available")
+		return nil, status.Error(codes.Unavailable, "book is not available")
 	}
 
 	err := s.bookClient.DecrementBookStock(ctx, book.Id)
@@ -45,7 +46,7 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 		return nil, status.Error(codes.Internal, "failed when update stock book")
 	}
 
-	loan, code, err := s.loanService.CreateLoan(ctx, req.UserId, req.BookId)
+	loan, code, err := s.loanService.CreateLoan(ctx, req.UserId, req.Email, book)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
 	}
@@ -91,16 +92,9 @@ func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequ
 }
 
 func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.UpdateLoanStatusRequest) (*protoLoan.LoanResponse, error) {
-	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.UserId, req.Role, req.Status, time.Unix(req.ReturnDate, 0))
+	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, time.Unix(req.ReturnDate, 0))
 	if err != nil {
 		return nil, status.Error(code, err.Error())
-	}
-
-	if req.Status == "RETURNED" {
-		err := s.bookClient.IncrementBookStock(ctx, loan.BookId)
-		if err != nil {
-			return nil, status.Error(code, err.Error())
-		}
 	}
 
 	var returnDate int64
@@ -251,5 +245,48 @@ func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.Ge
 
 	return &protoLoan.ListLoansResponse{
 		Loans: protoLoans,
+	}, nil
+}
+
+func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLoanRequest) (*protoLoan.LoanResponse, error) {
+	loan, code, _ := s.loanService.GetLoan(ctx, req.Id)
+	if loan == nil {
+		return nil, status.Error(code, fmt.Sprintf("loan not found with id %s", req.Id))
+	}
+
+	if loan.Status == "RETURNED" {
+		return nil, status.Error(codes.Canceled, "loan already returned")
+	}
+
+	if loan.UserId != req.UserId {
+		return nil, status.Error(codes.PermissionDenied, "you don't have access to this resource")
+	}
+
+	book, err := s.bookClient.GetBook(ctx, loan.BookId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	loan, code, err = s.loanService.ReturnLoan(ctx, req.Id, req.UserId, req.Email, book.Title, time.Unix(req.ReturnDate, 0))
+	if err != nil {
+		return nil, status.Error(code, err.Error())
+	}
+
+	err = s.bookClient.IncrementBookStock(ctx, loan.BookId)
+	if err != nil {
+		return nil, status.Error(code, err.Error())
+	}
+
+	return &protoLoan.LoanResponse{
+		Loan: &protoLoan.Loan{
+			Id:         loan.Id,
+			UserId:     loan.UserId,
+			BookId:     loan.BookId,
+			LoanDate:   loan.LoanDate.Unix(),
+			ReturnDate: loan.ReturnDate.Unix(),
+			Status:     loan.Status,
+			CreatedAt:  loan.CreatedAt.Unix(),
+			UpdatedAt:  loan.UpdatedAt.Unix(),
+		},
 	}, nil
 }

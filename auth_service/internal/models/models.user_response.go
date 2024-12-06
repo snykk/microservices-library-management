@@ -18,4 +18,5 @@ type ValidateTokenResponse struct {
 	Valid  bool
 	UserID string
 	Role   string
+	Email  string
 }

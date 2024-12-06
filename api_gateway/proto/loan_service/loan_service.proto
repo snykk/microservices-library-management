@@ -6,6 +6,7 @@ option go_package = "/loan_service";
 
 service LoanService {
     rpc CreateLoan(CreateLoanRequest) returns (LoanResponse);
+    rpc ReturnLoan(ReturnLoanRequest) returns (LoanResponse);
     rpc GetLoan(GetLoanRequest) returns (LoanResponse);
     rpc UpdateLoanStatus(UpdateLoanStatusRequest) returns (LoanResponse);
     rpc ListUserLoans(ListUserLoansRequest) returns (ListLoansResponse);
@@ -29,6 +30,14 @@ message Loan {
 message CreateLoanRequest {
     string user_id = 1;
     string book_id = 2;
+    string email = 3; // for sending loan notification to the email user
+}
+
+message ReturnLoanRequest {
+    string id = 1;
+    string user_id = 2;
+    string email = 3; // for sending loan notification to the email user
+    int64 return_date = 4;
 }
 
 message GetLoanRequest {
@@ -37,10 +46,8 @@ message GetLoanRequest {
 
 message UpdateLoanStatusRequest {
     string id = 1;
-    string user_id = 2;
-    string role = 3;
-    string status = 4;      // New loan status (e.g., RETURNED, LOST)
-    int64 return_date = 5;  // unix time
+    string status = 2;      // New loan status (e.g., RETURNED, LOST)
+    int64 return_date = 3;  // unix time
 }
 
 message ListUserLoansRequest {

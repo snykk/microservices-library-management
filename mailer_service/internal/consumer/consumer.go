@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"mailer_service/internal/mailer"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -14,9 +15,9 @@ type OTPMessage struct {
 }
 
 type LoanNotificationMessage struct {
-	Email string `json:"email"`
-	Book  string `json:"book"`
-	Due   string `json:"due"`
+	Email string    `json:"email"`
+	Book  string    `json:"book"`
+	Due   time.Time `json:"due"`
 }
 
 type ReturnNotificationMessage struct {

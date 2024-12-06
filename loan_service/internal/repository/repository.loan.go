@@ -18,6 +18,7 @@ type LoanRepository interface {
 	ListLoans(ctx context.Context) ([]*models.LoanRecord, error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, error)
 	GetLoansByStatus(ctx context.Context, status string) ([]*models.LoanRecord, error)
+	ReturnLoan(ctx context.Context, id string) (*models.LoanRecord, error)
 }
 
 type loanRepository struct {
@@ -96,27 +97,21 @@ func (r *loanRepository) GetLoanByBookIdAndUserId(ctx context.Context, bookId, u
 	return loan, nil
 }
 
-// UpdateLoanStatus updates the status and optionally the return date of a loan
+// updates the status
 func (r *loanRepository) UpdateLoanStatus(ctx context.Context, req *models.LoanRecord) (*models.LoanRecord, error) {
 	query := `
 		UPDATE loans
-		SET status = :status, return_date = :return_date
+		SET status = :status
 		WHERE id = :id
 		RETURNING id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
 	`
 
 	loan := &models.LoanRecord{}
-	rows, err := r.db.NamedQueryContext(ctx, query, req)
+	err := r.db.GetContext(ctx, loan, query, req)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	if rows.Next() {
-		if err := rows.StructScan(loan); err != nil {
-			return nil, err
-		}
-	}
 	return loan, nil
 }
 
@@ -174,4 +169,21 @@ func (r *loanRepository) GetLoansByStatus(ctx context.Context, status string) ([
 		return nil, err
 	}
 	return loans, nil
+}
+
+func (r *loanRepository) ReturnLoan(ctx context.Context, id string) (*models.LoanRecord, error) {
+	query := `
+		UPDATE loans
+		SET status = 'RETURNED', return_date = NOW()
+		WHERE id = $1
+		RETURNING id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
+	`
+
+	loan := &models.LoanRecord{}
+	err := r.db.GetContext(ctx, loan, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return loan, nil
 }

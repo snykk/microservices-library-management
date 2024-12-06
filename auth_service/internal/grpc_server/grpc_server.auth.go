@@ -117,5 +117,6 @@ func (s *authServer) ValidateToken(ctx context.Context, req *protoAuth.ValidateT
 		Valid:  result.Valid,
 		UserId: result.UserID,
 		Role:   result.Role,
+		Email:  result.Email,
 	}, nil
 }

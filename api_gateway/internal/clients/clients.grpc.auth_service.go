@@ -122,5 +122,6 @@ func (authC *authClient) ValidateToken(ctx context.Context, dto datatransfers.Va
 		Valid:  resp.Valid,
 		UserID: resp.UserId,
 		Role:   resp.Role,
+		Email:  resp.Email,
 	}, nil
 }

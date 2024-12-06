@@ -11,13 +11,14 @@ import (
 )
 
 type LoanClient interface {
-	CreateLoan(ctx context.Context, userId string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error)
+	CreateLoan(ctx context.Context, userId, email string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error)
 	GetLoan(ctx context.Context, id string) (datatransfers.LoanResponse, error)
-	UpdateLoanStatus(ctx context.Context, loanId, userId, role, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
+	UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
 	ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error)
 	ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error)
 	GetLoansByStatus(ctx context.Context, status string) ([]datatransfers.LoanResponse, error)
+	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error)
 }
 
 type loanClient struct {
@@ -36,10 +37,11 @@ func NewLoanClient() (LoanClient, error) {
 	}, nil
 }
 
-func (l *loanClient) CreateLoan(ctx context.Context, userId string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error) {
+func (l *loanClient) CreateLoan(ctx context.Context, userId, email string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error) {
 	reqProto := protoLoan.CreateLoanRequest{
 		UserId: userId,
 		BookId: dto.BookId,
+		Email:  email,
 	}
 
 	resp, err := l.client.CreateLoan(ctx, &reqProto)
@@ -87,11 +89,9 @@ func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.Loan
 	return loanResponse, nil
 }
 
-func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, userId, role, status string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error) {
 	reqProto := protoLoan.UpdateLoanStatusRequest{
 		Id:         loanId,
-		UserId:     userId,
-		Role:       role,
 		Status:     status,
 		ReturnDate: returnDate.Unix(),
 	}
@@ -246,4 +246,35 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]dat
 	}
 
 	return loans, nil
+}
+
+func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+	reqProto := protoLoan.ReturnLoanRequest{
+		Id:         id,
+		Email:      email,
+		UserId:     userId,
+		ReturnDate: returnDate.Unix(),
+	}
+
+	resp, err := l.client.ReturnLoan(ctx, &reqProto)
+	if err != nil {
+		return datatransfers.LoanResponse{}, err
+	}
+
+	loanResponse := datatransfers.LoanResponse{
+		Id:        resp.Loan.Id,
+		UserId:    resp.Loan.UserId,
+		BookId:    resp.Loan.BookId,
+		LoanDate:  time.Unix(resp.Loan.LoanDate, 0),
+		Status:    resp.Loan.Status,
+		CreatedAt: time.Unix(resp.Loan.CreatedAt, 0),
+		UpdatedAt: time.Unix(resp.Loan.UpdatedAt, 0),
+	}
+
+	if resp.Loan.ReturnDate != 0 {
+		returnDate := time.Unix(resp.Loan.ReturnDate, 0)
+		loanResponse.ReturnDate = &returnDate
+	}
+
+	return loanResponse, nil
 }
