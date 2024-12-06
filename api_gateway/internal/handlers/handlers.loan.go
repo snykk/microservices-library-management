@@ -43,7 +43,7 @@ func (l *LoanHandler) ReturnLoanHandler(c *fiber.Ctx) error {
 
 	req.ReturnDate = time.Now()
 	req.Status = "RETURNED"
-	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, req.Status, req.ReturnDate)
+	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, c.Locals("userID").(string), c.Locals("role").(string), req.Status, req.ReturnDate)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update loan status", err))
 	}
@@ -70,7 +70,7 @@ func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
 	}
 
 	req.ReturnDate = time.Now()
-	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, req.Status, req.ReturnDate)
+	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, c.Locals("userID").(string), c.Locals("role").(string), req.Status, req.ReturnDate)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update loan status", err))
 	}

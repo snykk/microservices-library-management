@@ -78,7 +78,7 @@ func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequ
 }
 
 func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.UpdateLoanStatusRequest) (*protoLoan.LoanResponse, error) {
-	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, time.Unix(req.ReturnDate, 0))
+	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.UserId, req.Role, req.Status, time.Unix(req.ReturnDate, 0))
 	if err != nil {
 		return nil, status.Error(code, err.Error())
 	}

@@ -13,7 +13,7 @@ import (
 type LoanClient interface {
 	CreateLoan(ctx context.Context, userId string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error)
 	GetLoan(ctx context.Context, id string) (datatransfers.LoanResponse, error)
-	UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
+	UpdateLoanStatus(ctx context.Context, loanId, userId, role, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
 	ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error)
 	ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error)
@@ -87,9 +87,11 @@ func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.Loan
 	return loanResponse, nil
 }
 
-func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, userId, role, status string, returnDate time.Time) (datatransfers.LoanResponse, error) {
 	reqProto := protoLoan.UpdateLoanStatusRequest{
 		Id:         loanId,
+		UserId:     userId,
+		Role:       role,
 		Status:     status,
 		ReturnDate: returnDate.Unix(),
 	}

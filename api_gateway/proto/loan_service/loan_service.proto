@@ -37,8 +37,10 @@ message GetLoanRequest {
 
 message UpdateLoanStatusRequest {
     string id = 1;
-    string status = 2;      // New loan status (e.g., RETURNED, LOST)
-    int64 return_date = 3;  // unix time
+    string user_id = 2;
+    string role = 3;
+    string status = 4;      // New loan status (e.g., RETURNED, LOST)
+    int64 return_date = 5;  // unix time
 }
 
 message ListUserLoansRequest {
