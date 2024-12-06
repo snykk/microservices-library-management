@@ -12,6 +12,7 @@ import (
 type LoanRepository interface {
 	CreateLoan(ctx context.Context, loan *models.LoanRecord) (*models.LoanRecord, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, error)
+	GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, error)
 	UpdateLoanStatus(ctx context.Context, loan *models.LoanRecord) (*models.LoanRecord, error)
 	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error)
 	ListLoans(ctx context.Context) ([]*models.LoanRecord, error)
@@ -61,6 +62,28 @@ func (r *loanRepository) GetLoan(ctx context.Context, id string) (*models.LoanRe
 	loan := &models.LoanRecord{}
 	var returnDate sql.NullTime
 	if err := r.db.GetContext(ctx, loan, query, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("loan not found")
+		}
+		return nil, err
+	}
+
+	if returnDate.Valid {
+		loan.ReturnDate = &returnDate.Time
+	}
+	return loan, nil
+}
+
+func (r *loanRepository) GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, error) {
+	query := `
+		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
+		FROM loans
+		WHERE book_id = $1 AND user_id = $2 AND status = 'BORROWED'
+	`
+
+	loan := &models.LoanRecord{}
+	var returnDate sql.NullTime
+	if err := r.db.GetContext(ctx, loan, query, bookId, userId); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("loan not found")
 		}

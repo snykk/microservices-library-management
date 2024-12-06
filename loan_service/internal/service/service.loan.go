@@ -14,6 +14,7 @@ import (
 type LoanService interface {
 	CreateLoan(ctx context.Context, userId, bookId string) (*models.LoanRecord, codes.Code, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error)
+	GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error)
 	UpdateLoanStatus(ctx context.Context, id, userId, role, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
 	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, codes.Code, error)
 	ListLoans(ctx context.Context) ([]*models.LoanRecord, codes.Code, error)
@@ -48,6 +49,14 @@ func (s *loanService) GetLoan(ctx context.Context, id string) (*models.LoanRecor
 	loan, err := s.repo.GetLoan(ctx, id)
 	if err != nil {
 		return nil, codes.Internal, fmt.Errorf("failed to get loan with id %s", id)
+	}
+	return loan, codes.OK, nil
+}
+
+func (s *loanService) GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error) {
+	loan, err := s.repo.GetLoanByBookIdAndUserId(ctx, bookId, userId)
+	if err != nil {
+		return nil, codes.Internal, fmt.Errorf("failed to get loan with id %s and userId %s", bookId, userId)
 	}
 	return loan, codes.OK, nil
 }

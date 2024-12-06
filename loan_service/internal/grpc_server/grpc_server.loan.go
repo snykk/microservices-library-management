@@ -32,6 +32,11 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 		return nil, status.Error(codes.NotFound, "book not found")
 	}
 
+	userLoan, _, _ := s.loanService.GetLoanByBookIdAndUserId(ctx, req.BookId, req.UserId)
+	if userLoan != nil && userLoan.Status == "BORROWED" {
+		return nil, status.Error(codes.Canceled, "user must return the borrowed book before creating a new loan")
+	}
+
 	if book.Stock == 0 {
 		return nil, status.Error(codes.Unavailable, "book stock is not available")
 	}
