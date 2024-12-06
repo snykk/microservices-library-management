@@ -36,6 +36,21 @@ func (l *LoanHandler) CreateLoanHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(datatransfers.ResponseSuccess("Loan created successfully", resp))
 }
 
+func (l *LoanHandler) ReturnLoanHandler(c *fiber.Ctx) error {
+	loanId := c.Params("id")
+
+	var req datatransfers.LoanStatusUpdateRequest
+
+	req.ReturnDate = time.Now()
+	req.Status = "RETURNED"
+	resp, err := l.client.UpdateLoanStatus(c.Context(), loanId, req.Status, req.ReturnDate)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update loan status", err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Loan status updated successfully", resp))
+}
+
 func (l *LoanHandler) GetLoanHandler(c *fiber.Ctx) error {
 	loanId := c.Params("id")
 

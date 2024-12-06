@@ -30,6 +30,7 @@ func (r *loanRoutes) Routes() {
 	// Public routes (authentication required)
 	route.Use(r.authMiddleware.Authenticate())
 	route.Post("", r.handler.CreateLoanHandler)
+	route.Post("/:id/return", r.handler.ReturnLoanHandler)
 	route.Get("", r.handler.ListUserLoansHandler)
 
 	// Admin routes (authentication and authorization required)

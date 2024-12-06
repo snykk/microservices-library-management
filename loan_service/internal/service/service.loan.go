@@ -46,6 +46,10 @@ func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, r
 		return nil, errors.New("loan not found")
 	}
 
+	if loan.Status == status {
+		return nil, errors.New("loan already " + status)
+	}
+
 	loan.Status = status
 	loan.ReturnDate = &returnDate
 
