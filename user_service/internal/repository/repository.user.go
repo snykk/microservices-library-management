@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"user_service/internal/models"
@@ -9,9 +10,9 @@ import (
 )
 
 type UserRepository interface {
-	GetUserById(userId *string) (*models.UserRecord, error)
-	GetUserByEmail(email *string) (*models.UserRecord, error)
-	ListUsers() ([]*models.UserRecord, error)
+	GetUserById(ctx context.Context, userId string) (*models.UserRecord, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.UserRecord, error)
+	ListUsers(ctx context.Context) ([]*models.UserRecord, error)
 }
 
 type userRepository struct {
@@ -24,12 +25,24 @@ func NewUserRepository(db *sqlx.DB) UserRepository {
 	}
 }
 
-func (r *userRepository) GetUserById(userId *string) (*models.UserRecord, error) {
+func (r *userRepository) GetUserById(ctx context.Context, userId string) (*models.UserRecord, error) {
 	query := `SELECT id, email, username, password, verified, role, created_at, updated_at FROM users WHERE id = $1`
-	row := r.db.QueryRow(query, *userId)
 
 	user := &models.UserRecord{}
-	if err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.Verified, &user.Role, &user.CreatedAt, &user.UpdatedAt); err != nil {
+
+	err := r.db.QueryRowContext(ctx, query,
+		userId,
+	).Scan(
+		&user.Id,
+		&user.Email,
+		&user.Username,
+		&user.Password,
+		&user.Verified,
+		&user.Role,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("user not found")
 		}
@@ -39,12 +52,24 @@ func (r *userRepository) GetUserById(userId *string) (*models.UserRecord, error)
 	return user, nil
 }
 
-func (r *userRepository) GetUserByEmail(email *string) (*models.UserRecord, error) {
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*models.UserRecord, error) {
 	query := `SELECT id, email, username, password, verified, role, created_at, updated_at FROM users WHERE email = $1`
-	row := r.db.QueryRow(query, *email)
 
 	user := &models.UserRecord{}
-	if err := row.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.Verified, &user.Role, &user.CreatedAt, &user.UpdatedAt); err != nil {
+
+	err := r.db.QueryRowContext(ctx, query,
+		email,
+	).Scan(
+		&user.Id,
+		&user.Email,
+		&user.Username,
+		&user.Password,
+		&user.Verified,
+		&user.Role,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("user not found")
 		}
@@ -54,9 +79,9 @@ func (r *userRepository) GetUserByEmail(email *string) (*models.UserRecord, erro
 	return user, nil
 }
 
-func (r *userRepository) ListUsers() ([]*models.UserRecord, error) {
+func (r *userRepository) ListUsers(ctx context.Context) ([]*models.UserRecord, error) {
 	query := `SELECT id, email, username, password, verified, role, created_at, updated_at FROM users`
-	rows, err := r.db.Query(query)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +90,16 @@ func (r *userRepository) ListUsers() ([]*models.UserRecord, error) {
 	var users []*models.UserRecord
 	for rows.Next() {
 		user := &models.UserRecord{}
-		if err := rows.Scan(&user.Id, &user.Email, &user.Username, &user.Password, &user.Verified, &user.Role, &user.CreatedAt, &user.UpdatedAt); err != nil {
+		if err := rows.Scan(
+			&user.Id,
+			&user.Email,
+			&user.Username,
+			&user.Password,
+			&user.Verified,
+			&user.Role,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		users = append(users, user)

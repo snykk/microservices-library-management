@@ -8,10 +8,10 @@ import (
 
 type CategoryService interface {
 	CreateCategory(ctx context.Context, req *models.CategoryRequest) (*models.CategoryRecord, error)
-	GetCategory(ctx context.Context, id *string) (*models.CategoryRecord, error)
+	GetCategory(ctx context.Context, id string) (*models.CategoryRecord, error)
 	ListCategories(ctx context.Context) ([]*models.CategoryRecord, error)
-	UpdateCategory(ctx context.Context, id *string, req *models.CategoryRequest) (*models.CategoryRecord, error)
-	DeleteCategory(ctx context.Context, id *string) error
+	UpdateCategory(ctx context.Context, id string, req *models.CategoryRequest) (*models.CategoryRecord, error)
+	DeleteCategory(ctx context.Context, id string) error
 }
 
 type categoryService struct {
@@ -24,24 +24,24 @@ func NewCategoryService(repo repository.CategoryRepository) CategoryService {
 
 func (s *categoryService) CreateCategory(ctx context.Context, req *models.CategoryRequest) (*models.CategoryRecord, error) {
 	category := models.CategoryRecord{Name: req.Name}
-	return s.repo.CreateCategory(&category)
+	return s.repo.CreateCategory(ctx, &category)
 }
 
-func (s *categoryService) GetCategory(ctx context.Context, id *string) (*models.CategoryRecord, error) {
-	return s.repo.GetCategory(id)
+func (s *categoryService) GetCategory(ctx context.Context, id string) (*models.CategoryRecord, error) {
+	return s.repo.GetCategory(ctx, id)
 }
 
 func (s *categoryService) ListCategories(ctx context.Context) ([]*models.CategoryRecord, error) {
-	return s.repo.ListCategories()
+	return s.repo.ListCategories(ctx)
 }
 
-func (s *categoryService) UpdateCategory(ctx context.Context, id *string, req *models.CategoryRequest) (*models.CategoryRecord, error) {
-	return s.repo.UpdateCategory(&models.CategoryRecord{
-		Id:   *id,
+func (s *categoryService) UpdateCategory(ctx context.Context, id string, req *models.CategoryRequest) (*models.CategoryRecord, error) {
+	return s.repo.UpdateCategory(ctx, &models.CategoryRecord{
+		Id:   id,
 		Name: req.Name,
 	})
 }
 
-func (s *categoryService) DeleteCategory(ctx context.Context, id *string) error {
-	return s.repo.DeleteCategory(id)
+func (s *categoryService) DeleteCategory(ctx context.Context, id string) error {
+	return s.repo.DeleteCategory(ctx, id)
 }

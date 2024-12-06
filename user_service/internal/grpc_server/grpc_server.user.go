@@ -22,7 +22,7 @@ func NewUserGRPCServer(userService service.UserService) protoUser.UserServiceSer
 }
 
 func (s *userGRPCServer) GetUserById(ctx context.Context, req *protoUser.GetUserByIdRequest) (*protoUser.GetUserByIdResponse, error) {
-	user, err := s.userService.GetUserById(ctx, &req.UserId)
+	user, err := s.userService.GetUserById(ctx, req.UserId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve user with id '%s'", req.UserId))
 	}
@@ -42,7 +42,7 @@ func (s *userGRPCServer) GetUserById(ctx context.Context, req *protoUser.GetUser
 }
 
 func (s *userGRPCServer) GetUserByEmail(ctx context.Context, req *protoUser.GetUserByEmailRequest) (*protoUser.GetUserByEmailResponse, error) {
-	user, err := s.userService.GetUserByEmail(ctx, &req.Email)
+	user, err := s.userService.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve user with email '%s'", req.Email))
 	}

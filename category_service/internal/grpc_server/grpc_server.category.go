@@ -41,7 +41,7 @@ func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory.GetCategoryRequest) (*protoCategory.GetCategoryResponse, error) {
-	category, err := s.categoryService.GetCategory(ctx, &req.Id)
+	category, err := s.categoryService.GetCategory(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve category data with id '%s'", req.Id))
 	}
@@ -78,7 +78,7 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCategory.UpdateCategoryRequest) (*protoCategory.UpdateCategoryResponse, error) {
-	updatedCategory, err := s.categoryService.UpdateCategory(ctx, &req.Id, &models.CategoryRequest{
+	updatedCategory, err := s.categoryService.UpdateCategory(ctx, req.Id, &models.CategoryRequest{
 		Name: req.Name,
 	})
 	if err != nil {
@@ -96,7 +96,7 @@ func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) DeleteCategory(ctx context.Context, req *protoCategory.DeleteCategoryRequest) (*protoCategory.DeleteCategoryResponse, error) {
-	err := s.categoryService.DeleteCategory(ctx, &req.Id)
+	err := s.categoryService.DeleteCategory(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete category data with id '%s'", req.Id))
 	}

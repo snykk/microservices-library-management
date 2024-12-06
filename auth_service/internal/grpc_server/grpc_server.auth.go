@@ -48,7 +48,7 @@ func (s *authServer) Register(ctx context.Context, req *protoAuth.RegisterReques
 }
 
 func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest) (*protoAuth.SendOTPResponse, error) {
-	otpCode, err := s.authService.SendOTP(ctx, &req.Email)
+	otpCode, err := s.authService.SendOTP(ctx, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send OTP email: %v", err)
 	}
@@ -80,7 +80,7 @@ func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmail
 
 	fmt.Println("otp key", otpKey)
 
-	result, err := s.authService.VerifyEmail(ctx, &verifyEmailRequest, &redisOtp)
+	result, err := s.authService.VerifyEmail(ctx, &verifyEmailRequest, redisOtp)
 	if err != nil {
 		return nil, exception.GRPCErrorFormatter(err)
 	}

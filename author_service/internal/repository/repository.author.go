@@ -2,6 +2,7 @@ package repository
 
 import (
 	"author_service/internal/models"
+	"context"
 	"database/sql"
 	"errors"
 
@@ -9,11 +10,11 @@ import (
 )
 
 type AuthorRepository interface {
-	CreateAuthor(req *models.AuthorRecord) (*models.AuthorRecord, error)
-	GetAuthor(id *string) (*models.AuthorRecord, error)
-	ListAuthors() ([]*models.AuthorRecord, error)
-	UpdateAuthor(req *models.AuthorRecord) (*models.AuthorRecord, error)
-	DeleteAuthor(id *string) error
+	CreateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error)
+	GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error)
+	ListAuthors(ctx context.Context) ([]*models.AuthorRecord, error)
+	UpdateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error)
+	DeleteAuthor(ctx context.Context, id string) error
 }
 
 type authorRepository struct {
@@ -26,11 +27,12 @@ func NewAuthorRepository(db *sqlx.DB) AuthorRepository {
 	}
 }
 
-func (r *authorRepository) CreateAuthor(req *models.AuthorRecord) (*models.AuthorRecord, error) {
+func (r *authorRepository) CreateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error) {
 	query := `INSERT INTO authors (name, biography) VALUES ($1, $2) RETURNING id, name, biography, created_at, updated_at`
 
 	author := &models.AuthorRecord{}
-	err := r.db.QueryRow(
+	err := r.db.QueryRowContext(
+		ctx,
 		query,
 		req.Name,
 		req.Biography,
@@ -48,12 +50,20 @@ func (r *authorRepository) CreateAuthor(req *models.AuthorRecord) (*models.Autho
 	return author, nil
 }
 
-func (r *authorRepository) GetAuthor(id *string) (*models.AuthorRecord, error) {
+func (r *authorRepository) GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error) {
 	query := `SELECT id, name, biography, created_at, updated_at FROM authors WHERE id = $1`
-	row := r.db.QueryRow(query, *id)
 
 	author := &models.AuthorRecord{}
-	if err := row.Scan(&author.Id, &author.Name, &author.Biography, &author.CreatedAt, &author.UpdatedAt); err != nil {
+
+	if err := r.db.QueryRowContext(ctx, query,
+		id,
+	).Scan(
+		&author.Id,
+		&author.Name,
+		&author.Biography,
+		&author.CreatedAt,
+		&author.UpdatedAt,
+	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("author not found")
 		}
@@ -63,9 +73,9 @@ func (r *authorRepository) GetAuthor(id *string) (*models.AuthorRecord, error) {
 	return author, nil
 }
 
-func (r *authorRepository) ListAuthors() ([]*models.AuthorRecord, error) {
+func (r *authorRepository) ListAuthors(ctx context.Context) ([]*models.AuthorRecord, error) {
 	query := `SELECT id, name, biography, created_at, updated_at FROM authors`
-	rows, err := r.db.Query(query)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +84,13 @@ func (r *authorRepository) ListAuthors() ([]*models.AuthorRecord, error) {
 	var authors []*models.AuthorRecord
 	for rows.Next() {
 		author := &models.AuthorRecord{}
-		if err := rows.Scan(&author.Id, &author.Name, &author.Biography, &author.CreatedAt, &author.UpdatedAt); err != nil {
+		if err := rows.Scan(
+			&author.Id,
+			&author.Name,
+			&author.Biography,
+			&author.CreatedAt,
+			&author.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		authors = append(authors, author)
@@ -86,20 +102,26 @@ func (r *authorRepository) ListAuthors() ([]*models.AuthorRecord, error) {
 	return authors, nil
 }
 
-func (r *authorRepository) UpdateAuthor(req *models.AuthorRecord) (*models.AuthorRecord, error) {
+func (r *authorRepository) UpdateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error) {
 	query := `UPDATE authors SET name = $1, biography = $2 WHERE id = $3 RETURNING id, name, biography, created_at, updated_at`
-	row := r.db.QueryRow(query, req.Name, req.Biography, req.Id)
+	row := r.db.QueryRowContext(ctx, query, req.Name, req.Biography, req.Id)
 
 	author := &models.AuthorRecord{}
-	if err := row.Scan(&author.Id, &author.Name, &author.Biography, &author.CreatedAt, &author.UpdatedAt); err != nil {
+	if err := row.Scan(
+		&author.Id,
+		&author.Name,
+		&author.Biography,
+		&author.CreatedAt,
+		&author.UpdatedAt,
+	); err != nil {
 		return nil, err
 	}
 
 	return author, nil
 }
 
-func (r *authorRepository) DeleteAuthor(id *string) error {
+func (r *authorRepository) DeleteAuthor(ctx context.Context, id string) error {
 	query := `DELETE FROM authors WHERE id = $1`
-	_, err := r.db.Exec(query, *id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }

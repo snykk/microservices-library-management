@@ -64,7 +64,7 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 }
 
 func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.GetBooksByAuthorRequest) (*protoBook.ListBooksResponse, error) {
-	books, err := s.bookService.GetBookByAuthorId(ctx, &req.AuthorId)
+	books, err := s.bookService.GetBookByAuthorId(ctx, req.AuthorId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve books by author id")
 	}
@@ -88,7 +88,7 @@ func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.Ge
 }
 
 func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.GetBooksByCategoryRequest) (*protoBook.ListBooksResponse, error) {
-	books, err := s.bookService.GetBookByCategoryId(ctx, &req.CategoryId)
+	books, err := s.bookService.GetBookByCategoryId(ctx, req.CategoryId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve books by category id")
 	}
@@ -112,7 +112,7 @@ func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.
 }
 
 func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequest) (*protoBook.GetBookResponse, error) {
-	book, err := s.bookService.GetBook(ctx, &req.Id)
+	book, err := s.bookService.GetBook(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve book data with id '%s'", req.Id))
 	}
@@ -167,7 +167,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 		return nil, status.Error(codes.NotFound, "category not found")
 	}
 
-	updatedBook, err := s.bookService.UpdateBook(ctx, &req.Id, &models.BookRequest{
+	updatedBook, err := s.bookService.UpdateBook(ctx, req.Id, &models.BookRequest{
 		Title:      req.Title,
 		AuthorId:   req.AuthorId,
 		CategoryId: req.CategoryId,
@@ -191,7 +191,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 }
 
 func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBookRequest) (*protoBook.DeleteBookResponse, error) {
-	err := s.bookService.DeleteBook(ctx, &req.Id)
+	err := s.bookService.DeleteBook(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete book dta with id '%s'", req.Id))
 	}

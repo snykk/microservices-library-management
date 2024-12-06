@@ -11,8 +11,8 @@ import (
 
 type AuthService interface {
 	Register(ctx context.Context, req *models.RegisterRequest) (*models.RegisterResponse, error)
-	SendOTP(ctx context.Context, email *string) (*string, error)
-	VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp *string) (*models.VerifyEmailResponse, error)
+	SendOTP(ctx context.Context, email string) (*string, error)
+	VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp string) (*models.VerifyEmailResponse, error)
 	Login(ctx context.Context, req *models.LoginRequest) (*models.LoginResponse, error)
 	ValidateToken(ctx context.Context, req *models.ValidateTokenRequest) (*models.ValidateTokenResponse, error)
 }
@@ -32,7 +32,7 @@ func NewAuthService(repo repository.AuthRepository, jwtService jwt.JWTService, m
 }
 
 func (s *authService) Register(ctx context.Context, req *models.RegisterRequest) (*models.RegisterResponse, error) {
-	userFromDB, _ := s.repo.GetUserByEmail(&req.Email)
+	userFromDB, _ := s.repo.GetUserByEmail(ctx, req.Email)
 	if userFromDB != nil {
 		return nil, ErrEmailAlreadyRegistered
 	}
@@ -50,7 +50,7 @@ func (s *authService) Register(ctx context.Context, req *models.RegisterRequest)
 		Role:     "user", // Default role
 	}
 	// Create user
-	createdUser, err := s.repo.CreateUser(&user)
+	createdUser, err := s.repo.CreateUser(ctx, &user)
 	if err != nil {
 		return nil, ErrCreateUser
 	}
@@ -60,8 +60,8 @@ func (s *authService) Register(ctx context.Context, req *models.RegisterRequest)
 	}, nil
 }
 
-func (s *authService) SendOTP(ctx context.Context, email *string) (*string, error) {
-	user, err := s.repo.GetUserByEmail(email)
+func (s *authService) SendOTP(ctx context.Context, email string) (*string, error) {
+	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, ErrGetUserByEmail
 	}
@@ -75,15 +75,15 @@ func (s *authService) SendOTP(ctx context.Context, email *string) (*string, erro
 		return nil, ErrGenerateOTPCode
 	}
 
-	if err = s.mailer.SendOTP(otp, *email); err != nil { // todo: use rabbitmq to enhance response time
+	if err = s.mailer.SendOTP(otp, email); err != nil { // todo: use rabbitmq to enhance response time
 		return nil, ErrSendOtpWithMailer
 	}
 
 	return &otp, nil
 }
 
-func (s *authService) VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp *string) (*models.VerifyEmailResponse, error) {
-	user, err := s.repo.GetUserByEmail(&req.Email)
+func (s *authService) VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp string) (*models.VerifyEmailResponse, error) {
+	user, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, ErrGetUserByEmail
 	}
@@ -92,12 +92,12 @@ func (s *authService) VerifyEmail(ctx context.Context, req *models.VerifyEmailRe
 		return nil, ErrEmailAlreadyVerified
 	}
 
-	if req.OTP != *redisOtp {
+	if req.OTP != redisOtp {
 		return nil, ErrMismatchOTPCode
 	}
 
 	verified := true
-	err = s.repo.UpdateUserVerification(&req.Email, &verified)
+	err = s.repo.UpdateUserVerification(ctx, req.Email, verified)
 	if err != nil {
 		return nil, ErrUpdateUserVerification
 	}
@@ -106,7 +106,7 @@ func (s *authService) VerifyEmail(ctx context.Context, req *models.VerifyEmailRe
 }
 
 func (s *authService) Login(ctx context.Context, req *models.LoginRequest) (*models.LoginResponse, error) {
-	user, err := s.repo.GetUserByEmail(&req.Email)
+	user, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, ErrGetUserByEmail
 	}

@@ -43,7 +43,7 @@ func (s *authorGRPCServer) CreateAuthor(ctx context.Context, req *protoAuthor.Cr
 }
 
 func (s *authorGRPCServer) GetAuthor(ctx context.Context, req *protoAuthor.GetAuthorRequest) (*protoAuthor.GetAuthorResponse, error) {
-	author, err := s.authorService.GetAuthor(ctx, &req.Id)
+	author, err := s.authorService.GetAuthor(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve author with id '%s'", req.Id))
 	}
@@ -82,7 +82,7 @@ func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.Lis
 }
 
 func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.UpdateAuthorRequest) (*protoAuthor.UpdateAuthorResponse, error) {
-	updatedAuthor, err := s.authorService.UpdateAuthor(ctx, &req.Id, &models.AuthorRequest{
+	updatedAuthor, err := s.authorService.UpdateAuthor(ctx, req.Id, &models.AuthorRequest{
 		Name:      req.Name,
 		Biography: req.Biography,
 	})
@@ -102,7 +102,7 @@ func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.Up
 }
 
 func (s *authorGRPCServer) DeleteAuthor(ctx context.Context, req *protoAuthor.DeleteAuthorRequest) (*protoAuthor.DeleteAuthorResponse, error) {
-	err := s.authorService.DeleteAuthor(ctx, &req.Id)
+	err := s.authorService.DeleteAuthor(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete author with id '%s'", req.Id))
 	}

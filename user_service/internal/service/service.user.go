@@ -7,8 +7,8 @@ import (
 )
 
 type UserService interface {
-	GetUserById(ctx context.Context, userId *string) (*models.UserRecord, error)
-	GetUserByEmail(ctx context.Context, email *string) (*models.UserRecord, error)
+	GetUserById(ctx context.Context, userId string) (*models.UserRecord, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.UserRecord, error)
 	ListUsers(ctx context.Context) ([]*models.UserRecord, error)
 }
 
@@ -22,14 +22,14 @@ func NewUserService(repo repository.UserRepository) UserService {
 	}
 }
 
-func (s *userService) GetUserById(ctx context.Context, userId *string) (*models.UserRecord, error) {
-	return s.repo.GetUserById(userId)
+func (s *userService) GetUserById(ctx context.Context, userId string) (*models.UserRecord, error) {
+	return s.repo.GetUserById(ctx, userId)
 }
 
-func (s *userService) GetUserByEmail(ctx context.Context, email *string) (*models.UserRecord, error) {
-	return s.repo.GetUserByEmail(email)
+func (s *userService) GetUserByEmail(ctx context.Context, email string) (*models.UserRecord, error) {
+	return s.repo.GetUserByEmail(ctx, email)
 }
 
 func (s *userService) ListUsers(ctx context.Context) ([]*models.UserRecord, error) {
-	return s.repo.ListUsers()
+	return s.repo.ListUsers(ctx)
 }
