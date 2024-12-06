@@ -14,6 +14,9 @@ type BookService interface {
 	ListBooks(ctx context.Context) ([]*models.BookRecord, error)
 	UpdateBook(ctx context.Context, id *string, req *models.BookRequest) (*models.BookRecord, error)
 	DeleteBook(ctx context.Context, id *string) error
+	UpdateBookStock(ctx context.Context, id string, newStock int) error
+	IncrementBookStock(ctx context.Context, id string) error
+	DecrementBookStock(ctx context.Context, id string) error
 }
 
 type bookService struct {
@@ -63,4 +66,16 @@ func (s *bookService) UpdateBook(ctx context.Context, id *string, req *models.Bo
 
 func (s *bookService) DeleteBook(ctx context.Context, id *string) error {
 	return s.repo.DeleteBook(id)
+}
+
+func (s *bookService) UpdateBookStock(ctx context.Context, id string, newStock int) error {
+	return s.repo.UpdateBookStock(id, newStock)
+}
+
+func (s *bookService) IncrementBookStock(ctx context.Context, id string) error {
+	return s.repo.IncrementBookStock(id)
+}
+
+func (s *bookService) DecrementBookStock(ctx context.Context, id string) error {
+	return s.repo.DecrementBookStock(id)
 }

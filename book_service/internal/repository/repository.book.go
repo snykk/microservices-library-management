@@ -16,6 +16,9 @@ type BookRepository interface {
 	ListBooks() ([]*models.BookRecord, error)
 	UpdateBook(req *models.BookRecord) (*models.BookRecord, error)
 	DeleteBook(id *string) error
+	UpdateBookStock(bookId string, newStock int) error
+	IncrementBookStock(bookId string) error
+	DecrementBookStock(bookId string) error
 }
 
 type bookRepository struct {
@@ -146,4 +149,61 @@ func (r *bookRepository) DeleteBook(id *string) error {
 	query := `DELETE FROM books WHERE id = $1`
 	_, err := r.db.Exec(query, *id)
 	return err
+}
+
+func (r *bookRepository) UpdateBookStock(bookId string, newStock int) error {
+	query := `UPDATE books SET stock = $1 WHERE id = $2`
+	result, err := r.db.Exec(query, newStock, bookId)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no book found with the given Id")
+	}
+
+	return nil
+}
+
+func (r *bookRepository) IncrementBookStock(bookId string) error {
+	query := `UPDATE books SET stock = stock + 1, updated_at = NOW() WHERE id = $1`
+	result, err := r.db.Exec(query, bookId)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no book found with the given Id")
+	}
+
+	return nil
+}
+
+func (r *bookRepository) DecrementBookStock(bookId string) error {
+	query := `UPDATE books SET stock = stock - 1, updated_at = NOW() WHERE id = $1 AND stock > 0`
+	result, err := r.db.Exec(query, bookId)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no book found with the given Id or insufficient stock")
+	}
+
+	return nil
 }

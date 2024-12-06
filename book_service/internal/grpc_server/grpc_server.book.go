@@ -198,3 +198,36 @@ func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBo
 
 	return &protoBook.DeleteBookResponse{Message: fmt.Sprintf("success delete book with id %s", req.Id)}, nil
 }
+
+func (s *bookGRPCServer) UpdateBookStock(ctx context.Context, req *protoBook.UpdateBookStockRequest) (*protoBook.UpdateBookStockResponse, error) {
+	err := s.bookService.UpdateBookStock(ctx, req.Id, int(req.Stock))
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update book data with id '%s'", req.Id))
+	}
+
+	return &protoBook.UpdateBookStockResponse{
+		Message: fmt.Sprintf("stock book with id %s updates successfully", req.Id),
+	}, nil
+}
+
+func (s *bookGRPCServer) IncrementBookStock(ctx context.Context, req *protoBook.IncrementBookStockRequest) (*protoBook.IncrementBookStockResponse, error) {
+	err := s.bookService.IncrementBookStock(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to increment book data with id '%s'", req.Id))
+	}
+
+	return &protoBook.IncrementBookStockResponse{
+		Message: fmt.Sprintf("stock book with id %s increments successfully", req.Id),
+	}, nil
+}
+
+func (s *bookGRPCServer) DecrementBookStock(ctx context.Context, req *protoBook.DecrementBookStockRequest) (*protoBook.DecrementBookStockResponse, error) {
+	err := s.bookService.DecrementBookStock(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to decrement book data with id '%s'", req.Id))
+	}
+
+	return &protoBook.DecrementBookStockResponse{
+		Message: fmt.Sprintf("stock book with id %s increments successfully", req.Id),
+	}, nil
+}

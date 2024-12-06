@@ -32,6 +32,15 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 		return nil, status.Error(codes.NotFound, "book not found")
 	}
 
+	if book.Stock == 0 {
+		return nil, status.Error(codes.Unavailable, "book stock is not available")
+	}
+
+	err := s.bookClient.DecrementBookStock(ctx, book.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed when update stock book")
+	}
+
 	loan, code, err := s.loanService.CreateLoan(ctx, req.UserId, req.BookId)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -81,6 +90,13 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.UserId, req.Role, req.Status, time.Unix(req.ReturnDate, 0))
 	if err != nil {
 		return nil, status.Error(code, err.Error())
+	}
+
+	if req.Status == "RETURNED" {
+		err := s.bookClient.IncrementBookStock(ctx, loan.BookId)
+		if err != nil {
+			return nil, status.Error(code, err.Error())
+		}
 	}
 
 	var returnDate int64

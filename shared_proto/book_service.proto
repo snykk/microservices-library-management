@@ -12,6 +12,9 @@ service BookService {
   rpc ListBooks(ListBooksRequest) returns (ListBooksResponse);
   rpc UpdateBook(UpdateBookRequest) returns (UpdateBookResponse);
   rpc DeleteBook(DeleteBookRequest) returns (DeleteBookResponse);
+  rpc UpdateBookStock(UpdateBookStockRequest) returns (UpdateBookStockResponse);
+  rpc IncrementBookStock(IncrementBookStockRequest) returns (IncrementBookStockResponse);
+  rpc DecrementBookStock(DecrementBookStockRequest) returns (DecrementBookStockResponse);
 }
 
 
@@ -70,6 +73,16 @@ message UpdateBookResponse {
   Book book = 1;
 }
 
+message UpdateBookStockRequest {
+  string id = 1;
+  int32 stock = 2;
+}
+
+
+message UpdateBookStockResponse {
+  string message = 1;
+}
+
 message DeleteBookRequest {
   string id = 1;
 }
@@ -78,3 +91,19 @@ message DeleteBookResponse {
   string message = 1;
 }
 
+
+message IncrementBookStockRequest {
+  string id = 1;
+}
+
+message IncrementBookStockResponse {
+  string message = 1;
+}
+
+message DecrementBookStockRequest {
+  string id = 1;
+}
+
+message DecrementBookStockResponse {
+  string message = 1;
+}

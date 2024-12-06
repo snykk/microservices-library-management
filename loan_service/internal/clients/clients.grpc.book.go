@@ -10,6 +10,9 @@ import (
 
 type BookClient interface {
 	GetBook(ctx context.Context, id string) (*BookResponse, error)
+	UpdateBookStock(ctx context.Context, id string, newStock int) error
+	IncrementBookStock(ctx context.Context, id string) error
+	DecrementBookStock(ctx context.Context, id string) error
 }
 
 type bookClient struct {
@@ -39,10 +42,42 @@ func (a *bookClient) GetBook(ctx context.Context, id string) (*BookResponse, err
 	}
 
 	return &BookResponse{
-		Id: resp.Book.Id,
+		Id:    resp.Book.Id,
+		Stock: int(resp.Book.Stock),
 	}, nil
 }
 
+func (a *bookClient) UpdateBookStock(ctx context.Context, id string, newStock int) error {
+	reqProto := protoBook.UpdateBookStockRequest{
+		Id:    id,
+		Stock: int32(newStock),
+	}
+	_, err := a.client.UpdateBookStock(ctx, &reqProto)
+
+	return err
+}
+
+func (a *bookClient) IncrementBookStock(ctx context.Context, id string) error {
+	reqProto := protoBook.IncrementBookStockRequest{
+		Id: id,
+	}
+
+	_, err := a.client.IncrementBookStock(ctx, &reqProto)
+
+	return err
+}
+
+func (a *bookClient) DecrementBookStock(ctx context.Context, id string) error {
+	reqProto := protoBook.DecrementBookStockRequest{
+		Id: id,
+	}
+
+	_, err := a.client.DecrementBookStock(ctx, &reqProto)
+
+	return err
+}
+
 type BookResponse struct { // simplify struct to optimize memory
-	Id string
+	Id    string
+	Stock int
 }

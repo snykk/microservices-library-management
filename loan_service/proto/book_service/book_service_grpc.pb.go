@@ -29,6 +29,9 @@ type BookServiceClient interface {
 	ListBooks(ctx context.Context, in *ListBooksRequest, opts ...grpc.CallOption) (*ListBooksResponse, error)
 	UpdateBook(ctx context.Context, in *UpdateBookRequest, opts ...grpc.CallOption) (*UpdateBookResponse, error)
 	DeleteBook(ctx context.Context, in *DeleteBookRequest, opts ...grpc.CallOption) (*DeleteBookResponse, error)
+	UpdateBookStock(ctx context.Context, in *UpdateBookStockRequest, opts ...grpc.CallOption) (*UpdateBookStockResponse, error)
+	IncrementBookStock(ctx context.Context, in *IncrementBookStockRequest, opts ...grpc.CallOption) (*IncrementBookStockResponse, error)
+	DecrementBookStock(ctx context.Context, in *DecrementBookStockRequest, opts ...grpc.CallOption) (*DecrementBookStockResponse, error)
 }
 
 type bookServiceClient struct {
@@ -102,6 +105,33 @@ func (c *bookServiceClient) DeleteBook(ctx context.Context, in *DeleteBookReques
 	return out, nil
 }
 
+func (c *bookServiceClient) UpdateBookStock(ctx context.Context, in *UpdateBookStockRequest, opts ...grpc.CallOption) (*UpdateBookStockResponse, error) {
+	out := new(UpdateBookStockResponse)
+	err := c.cc.Invoke(ctx, "/book_service.BookService/UpdateBookStock", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bookServiceClient) IncrementBookStock(ctx context.Context, in *IncrementBookStockRequest, opts ...grpc.CallOption) (*IncrementBookStockResponse, error) {
+	out := new(IncrementBookStockResponse)
+	err := c.cc.Invoke(ctx, "/book_service.BookService/IncrementBookStock", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bookServiceClient) DecrementBookStock(ctx context.Context, in *DecrementBookStockRequest, opts ...grpc.CallOption) (*DecrementBookStockResponse, error) {
+	out := new(DecrementBookStockResponse)
+	err := c.cc.Invoke(ctx, "/book_service.BookService/DecrementBookStock", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BookServiceServer is the server API for BookService service.
 // All implementations must embed UnimplementedBookServiceServer
 // for forward compatibility
@@ -113,6 +143,9 @@ type BookServiceServer interface {
 	ListBooks(context.Context, *ListBooksRequest) (*ListBooksResponse, error)
 	UpdateBook(context.Context, *UpdateBookRequest) (*UpdateBookResponse, error)
 	DeleteBook(context.Context, *DeleteBookRequest) (*DeleteBookResponse, error)
+	UpdateBookStock(context.Context, *UpdateBookStockRequest) (*UpdateBookStockResponse, error)
+	IncrementBookStock(context.Context, *IncrementBookStockRequest) (*IncrementBookStockResponse, error)
+	DecrementBookStock(context.Context, *DecrementBookStockRequest) (*DecrementBookStockResponse, error)
 	mustEmbedUnimplementedBookServiceServer()
 }
 
@@ -140,6 +173,15 @@ func (UnimplementedBookServiceServer) UpdateBook(context.Context, *UpdateBookReq
 }
 func (UnimplementedBookServiceServer) DeleteBook(context.Context, *DeleteBookRequest) (*DeleteBookResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteBook not implemented")
+}
+func (UnimplementedBookServiceServer) UpdateBookStock(context.Context, *UpdateBookStockRequest) (*UpdateBookStockResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBookStock not implemented")
+}
+func (UnimplementedBookServiceServer) IncrementBookStock(context.Context, *IncrementBookStockRequest) (*IncrementBookStockResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IncrementBookStock not implemented")
+}
+func (UnimplementedBookServiceServer) DecrementBookStock(context.Context, *DecrementBookStockRequest) (*DecrementBookStockResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DecrementBookStock not implemented")
 }
 func (UnimplementedBookServiceServer) mustEmbedUnimplementedBookServiceServer() {}
 
@@ -280,6 +322,60 @@ func _BookService_DeleteBook_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BookService_UpdateBookStock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBookStockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookServiceServer).UpdateBookStock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/book_service.BookService/UpdateBookStock",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookServiceServer).UpdateBookStock(ctx, req.(*UpdateBookStockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BookService_IncrementBookStock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncrementBookStockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookServiceServer).IncrementBookStock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/book_service.BookService/IncrementBookStock",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookServiceServer).IncrementBookStock(ctx, req.(*IncrementBookStockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BookService_DecrementBookStock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DecrementBookStockRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BookServiceServer).DecrementBookStock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/book_service.BookService/DecrementBookStock",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BookServiceServer).DecrementBookStock(ctx, req.(*DecrementBookStockRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BookService_ServiceDesc is the grpc.ServiceDesc for BookService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -314,6 +410,18 @@ var BookService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteBook",
 			Handler:    _BookService_DeleteBook_Handler,
+		},
+		{
+			MethodName: "UpdateBookStock",
+			Handler:    _BookService_UpdateBookStock_Handler,
+		},
+		{
+			MethodName: "IncrementBookStock",
+			Handler:    _BookService_IncrementBookStock_Handler,
+		},
+		{
+			MethodName: "DecrementBookStock",
+			Handler:    _BookService_DecrementBookStock_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
