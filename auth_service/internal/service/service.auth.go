@@ -75,7 +75,7 @@ func (s *authService) SendOTP(ctx context.Context, email *string) (*string, erro
 		return nil, ErrGenerateOTPCode
 	}
 
-	if err = s.mailer.SendOTP(otp, *email); err != nil {
+	if err = s.mailer.SendOTP(otp, *email); err != nil { // todo: use rabbitmq to enhance response time
 		return nil, ErrSendOtpWithMailer
 	}
 
