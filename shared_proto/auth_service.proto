@@ -4,6 +4,8 @@ package auth_service;
 
 option go_package = "/auth_service";
 
+import "validate/validate.proto";
+
 service AuthService {
     rpc Register (RegisterRequest) returns (RegisterResponse);
     rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse);
@@ -13,7 +15,6 @@ service AuthService {
     rpc SendOTP (SendOTPRequest) returns (SendOTPResponse);
 }
 
-// Message for user model
 message User {
     string id = 1;
     string email = 2;
@@ -26,9 +27,9 @@ message User {
 }
 
 message RegisterRequest {
-    string email = 1;
-    string username = 2;
-    string password = 3;
+    string email = 1 [(validate.rules).string.min_len = 1, (validate.rules).string.email = true];
+    string username = 2 [(validate.rules).string.min_len = 3];  // Minimal length for username
+    string password = 3 [(validate.rules).string.min_len = 4];  // Minimal length for password
 }
 
 message RegisterResponse {
@@ -36,56 +37,48 @@ message RegisterResponse {
 }
 
 message VerifyEmailRequest {
-    string email = 1;
-    string otp = 2;        // One-Time Password sent to the user's email
+    string email = 1 [(validate.rules).string.min_len = 1, (validate.rules).string.email = true];
+    string otp = 2 [(validate.rules).string.min_len = 1];  // OTP must not be empty
 }
 
 message VerifyEmailResponse {
     string message = 1;
 }
 
-// Message for login
 message LoginRequest {
-    string email = 1;
-    string password = 2;
+    string email = 1 [(validate.rules).string.email = true];
+    string password = 2 [(validate.rules).string.min_len = 4]; // Minimal length for password
 }
 
-// Response for login
 message LoginResponse {
-    string accessToken = 1;    // Access token for the session
-    string refreshToken = 2;   // Refresh token for renewing the session
+    string accessToken = 1;
+    string refreshToken = 2;
     string message = 3;
 }
 
-// Message for token validation
 message ValidateTokenRequest {
-    string token = 1;      // Token to be validated
+    string token = 1 [(validate.rules).string.min_len = 1];  // Token must not be empty
 }
 
-// Response for token validation
 message ValidateTokenResponse {
-    bool valid = 1;        // Indicates whether the token is valid
+    bool valid = 1;
     string userId = 2;
     string role = 3;
     string email = 4;
 }
 
-// Message for logout
 message LogoutRequest {
-    int64 userId = 1;     // User ID initiating the logout
+    string userId = 1 [(validate.rules).string.min_len = 1];
 }
 
-// Response for logout
 message LogoutResponse {
-    string message = 1;    // Success or error message
+    string message = 1;
 }
 
-// Message for sending or resending OTP
 message SendOTPRequest {
-    string email = 1;      // User's email address to receive the OTP
+    string email = 1 [(validate.rules).string.email = true];  // Email must be valid
 }
 
-// Response for sending OTP
 message SendOTPResponse {
-    string message = 1;    // Success or error message
+    string message = 1;
 }

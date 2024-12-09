@@ -22,6 +22,11 @@ func NewUserGRPCServer(userService service.UserService) protoUser.UserServiceSer
 }
 
 func (s *userGRPCServer) GetUserById(ctx context.Context, req *protoUser.GetUserByIdRequest) (*protoUser.GetUserByIdResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	user, err := s.userService.GetUserById(ctx, req.UserId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve user with id '%s'", req.UserId))
@@ -42,6 +47,11 @@ func (s *userGRPCServer) GetUserById(ctx context.Context, req *protoUser.GetUser
 }
 
 func (s *userGRPCServer) GetUserByEmail(ctx context.Context, req *protoUser.GetUserByEmailRequest) (*protoUser.GetUserByEmailResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	user, err := s.userService.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve user with email '%s'", req.Email))
@@ -62,6 +72,11 @@ func (s *userGRPCServer) GetUserByEmail(ctx context.Context, req *protoUser.GetU
 }
 
 func (s *userGRPCServer) ListUsers(ctx context.Context, req *protoUser.ListUsersRequest) (*protoUser.ListUsersResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	users, err := s.userService.ListUsers(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve user list")

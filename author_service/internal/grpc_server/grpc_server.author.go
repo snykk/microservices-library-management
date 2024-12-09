@@ -23,6 +23,11 @@ func NewAuthorGRPCServer(authorService service.AuthorService) protoAuthor.Author
 }
 
 func (s *authorGRPCServer) CreateAuthor(ctx context.Context, req *protoAuthor.CreateAuthorRequest) (*protoAuthor.CreateAuthorResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	createdAuthor, err := s.authorService.CreateAuthor(ctx, &models.AuthorRequest{
 		Name:      req.Name,
 		Biography: req.Biography,
@@ -43,6 +48,11 @@ func (s *authorGRPCServer) CreateAuthor(ctx context.Context, req *protoAuthor.Cr
 }
 
 func (s *authorGRPCServer) GetAuthor(ctx context.Context, req *protoAuthor.GetAuthorRequest) (*protoAuthor.GetAuthorResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	author, err := s.authorService.GetAuthor(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve author with id '%s'", req.Id))
@@ -60,6 +70,11 @@ func (s *authorGRPCServer) GetAuthor(ctx context.Context, req *protoAuthor.GetAu
 }
 
 func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.ListAuthorsRequest) (*protoAuthor.ListAuthorsResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	authors, err := s.authorService.ListAuthors(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve author list")
@@ -82,6 +97,11 @@ func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.Lis
 }
 
 func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.UpdateAuthorRequest) (*protoAuthor.UpdateAuthorResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	updatedAuthor, err := s.authorService.UpdateAuthor(ctx, req.Id, &models.AuthorRequest{
 		Name:      req.Name,
 		Biography: req.Biography,
@@ -102,6 +122,11 @@ func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.Up
 }
 
 func (s *authorGRPCServer) DeleteAuthor(ctx context.Context, req *protoAuthor.DeleteAuthorRequest) (*protoAuthor.DeleteAuthorResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	err := s.authorService.DeleteAuthor(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete author with id '%s'", req.Id))

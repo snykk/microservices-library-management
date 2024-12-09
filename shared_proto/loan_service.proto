@@ -4,6 +4,8 @@ package loan_service;
 
 option go_package = "/loan_service";
 
+import "validate/validate.proto";
+
 service LoanService {
     rpc CreateLoan(CreateLoanRequest) returns (LoanResponse);
     rpc ReturnLoan(ReturnLoanRequest) returns (LoanResponse);
@@ -28,47 +30,47 @@ message Loan {
 }
 
 message CreateLoanRequest {
-    string user_id = 1;
-    string book_id = 2;
-    string email = 3; // for sending loan notification to the email user
+    string user_id = 1 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
+    string book_id = 2 [(validate.rules).string.min_len = 1];      // Book ID must be non-empty
+    string email = 3 [(validate.rules).string.min_len = 1, (validate.rules).string.email = true]; // Must be a valid email address
 }
 
 message ReturnLoanRequest {
-    string id = 1;
-    string user_id = 2;
-    string email = 3; // for sending loan notification to the email user
-    int64 return_date = 4;
+    string id = 1 [(validate.rules).string.min_len = 1];           // ID must be non-empty
+    string user_id = 2 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
+    string email = 3 [(validate.rules).string.email = true];       // Must be a valid email address
+    int64 return_date = 4 [(validate.rules).int64.gte = 0];        // Return date must be >= 0
 }
 
 message GetLoanRequest {
-    string id = 1;
+    string id = 1 [(validate.rules).string.min_len = 1];           // ID must be non-empty
 }
 
 message UpdateLoanStatusRequest {
-    string id = 1;
-    string status = 2;      // New loan status (e.g., RETURNED, LOST)
-    int64 return_date = 3;  // unix time
+    string id = 1 [(validate.rules).string.min_len = 1];           // ID must be non-empty
+    string status = 2 [(validate.rules).string.min_len = 1];       // Status must be non-empty
+    int64 return_date = 3 [(validate.rules).int64.gte = 0];        // Return date must be >= 0
 }
 
 message ListUserLoansRequest {
-    string user_id = 1;     // User ID
+    string user_id = 1 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
 }
 
-message ListLoansRequest{}
+message ListLoansRequest {}
 
 message LoanResponse {
     Loan loan = 1;
 }
 
 message ListLoansResponse {
-    repeated Loan loans = 1; // List of loans
+    repeated Loan loans = 1 [(validate.rules).repeated.min_items = 1]; // Must contain at least one loan
 }
 
 message GetUserLoansByStatusRequest {
-    string user_id = 1;
-    string status = 2; // Loan status to filter by (e.g., BORROWED, RETURNED, LOST)
+    string user_id = 1 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
+    string status = 2 [(validate.rules).string.min_len = 1];       // Status must be non-empty
 }
 
 message GetLoansByStatusRequest {
-    string status = 1; // Loan status to filter by (e.g., BORROWED, RETURNED, LOST)
+    string status = 1 [(validate.rules).string.min_len = 1];       // Status must be non-empty
 }

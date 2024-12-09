@@ -23,6 +23,11 @@ func NewCategoryGRPCServer(categoryService service.CategoryService) protoCategor
 }
 
 func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCategory.CreateCategoryRequest) (*protoCategory.CreateCategoryResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	createdCategory, err := s.categoryService.CreateCategory(ctx, &models.CategoryRequest{
 		Name: req.Name,
 	})
@@ -41,6 +46,11 @@ func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory.GetCategoryRequest) (*protoCategory.GetCategoryResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	category, err := s.categoryService.GetCategory(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve category data with id '%s'", req.Id))
@@ -57,6 +67,11 @@ func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory
 }
 
 func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCategory.ListCategoriesRequest) (*protoCategory.ListCategoriesResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	categories, err := s.categoryService.ListCategories(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve category list")
@@ -78,6 +93,11 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCategory.UpdateCategoryRequest) (*protoCategory.UpdateCategoryResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	updatedCategory, err := s.categoryService.UpdateCategory(ctx, req.Id, &models.CategoryRequest{
 		Name: req.Name,
 	})
@@ -96,6 +116,11 @@ func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) DeleteCategory(ctx context.Context, req *protoCategory.DeleteCategoryRequest) (*protoCategory.DeleteCategoryResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	err := s.categoryService.DeleteCategory(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete category data with id '%s'", req.Id))

@@ -8,6 +8,9 @@ import (
 	protoAuth "auth_service/proto/auth_service"
 	"context"
 	"fmt"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type authServer struct {
@@ -24,6 +27,11 @@ func NewAuthServer(authService service.AuthService, redisCache redis.RedisCache)
 }
 
 func (s *authServer) Register(ctx context.Context, req *protoAuth.RegisterRequest) (*protoAuth.RegisterResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	result, err := s.authService.Register(ctx, &models.RegisterRequest{
 		Email:    req.Email,
 		Username: req.Username,
@@ -48,6 +56,11 @@ func (s *authServer) Register(ctx context.Context, req *protoAuth.RegisterReques
 }
 
 func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest) (*protoAuth.SendOTPResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	otpCode, err := s.authService.SendOTP(ctx, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send OTP email: %v", err)
@@ -65,6 +78,11 @@ func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest)
 }
 
 func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmailRequest) (*protoAuth.VerifyEmailResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	verifyEmailRequest := models.VerifyEmailRequest{
 		Email: req.Email,
 		OTP:   req.Otp,
@@ -92,6 +110,11 @@ func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmail
 }
 
 func (s *authServer) Login(ctx context.Context, req *protoAuth.LoginRequest) (*protoAuth.LoginResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	result, err := s.authService.Login(ctx, &models.LoginRequest{
 		Email:    req.Email,
 		Password: req.Password,
@@ -108,6 +131,11 @@ func (s *authServer) Login(ctx context.Context, req *protoAuth.LoginRequest) (*p
 }
 
 func (s *authServer) ValidateToken(ctx context.Context, req *protoAuth.ValidateTokenRequest) (*protoAuth.ValidateTokenResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	result, err := s.authService.ValidateToken(ctx, &models.ValidateTokenRequest{Token: req.Token})
 	if err != nil {
 		return nil, exception.GRPCErrorFormatter(err)

@@ -4,6 +4,8 @@ package book_service;
 
 option go_package = "/book_service";
 
+import "validate/validate.proto";
+
 service BookService {
   rpc CreateBook(CreateBookRequest) returns (CreateBookResponse);
   rpc GetBook(GetBookRequest) returns (GetBookResponse);
@@ -17,7 +19,6 @@ service BookService {
   rpc DecrementBookStock(DecrementBookStockRequest) returns (DecrementBookStockResponse);
 }
 
-
 message Book {
   string id = 1;
   string title = 2;
@@ -29,10 +30,10 @@ message Book {
 }
 
 message CreateBookRequest {
-  string title = 1;
-  string author_id = 2;
-  string category_id = 3;
-  int32 stock = 4;
+  string title = 1 [(validate.rules).string.min_len = 1];
+  string author_id = 2 [(validate.rules).string.min_len = 1];
+  string category_id = 3 [(validate.rules).string.min_len = 1];
+  int32 stock = 4 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
 }
 
 message CreateBookResponse {
@@ -40,7 +41,7 @@ message CreateBookResponse {
 }
 
 message GetBookRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message GetBookResponse {
@@ -48,11 +49,11 @@ message GetBookResponse {
 }
 
 message GetBooksByAuthorRequest {
-  string author_id = 1;
+  string author_id = 1 [(validate.rules).string.min_len = 1];  // Author ID must not be empty
 }
 
 message GetBooksByCategoryRequest {
-  string category_id = 1;
+  string category_id = 1 [(validate.rules).string.min_len = 1];  // Category ID must not be empty
 }
 
 message ListBooksRequest {}
@@ -62,11 +63,11 @@ message ListBooksResponse {
 }
 
 message UpdateBookRequest {
-  string id = 1;
-  string title = 2;
-  string author_id = 3;
-  string category_id = 4;
-  int32 stock = 5;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  string title = 2 [(validate.rules).string.min_len = 1];
+  string author_id = 3 [(validate.rules).string.min_len = 1];
+  string category_id = 4 [(validate.rules).string.min_len = 1];
+  int32 stock = 5 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
 }
 
 message UpdateBookResponse {
@@ -74,26 +75,24 @@ message UpdateBookResponse {
 }
 
 message UpdateBookStockRequest {
-  string id = 1;
-  int32 stock = 2;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 stock = 2 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
 }
-
 
 message UpdateBookStockResponse {
   string message = 1;
 }
 
 message DeleteBookRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message DeleteBookResponse {
   string message = 1;
 }
 
-
 message IncrementBookStockRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message IncrementBookStockResponse {
@@ -101,7 +100,7 @@ message IncrementBookStockResponse {
 }
 
 message DecrementBookStockRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message DecrementBookStockResponse {

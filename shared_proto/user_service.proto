@@ -4,13 +4,14 @@ package user_service;
 
 option go_package = "/user_service";
 
+import "validate/validate.proto";
+
 service UserService {
     rpc GetUserById (GetUserByIdRequest) returns (GetUserByIdResponse);
     rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
     rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
 }
 
-// Message for user model
 message User {
     string id = 1;
     string email = 2;
@@ -23,7 +24,7 @@ message User {
 }
 
 message GetUserByIdRequest {
-    string userId = 1;
+    string userId = 1 [(validate.rules).string.min_len = 1];  // userId must not be empty
 }
 
 message GetUserByIdResponse {
@@ -31,7 +32,7 @@ message GetUserByIdResponse {
 }
 
 message GetUserByEmailRequest {
-    string email = 1;
+    string email = 1 [(validate.rules).string.email = true];
 }
 
 message GetUserByEmailResponse {
@@ -40,7 +41,6 @@ message GetUserByEmailResponse {
 
 message ListUsersRequest {}
 
-
 message ListUsersResponse {
-    repeated User users = 1; 
+    repeated User users = 1;
 }

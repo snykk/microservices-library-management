@@ -23,6 +23,11 @@ func NewBookGRPCServer(bookService service.BookService) protoBook.BookServiceSer
 }
 
 func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBookRequest) (*protoBook.CreateBookResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	// check author existence
 	err := s.bookService.ValidateAuthorExistence(ctx, req.AuthorId)
 	if err != nil {
@@ -58,6 +63,11 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 }
 
 func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.GetBooksByAuthorRequest) (*protoBook.ListBooksResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	books, err := s.bookService.GetBookByAuthorId(ctx, req.AuthorId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve books by author id")
@@ -82,6 +92,11 @@ func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.Ge
 }
 
 func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.GetBooksByCategoryRequest) (*protoBook.ListBooksResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	books, err := s.bookService.GetBookByCategoryId(ctx, req.CategoryId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve books by category id")
@@ -106,6 +121,11 @@ func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.
 }
 
 func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequest) (*protoBook.GetBookResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	book, err := s.bookService.GetBook(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to retrieve book data with id '%s'", req.Id))
@@ -125,6 +145,11 @@ func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequ
 }
 
 func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooksRequest) (*protoBook.ListBooksResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	books, err := s.bookService.ListBooks(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to retrieve book list")
@@ -149,6 +174,11 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 }
 
 func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBookRequest) (*protoBook.UpdateBookResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	// check author existence
 	err := s.bookService.ValidateAuthorExistence(ctx, req.AuthorId)
 	if err != nil {
@@ -184,6 +214,11 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 }
 
 func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBookRequest) (*protoBook.DeleteBookResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	err := s.bookService.DeleteBook(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete book dta with id '%s'", req.Id))
@@ -193,6 +228,11 @@ func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBo
 }
 
 func (s *bookGRPCServer) UpdateBookStock(ctx context.Context, req *protoBook.UpdateBookStockRequest) (*protoBook.UpdateBookStockResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	err := s.bookService.UpdateBookStock(ctx, req.Id, int(req.Stock))
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update book data with id '%s'", req.Id))
@@ -204,6 +244,11 @@ func (s *bookGRPCServer) UpdateBookStock(ctx context.Context, req *protoBook.Upd
 }
 
 func (s *bookGRPCServer) IncrementBookStock(ctx context.Context, req *protoBook.IncrementBookStockRequest) (*protoBook.IncrementBookStockResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	err := s.bookService.IncrementBookStock(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to increment book data with id '%s'", req.Id))
@@ -215,6 +260,11 @@ func (s *bookGRPCServer) IncrementBookStock(ctx context.Context, req *protoBook.
 }
 
 func (s *bookGRPCServer) DecrementBookStock(ctx context.Context, req *protoBook.DecrementBookStockRequest) (*protoBook.DecrementBookStockResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	err := s.bookService.DecrementBookStock(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to decrement book data with id '%s'", req.Id))

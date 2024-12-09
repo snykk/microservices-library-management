@@ -4,6 +4,8 @@ package category_service;
 
 option go_package = "/category_service";
 
+import "validate/validate.proto";
+
 service CategoryService {
   rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
   rpc GetCategory(GetCategoryRequest) returns (GetCategoryResponse);
@@ -20,7 +22,7 @@ message Category {
 }
 
 message CreateCategoryRequest {
-  string name = 1;
+  string name = 1 [(validate.rules).string.min_len = 3];  // Name must not be empty
 }
 
 message CreateCategoryResponse {
@@ -28,7 +30,7 @@ message CreateCategoryResponse {
 }
 
 message GetCategoryRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message GetCategoryResponse {
@@ -41,19 +43,17 @@ message ListCategoriesResponse {
   repeated Category categories = 1;
 }
 
-// UpdateCategory request and response
 message UpdateCategoryRequest {
-  string id = 1;
-  string name = 2;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  string name = 2 [(validate.rules).string.min_len = 3];  // Name must not be empty
 }
 
 message UpdateCategoryResponse {
   Category category = 1;
 }
 
-// DeleteCategory request and response
 message DeleteCategoryRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message DeleteCategoryResponse {

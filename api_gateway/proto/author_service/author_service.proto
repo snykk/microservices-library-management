@@ -4,6 +4,8 @@ package author_service;
 
 option go_package = "/author_service";
 
+import "validate/validate.proto";
+
 service AuthorService {
   rpc CreateAuthor(CreateAuthorRequest) returns (CreateAuthorResponse);
   rpc GetAuthor(GetAuthorRequest) returns (GetAuthorResponse);
@@ -21,8 +23,8 @@ message Author {
 }
 
 message CreateAuthorRequest {
-  string name = 1;
-  string biography = 2;
+  string name = 1 [(validate.rules).string.min_len = 3];
+  string biography = 2 [(validate.rules).string.min_len = 1];
 }
 
 message CreateAuthorResponse {
@@ -30,7 +32,7 @@ message CreateAuthorResponse {
 }
 
 message GetAuthorRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message GetAuthorResponse {
@@ -43,20 +45,18 @@ message ListAuthorsResponse {
   repeated Author authors = 1;
 }
 
-// UpdateAuthor request and response
 message UpdateAuthorRequest {
-  string id = 1;
-  string name = 2;
-  string biography = 3;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  string name = 2 [(validate.rules).string.min_len = 3];
+  string biography = 3 [(validate.rules).string.min_len = 1];
 }
 
 message UpdateAuthorResponse {
   Author author = 1;
 }
 
-// DeleteAuthor request and response
 message DeleteAuthorRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message DeleteAuthorResponse {

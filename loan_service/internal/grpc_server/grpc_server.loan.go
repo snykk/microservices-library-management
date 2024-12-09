@@ -6,6 +6,7 @@ import (
 	protoLoan "loan_service/proto/loan_service"
 	"time"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -21,6 +22,11 @@ func NewLoanGRPCServer(loanService service.LoanService) protoLoan.LoanServiceSer
 }
 
 func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLoanRequest) (*protoLoan.LoanResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loan, code, err := s.loanService.CreateLoan(ctx, req.UserId, req.Email, req.BookId)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -40,6 +46,11 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 }
 
 func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLoanRequest) (*protoLoan.LoanResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loan, code, err := s.loanService.ReturnLoan(ctx, req.Id, req.UserId, req.Email, time.Unix(req.ReturnDate, 0))
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -60,6 +71,11 @@ func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLo
 }
 
 func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequest) (*protoLoan.LoanResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loan, code, err := s.loanService.GetLoan(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -87,6 +103,11 @@ func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequ
 }
 
 func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.UpdateLoanStatusRequest) (*protoLoan.LoanResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, time.Unix(req.ReturnDate, 0))
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -114,6 +135,11 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 }
 
 func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListUserLoansRequest) (*protoLoan.ListLoansResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loans, code, err := s.loanService.ListUserLoans(ctx, req.UserId)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -146,6 +172,11 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 }
 
 func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoansRequest) (*protoLoan.ListLoansResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loans, code, err := s.loanService.ListLoans(ctx)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -178,6 +209,11 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 }
 
 func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoan.GetUserLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loans, code, err := s.loanService.GetUserLoansByStatus(ctx, req.UserId, req.Status)
 	if err != nil {
 		return nil, status.Error(code, err.Error())
@@ -210,6 +246,11 @@ func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoa
 }
 
 func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.GetLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
+	// Validate request from client
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
+	}
+
 	loans, code, err := s.loanService.GetLoansByStatus(ctx, req.Status)
 	if err != nil {
 		return nil, status.Error(code, err.Error())

@@ -48,11 +48,14 @@ generate-proto:
 	@for TARGET_DIR in $(API_GATEWAY_PROTO)/$(SERVICE) $(SERVICE)/proto/${SERVICE}; do \
 		echo "Generating files in $$TARGET_DIR..."; \
 		protoc \
+		-I $(PROTO_DIR) \
+		-I $(PROTO_DIR)/validate \
 		--proto_path=$(PROTO_DIR) \
 		--go_out=$$TARGET_DIR \
 		--go_opt=paths=source_relative \
 		--go-grpc_out=$$TARGET_DIR \
 		--go-grpc_opt=paths=source_relative \
+		--validate_out="lang=go,paths=source_relative:$$TARGET_DIR" \
 		$(PROTO_DIR)/$(SERVICE).proto; \
 		cp $(PROTO_DIR)/$(SERVICE).proto $$TARGET_DIR/$(SERVICE).proto; \
 	done
@@ -77,11 +80,14 @@ generate-proto-to-project:
 
 	@# Generate proto files to the specific project directory
 	@protoc \
+		-I $(PROTO_DIR) \
+		-I $(PROTO_DIR)/validate \
 		--proto_path=$(PROTO_DIR) \
 		--go_out=$(PROJECT)/proto/${SERVICE} \
 		--go_opt=paths=source_relative \
 		--go-grpc_out=$(PROJECT)/proto/${SERVICE} \
 		--go-grpc_opt=paths=source_relative \
+		--validate_out="lang=go,paths=source_relative:$$TARGET_DIR
 		$(PROTO_DIR)/$(SERVICE).proto
 
 	@# Copy original proto file to the target directory
