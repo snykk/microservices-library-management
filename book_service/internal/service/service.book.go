@@ -1,9 +1,11 @@
 package service
 
 import (
+	"book_service/internal/clients"
 	"book_service/internal/models"
 	"book_service/internal/repository"
 	"context"
+	"fmt"
 )
 
 type BookService interface {
@@ -17,15 +19,22 @@ type BookService interface {
 	UpdateBookStock(ctx context.Context, id string, newStock int) error
 	IncrementBookStock(ctx context.Context, id string) error
 	DecrementBookStock(ctx context.Context, id string) error
+
+	ValidateAuthorExistence(ctx context.Context, authorId string) error
+	ValidateCategoryExistence(ctx context.Context, categoryId string) error
 }
 
 type bookService struct {
-	repo repository.BookRepository
+	repo           repository.BookRepository
+	authorClient   clients.AuthorClient
+	categoryClient clients.CategoryClient
 }
 
-func NewBookService(repo repository.BookRepository) BookService {
+func NewBookService(repo repository.BookRepository, authorClient clients.AuthorClient, categoryClient clients.CategoryClient) BookService {
 	return &bookService{
-		repo: repo,
+		repo:           repo,
+		authorClient:   authorClient,
+		categoryClient: categoryClient,
 	}
 }
 
@@ -78,4 +87,21 @@ func (s *bookService) IncrementBookStock(ctx context.Context, id string) error {
 
 func (s *bookService) DecrementBookStock(ctx context.Context, id string) error {
 	return s.repo.DecrementBookStock(ctx, id)
+}
+
+func (s *bookService) ValidateAuthorExistence(ctx context.Context, authorId string) error {
+	author, _ := s.authorClient.GetAuthor(ctx, authorId)
+	if author == nil {
+		return fmt.Errorf("author with id '%s' not found", authorId)
+	}
+	return nil
+
+}
+
+func (s *bookService) ValidateCategoryExistence(ctx context.Context, categoryId string) error {
+	category, _ := s.categoryClient.GetCategory(ctx, categoryId)
+	if category == nil {
+		return fmt.Errorf("category with id '%s' not found", categoryId)
+	}
+	return nil
 }

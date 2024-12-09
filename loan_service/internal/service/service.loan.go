@@ -14,10 +14,10 @@ import (
 )
 
 type LoanService interface {
-	CreateLoan(ctx context.Context, userId, email string, book *clients.BookResponse) (*models.LoanRecord, codes.Code, error)
-	ReturnLoan(ctx context.Context, id, userId, email, bookTitle string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
+	CreateLoan(ctx context.Context, userId, email, bookId string) (*models.LoanRecord, codes.Code, error)
+	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error)
-	GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error)
+	GetBorrowedLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error)
 	UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
 	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, codes.Code, error)
 	ListLoans(ctx context.Context) ([]*models.LoanRecord, codes.Code, error)
@@ -26,18 +26,38 @@ type LoanService interface {
 }
 
 type loanService struct {
-	repo      repository.LoanRepository
-	publisher *rabbitmq.Publisher
+	bookClient clients.BookClient
+	repo       repository.LoanRepository
+	publisher  *rabbitmq.Publisher
 }
 
-func NewLoanService(repo repository.LoanRepository, publsisher *rabbitmq.Publisher) LoanService {
+func NewLoanService(repo repository.LoanRepository, bookClient clients.BookClient, publsisher *rabbitmq.Publisher) LoanService {
 	return &loanService{
-		repo:      repo,
-		publisher: publsisher,
+		bookClient: bookClient,
+		repo:       repo,
+		publisher:  publsisher,
 	}
 }
 
-func (s *loanService) CreateLoan(ctx context.Context, userId, email string, book *clients.BookResponse) (*models.LoanRecord, codes.Code, error) {
+func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId string) (*models.LoanRecord, codes.Code, error) {
+	userLoan, _ := s.repo.GetBorrowedLoanByBookIdAndUserId(ctx, bookId, userId)
+	if userLoan != nil && userLoan.Status == "BORROWED" {
+		return nil, codes.Canceled, errors.New("user must return the borrowed book before creating a new loan")
+	}
+
+	book, _ := s.bookClient.GetBook(ctx, bookId)
+	if book == nil {
+		return nil, codes.NotFound, fmt.Errorf("book '%s' not found", bookId)
+	}
+	if book.Stock == 0 {
+		return nil, codes.Unavailable, errors.New("book is not available")
+	}
+
+	err := s.bookClient.DecrementBookStock(ctx, book.Id)
+	if err != nil {
+		return nil, codes.Internal, fmt.Errorf("failed when update stock book '%s'", book.Id)
+	}
+
 	loan := &models.LoanRecord{
 		UserId:   userId,
 		BookId:   book.Id,
@@ -61,21 +81,44 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email string, book
 	return createdLoan, codes.OK, nil
 }
 
-func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email, bookTitle string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
-	loan, err := s.repo.ReturnLoan(ctx, id)
+func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
+	// check loan
+	loan, err := s.repo.GetLoan(ctx, id)
+	if err != nil { // supposed loan not found
+		return nil, codes.NotFound, fmt.Errorf("loan '%s' not found", id)
+	}
+	if loan.Status == "RETURNED" {
+		return nil, codes.Canceled, fmt.Errorf("loan '%s' already returned", loan.Id)
+	}
+	if loan.UserId != userId {
+		return nil, codes.PermissionDenied, errors.New("you don't have access to this resource")
+	}
+
+	// check book
+	book, err := s.bookClient.GetBook(ctx, loan.BookId)
+	if err != nil {
+		return nil, codes.Internal, errors.New("failed to get loan book")
+	}
+
+	returnedLoan, err := s.repo.ReturnLoan(ctx, id)
 	if err != nil {
 		return nil, codes.Internal, fmt.Errorf("failed to return loan with id %s", id)
 	}
 
+	err = s.bookClient.IncrementBookStock(ctx, book.Id)
+	if err != nil {
+		return nil, codes.Internal, fmt.Errorf("failed when update stock book '%s'", book.Id)
+	}
+
 	err = s.publisher.Publish("email_exchange", "return_notification", models.ReturnNotificationMessage{
 		Email: email,
-		Book:  bookTitle,
+		Book:  book.Title,
 	})
 	if err != nil {
 		return nil, codes.Internal, errors.New("failed to publish loan notification to queue")
 	}
 
-	return loan, codes.OK, nil
+	return returnedLoan, codes.OK, nil
 }
 
 func (s *loanService) GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error) {
@@ -86,8 +129,8 @@ func (s *loanService) GetLoan(ctx context.Context, id string) (*models.LoanRecor
 	return loan, codes.OK, nil
 }
 
-func (s *loanService) GetLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error) {
-	loan, err := s.repo.GetLoanByBookIdAndUserId(ctx, bookId, userId)
+func (s *loanService) GetBorrowedLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error) {
+	loan, err := s.repo.GetBorrowedLoanByBookIdAndUserId(ctx, bookId, userId)
 	if err != nil {
 		return nil, codes.Internal, fmt.Errorf("failed to get loan with id %s and userId %s", bookId, userId)
 	}

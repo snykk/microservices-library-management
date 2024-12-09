@@ -22,6 +22,7 @@ func main() {
 	grpcPort := os.Getenv("GRPC_PORT")
 	dsn := os.Getenv("DSN")
 
+	// Initialize postgres connection
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -45,7 +46,7 @@ func main() {
 
 	// Repository and Service Layer
 	bookRepo := repository.NewBookRepository(db)
-	bookService := service.NewBookService(bookRepo)
+	bookService := service.NewBookService(bookRepo, authorClient, categoryClient)
 
 	// gRPC Server
 	lis, err := net.Listen("tcp", ":"+grpcPort)
@@ -54,7 +55,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	bookServer := grpc_server.NewBookGRPCServer(bookService, authorClient, categoryClient)
+	bookServer := grpc_server.NewBookGRPCServer(bookService)
 	protoBook.RegisterBookServiceServer(grpcServer, bookServer)
 
 	// Enable gRPC reflection for debugging

@@ -37,6 +37,12 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 
+	// Client
+	bookClient, err := clients.NewBookClient()
+	if err != nil {
+		log.Fatalf("Failed to establish book client connection %v", err)
+	}
+
 	// Connect to RabbitMQ
 	conn, err := amqp.Dial(rabbitMQURL)
 	if err != nil {
@@ -59,7 +65,7 @@ func main() {
 
 	// Repository and Service Layer
 	loanRepo := repository.NewLoanRepository(db)
-	loanService := service.NewLoanService(loanRepo, publisher)
+	loanService := service.NewLoanService(loanRepo, bookClient, publisher)
 
 	// gRPC Server
 	lis, err := net.Listen("tcp", ":"+grpcPort)
@@ -67,14 +73,8 @@ func main() {
 		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
 	}
 
-	// Client
-	bookClient, err := clients.NewBookClient()
-	if err != nil {
-		log.Fatalf("Failed to establish book client connection %v", err)
-	}
-
 	grpcServer := grpc.NewServer()
-	loanServer := grpc_server.NewLoanGRPCServer(loanService, bookClient)
+	loanServer := grpc_server.NewLoanGRPCServer(loanService)
 	protoLoan.RegisterLoanServiceServer(grpcServer, loanServer)
 
 	// Enable gRPC reflection for debugging

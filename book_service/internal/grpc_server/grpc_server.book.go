@@ -1,7 +1,6 @@
 package grpc_server
 
 import (
-	"book_service/internal/clients"
 	"book_service/internal/models"
 	"book_service/internal/service"
 	protoBook "book_service/proto/book_service"
@@ -13,31 +12,26 @@ import (
 )
 
 type bookGRPCServer struct {
-	bookService    service.BookService
-	authorClient   clients.AuthorClient
-	categoryClient clients.CategoryClient
+	bookService service.BookService
 	protoBook.UnimplementedBookServiceServer
 }
 
-func NewBookGRPCServer(bookService service.BookService, authorClient clients.AuthorClient, categoryClient clients.CategoryClient) protoBook.BookServiceServer {
+func NewBookGRPCServer(bookService service.BookService) protoBook.BookServiceServer {
 	return &bookGRPCServer{
-		bookService:    bookService,
-		authorClient:   authorClient,
-		categoryClient: categoryClient,
+		bookService: bookService,
 	}
 }
 
 func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBookRequest) (*protoBook.CreateBookResponse, error) {
 	// check author existence
-	author, _ := s.authorClient.GetAuthor(ctx, req.AuthorId)
-	if author == nil {
-		return nil, status.Error(codes.NotFound, "author not found")
+	err := s.bookService.ValidateAuthorExistence(ctx, req.AuthorId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
-
 	// check category existence
-	category, _ := s.categoryClient.GetCategory(ctx, req.CategoryId)
-	if category == nil {
-		return nil, status.Error(codes.NotFound, "category not found")
+	err = s.bookService.ValidateCategoryExistence(ctx, req.CategoryId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	createdBook, err := s.bookService.CreateBook(ctx, &models.BookRequest{
@@ -156,15 +150,14 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 
 func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBookRequest) (*protoBook.UpdateBookResponse, error) {
 	// check author existence
-	author, _ := s.authorClient.GetAuthor(ctx, req.AuthorId)
-	if author == nil {
-		return nil, status.Error(codes.NotFound, "author not found")
+	err := s.bookService.ValidateAuthorExistence(ctx, req.AuthorId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
-
 	// check category existence
-	category, _ := s.categoryClient.GetCategory(ctx, req.CategoryId)
-	if category == nil {
-		return nil, status.Error(codes.NotFound, "category not found")
+	err = s.bookService.ValidateCategoryExistence(ctx, req.CategoryId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	updatedBook, err := s.bookService.UpdateBook(ctx, req.Id, &models.BookRequest{
