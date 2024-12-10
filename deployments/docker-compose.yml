@@ -21,6 +21,8 @@ services:
             - BOOK_SERVICE_URL=book_service:50051
             - AUTHOR_SERVICE_URL=author_service:50051
             - CATEGORY_SERVICE_URL=category_service:50051
+        volumes:
+            - ./../api_gateway/logs:/app/logs
 
     book-service:
         build:

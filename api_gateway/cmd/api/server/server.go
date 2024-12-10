@@ -8,7 +8,6 @@ import (
 	"api_gateway/pkg/logger"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,7 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	loggerFiber "github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 type App struct {
@@ -25,7 +24,7 @@ type App struct {
 }
 
 func NewApp() (*App, error) {
-	// Setup fiber app
+	// Setup Fiber app
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -34,37 +33,62 @@ func NewApp() (*App, error) {
 	// Client gRPC
 	authClient, err := clients.NewAuthClient()
 	if err != nil {
+		logger.Log.Error("Failed to create AuthClient",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return nil, err
 	}
 	bookClient, err := clients.NewBookClient()
 	if err != nil {
+		logger.Log.Error("Failed to create BookClient",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return nil, err
 	}
 	categoryClient, err := clients.NewCategoryClient()
 	if err != nil {
+		logger.Log.Error("Failed to create CategoryClient",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return nil, err
 	}
 	authorClient, err := clients.NewAuthorClient()
 	if err != nil {
+		logger.Log.Error("Failed to create AuthorClient",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return nil, err
 	}
 	userClient, err := clients.NewUserClient()
 	if err != nil {
+		logger.Log.Error("Failed to create UserClient",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return nil, err
 	}
 	loanClient, err := clients.NewLoanClient()
 	if err != nil {
+		logger.Log.Error("Failed to create LoanClient",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return nil, err
 	}
 
 	// Fiber middlewares
+	app.Use(middlewares.RequestIDMiddleware()) // Add the RequestID middleware
 	app.Use(cors.New())
 	app.Use(loggerFiber.New())
 
 	// Authentication middleware
 	authMiddleware := middlewares.NewAuthMiddleware(authClient)
 
-	// routes
+	// Routes
 	router := app.Group("/api")
 	routes.NewAuthRoute(router, authClient).Routes()
 	routes.NewBookRoute(router, authMiddleware, bookClient, authorClient, categoryClient).Routes()
@@ -73,34 +97,56 @@ func NewApp() (*App, error) {
 	routes.NewUserRoute(router, authMiddleware, userClient).Routes()
 	routes.NewLoanRoute(router, authMiddleware, loanClient).Routes()
 
+	logger.Log.Info("Fiber app initialized successfully",
+		zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+	)
+
 	return &App{
 		HttpServer: app,
 	}, nil
 }
 
 func (a *App) Run() error {
-	// Graceful shutdown
+	// Start server in a goroutine
 	go func() {
-		logger.InfoF("success to listen and serve on :%d", logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryServer}, 80)
-		if err := a.HttpServer.Listen(fmt.Sprintf(":%d", 80)); err != nil && err != fiber.ErrServiceUnavailable {
-			log.Fatalf("Failed to listen and serve: %+v", err)
+		address := ":80"
+		logger.Log.Info("Server is starting",
+			zap.String("address", address),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
+		if err := a.HttpServer.Listen(address); err != nil && err != fiber.ErrServiceUnavailable {
+			logger.Log.Fatal("Failed to listen and serve",
+				zap.Error(err),
+				zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+			)
 		}
 	}()
 
+	// Setup graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	// make blocking channel and wait for signal
-	<-quit
-	log.Println("Shutdown server ...")
+	// Wait for termination signal
+	sig := <-quit
+	logger.Log.Warn("Shutdown signal received",
+		zap.String("signal", sig.String()),
+		zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+	)
 
+	// Shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := a.HttpServer.ShutdownWithContext(ctx); err != nil {
+		logger.Log.Error("Error during server shutdown",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 		return fmt.Errorf("error when shutting down server: %v", err)
 	}
 
-	log.Println("Server exited properly.")
+	logger.Log.Info("Server exited properly",
+		zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+	)
 	return nil
 }

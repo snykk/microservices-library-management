@@ -8,15 +8,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
-
-// func init() {
-// 	// if err := config.InitializeAppConfig(); err != nil {
-// 	// 	logger.Fatal(err.Error(), logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
-// 	// }
-// 	// logger.Info("configuration loaded", logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
-// }
 
 func init() {
 	// Load Asia/Jakarta time zone globally
@@ -24,23 +17,57 @@ func init() {
 	if err != nil {
 		log.Fatalf("Failed to load timezone: %v", err)
 	}
-	// Set the local timezone globally
 	time.Local = loc
+
+	// Initialize logger with default configuration
+	err = logger.Initialize(logger.LoggerConfig{
+		// OutputPaths: []string{"stdout", "../../logs/api-gateway.log"}, // local
+		OutputPaths: []string{"stdout", "/app/logs/api-gateway.log"}, // container
+		MaxSize:     10,                                              // 10 MB
+		MaxBackups:  5,
+		MaxAge:      30, // 30 days
+		Compress:    true,
+		IsDev:       false,
+		ServiceName: "api-gateway",
+	})
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
 }
 
 func main() {
-	numCPU := runtime.NumCPU()
-	logger.InfoF("The project is running on %d CPU(s)", logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig}, numCPU)
+	defer logger.Sync()
 
-	if runtime.NumCPU() > 2 {
-		runtime.GOMAXPROCS(numCPU / 2)
+	// Log CPU usage
+	numCPU := runtime.NumCPU()
+	logger.Log.Info("Starting application",
+		zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		zap.Int("CPU count", numCPU),
+	)
+
+	// Adjust GOMAXPROCS if applicable
+	if numCPU > 2 {
+		newProcs := numCPU / 2
+		runtime.GOMAXPROCS(newProcs)
+		logger.Log.Info("Adjusted GOMAXPROCS",
+			zap.Int("new GOMAXPROCS", newProcs),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 	}
 
+	// Initialize and run the application
 	app, err := server.NewApp()
 	if err != nil {
-		logger.Panic(err.Error(), logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryServer})
+		logger.Log.Panic("Failed to create application instance",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 	}
+
 	if err := app.Run(); err != nil {
-		logger.Fatal(err.Error(), logrus.Fields{constants.LoggerCategory: constants.LoggerCategoryServer})
+		logger.Log.Fatal("Application run failed",
+			zap.Error(err),
+			zap.String(constants.LoggerCategory, constants.LoggerCategorySetup),
+		)
 	}
 }

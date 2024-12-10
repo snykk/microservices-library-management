@@ -1,11 +1,11 @@
 package constants
 
 const (
-	LoggerCategory       = "category"
-	LoggerCategoryServer = "server"
-	LoggerCategoryConfig = "config"
-	LoggerCategoryHTTP   = "http"
-	LoggerCategoryCORS   = "cors"
+	LoggerCategory           = "category"
+	LoggerCategorySetup      = "setup"
+	LoggerCategoryConnection = "connection"
+	LoggerCategoryGrpcClient = "grpc client"
+	LoggerCategoryMiddleware = "middleware"
 
 	LoggerFile = "file"
 )
