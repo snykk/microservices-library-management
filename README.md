@@ -11,7 +11,7 @@ A simple library management system built with Go to manage books, authors, categ
 -   [x] Book Stock Management
 -   [x] Loan (Borrowing and Returning) Book
 -   [ ] Search Feature using Elasticsearch
--   [ ] Logger
+-   [x] Logger Service (Improve logging across services, including internal logs)
 -   [ ] Unit Test
 -   [x] Email Notification (RabbitMQ Integration)
 -   [ ] Tidy and Refactor Code
