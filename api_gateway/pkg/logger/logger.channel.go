@@ -14,18 +14,42 @@ type Logger struct {
 	wg         sync.WaitGroup
 }
 
-// NewLogger initializes the Logger with a RabbitMQ publisher and starts worker goroutines for processing logs.
-func NewLogger(publisher *rabbitmq.Publisher, numWorkers int) *Logger {
-	logChannel := make(chan models.LogMessage, 100)
+// NewLoggerSingle initializes the Logger with a RabbitMQ publisher and starts a single worker goroutine for processing logs.
+func NewLoggerSingleWorker(publisher *rabbitmq.Publisher, bufferSize int) *Logger {
+	logChannel := make(chan models.LogMessage, bufferSize)
 	logger := &Logger{
 		logChannel: logChannel,
 	}
 
-	// Menjalankan beberapa worker untuk memproses log secara paralel
+	// Worker goroutine for processing logs (single goroutine)
+	go func() {
+		for logMsg := range logChannel {
+			log.Printf("Processing log: %v\n", logMsg)
+			if err := publisher.Publish(constants.LogExchange, constants.LogQueue, logMsg); err != nil {
+				log.Printf("[%s] Failed to publish log: %v\n", logMsg.Caller, err)
+			} else {
+				log.Printf("[%s] Successfully published log\n", logMsg.Caller)
+			}
+		}
+		log.Println("Worker: Exiting...")
+	}()
+
+	return logger
+}
+
+// NewLoggerMultiple initializes the Logger with a RabbitMQ publisher and starts multiple worker goroutines for processing logs.
+func NewLoggerMultipleWorker(publisher *rabbitmq.Publisher, numWorkers, bufferSize int) *Logger {
+	logChannel := make(chan models.LogMessage, bufferSize)
+	logger := &Logger{
+		logChannel: logChannel,
+	}
+
+	// Start multiple workers to process logs concurrently
 	for i := 0; i < numWorkers; i++ {
-		logger.wg.Add(1) // Menambah counter WaitGroup
+		logger.wg.Add(1) // Increment WaitGroup counter
 		go func(workerID int) {
-			defer logger.wg.Done() // Decrement counter ketika goroutine selesai
+			defer logger.wg.Done() // Decrement WaitGroup counter when the goroutine finishes
+
 			for logMsg := range logChannel {
 				log.Printf("Worker-%d: Processing log: %v\n", workerID, logMsg)
 				if err := publisher.Publish(constants.LogExchange, constants.LogQueue, logMsg); err != nil {
@@ -40,28 +64,6 @@ func NewLogger(publisher *rabbitmq.Publisher, numWorkers int) *Logger {
 
 	return logger
 }
-
-// // NewLogger initializes the Logger with a RabbitMQ publisher and starts the worker goroutine.
-// func NewLogger(publisher *rabbitmq.Publisher) *Logger {
-// 	logChannel := make(chan models.LogMessage, 100)
-// 	logger := &Logger{
-// 		logChannel: logChannel,
-// 	}
-
-// 	// Worker goroutine for processing logs
-// 	go func() {
-// 		for logMsg := range logChannel {
-// 			log.Println("ini channel")
-// 			log.Println("ini message:", logMsg)
-// 			if err := publisher.Publish(constants.LogExchange, constants.LogQueue, logMsg); err != nil {
-// 				log.Printf("[%s] {%s} Failed to publish log to RabbitMQ: %v\n", logMsg.Caller, logMsg.Caller, err)
-// 			}
-// 			log.Printf("[%s] {%s} Success to publish log to RabbitMQ\n", logMsg.Caller, logMsg.Caller)
-// 		}
-// 	}()
-
-// 	return logger
-// }
 
 // LogMessage sends a log message to the channel for processing.
 func (l *Logger) LogMessage(caller, requestID, level, message string, extra map[string]interface{}, err error) {
@@ -85,7 +87,7 @@ func (l *Logger) LogMessage(caller, requestID, level, message string, extra map[
 		logMsg.Error = err.Error()
 	}
 
-	// Mengirim log ke channel
+	// Send the log to the channel
 	select {
 	case l.logChannel <- logMsg:
 		log.Printf("[%s] Message sent to channel", caller)
@@ -100,10 +102,10 @@ func (l *Logger) Close() {
 		return
 	}
 
-	// Tutup channel agar semua goroutine selesai membaca
+	// Close the channel to signal workers to stop reading
 	close(l.logChannel)
 
-	// Tunggu semua goroutine selesai
+	// Wait for all goroutines to finish
 	l.wg.Wait()
 	log.Println("All log workers have exited.")
 }

@@ -58,7 +58,7 @@ func NewApp() (*App, error) {
 	}
 
 	// logger
-	logger := logger.NewLogger(rabbitMQPublisher, 5)
+	logger := logger.NewLoggerMultipleWorker(rabbitMQPublisher, 5, 100)
 
 	// Client gRPC
 	authClient, err := clients.NewAuthClient(logger)
