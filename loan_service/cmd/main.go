@@ -2,9 +2,11 @@ package main
 
 import (
 	"loan_service/internal/clients"
+	"loan_service/internal/constants"
 	"loan_service/internal/grpc_server"
 	"loan_service/internal/repository"
 	"loan_service/internal/service"
+	"loan_service/pkg/logger"
 	"loan_service/pkg/rabbitmq"
 	"log"
 	"net"
@@ -50,22 +52,31 @@ func main() {
 	}
 	defer conn.Close()
 
-	// Initialize publisher
-	publisher, err := rabbitmq.NewPublisher(conn)
+	// Initialize rabbitMQPublisher
+	rabbitMQPublisher, err := rabbitmq.NewPublisher(conn)
 	if err != nil {
-		log.Fatalf("Failed to initialize publisher: %v", err)
+		log.Fatalf("Failed to initialize rabbitMQPublisher: %v", err)
 	}
-	defer publisher.Close()
+	defer rabbitMQPublisher.Close()
 
 	// Declare exchanges
-	err = publisher.DeclareExchange("email_exchange", "direct")
+	err = rabbitMQPublisher.DeclareExchange(constants.EmailExchange, constants.ExchangeTypeDirect)
 	if err != nil {
 		log.Fatalf("Failed to declare exchange: %v", err)
 	}
 
+	err = rabbitMQPublisher.DeclareExchange(constants.LogExchange, constants.ExchangeTypeDirect)
+	if err != nil {
+		log.Fatalf("Failed to declare exchange: %v", err)
+	}
+
+	// logger
+	logger := logger.NewLoggerSingleWorker(rabbitMQPublisher, 100)
+	defer logger.Close()
+
 	// Repository and Service Layer
 	loanRepo := repository.NewLoanRepository(db)
-	loanService := service.NewLoanService(loanRepo, bookClient, publisher)
+	loanService := service.NewLoanService(loanRepo, bookClient, rabbitMQPublisher)
 
 	// gRPC Server
 	lis, err := net.Listen("tcp", ":"+grpcPort)
@@ -74,7 +85,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	loanServer := grpc_server.NewLoanGRPCServer(loanService)
+	loanServer := grpc_server.NewLoanGRPCServer(loanService, logger)
 	protoLoan.RegisterLoanServiceServer(grpcServer, loanServer)
 
 	// Enable gRPC reflection for debugging
