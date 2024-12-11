@@ -1,10 +1,12 @@
 package main
 
 import (
+	"auth_service/internal/constants"
 	"auth_service/internal/grpc_server"
 	"auth_service/internal/repository"
 	"auth_service/internal/service"
 	"auth_service/pkg/jwt"
+	"auth_service/pkg/logger"
 	"auth_service/pkg/mailer"
 	"auth_service/pkg/rabbitmq"
 	"auth_service/pkg/redis"
@@ -48,18 +50,27 @@ func main() {
 	}
 	defer conn.Close()
 
-	// Initialize publisher
-	publisher, err := rabbitmq.NewPublisher(conn)
+	// Initialize rabbitMQPublisher
+	rabbitMQPublisher, err := rabbitmq.NewPublisher(conn)
 	if err != nil {
-		log.Fatalf("Failed to initialize publisher: %v", err)
+		log.Fatalf("Failed to initialize RabbitMQPublisher: %v", err)
 	}
-	defer publisher.Close()
+	defer rabbitMQPublisher.Close()
 
 	// Declare exchanges
-	err = publisher.DeclareExchange("email_exchange", "direct")
+	err = rabbitMQPublisher.DeclareExchange(constants.EmailExchange, constants.ExchangeTypeDirect)
 	if err != nil {
 		log.Fatalf("Failed to declare exchange: %v", err)
 	}
+
+	err = rabbitMQPublisher.DeclareExchange(constants.LogExchange, constants.ExchangeTypeDirect)
+	if err != nil {
+		log.Fatalf("Failed to declare exchange: %v", err)
+	}
+
+	// logger
+	logger := logger.NewLoggerSingleWorker(rabbitMQPublisher, 100)
+	defer logger.Close()
 
 	// Email service env
 	emailSenderBytes, err := ioutil.ReadFile(os.Getenv("EMAIL_SENDER_CONTAINER_FILE"))
@@ -94,7 +105,7 @@ func main() {
 
 	// Repository and Service Layer
 	authRepo := repository.NewAuthRepository(db)
-	authService := service.NewAuthService(authRepo, jwtService, mailerService, publisher)
+	authService := service.NewAuthService(authRepo, jwtService, mailerService, rabbitMQPublisher)
 
 	// gRPC Server
 	lis, err := net.Listen("tcp", ":"+grpcPort)
@@ -103,7 +114,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	authServer := grpc_server.NewAuthServer(authService, redisCache)
+	authServer := grpc_server.NewAuthServer(authService, redisCache, logger)
 	protoAuth.RegisterAuthServiceServer(grpcServer, authServer)
 
 	// Enable gRPC reflection for debugging

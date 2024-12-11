@@ -2,9 +2,11 @@ package repository
 
 import (
 	"auth_service/internal/models"
+	"auth_service/pkg/utils"
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 )
 
@@ -52,9 +54,11 @@ func (r *authRepository) CreateUser(ctx context.Context, user *models.UserRecord
 		&newUser.UpdatedAt,
 	)
 	if err != nil {
+		log.Printf("[%s] Failed to insert user %s: %v\n", utils.GetLocation(), user.Email, err)
 		return nil, err
 	}
 
+	log.Printf("[%s] User %s successfully created\n", utils.GetLocation(), newUser.Email)
 	return &newUser, nil
 }
 
@@ -76,16 +80,25 @@ func (r *authRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 		&user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
+		log.Printf("[%s] User with email %s not found\n", utils.GetLocation(), email)
 		return nil, errors.New("user not found")
 	} else if err != nil {
+		log.Printf("[%s] Error fetching user %s: %v\n", utils.GetLocation(), email, err)
 		return nil, err
 	}
 
+	log.Printf("[%s] User %s retrieved successfully\n", utils.GetLocation(), email)
 	return &user, nil
 }
 
 func (r *authRepository) UpdateUserVerification(ctx context.Context, email string, verified bool) error {
 	query := `UPDATE users SET verified = $1, updated_at = $2 WHERE email = $3`
 	_, err := r.db.ExecContext(ctx, query, verified, time.Now(), email)
-	return err
+	if err != nil {
+		log.Printf("[%s] Failed to update verification for email %s: %v\n", utils.GetLocation(), email, err)
+		return err
+	}
+
+	log.Printf("[%s] User %s verification status updated to %v\n", utils.GetLocation(), email, verified)
+	return nil
 }

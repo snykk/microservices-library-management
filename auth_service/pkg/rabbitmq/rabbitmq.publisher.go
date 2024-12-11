@@ -1,6 +1,8 @@
 package rabbitmq
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 
@@ -45,19 +47,24 @@ func (p *Publisher) DeclareExchange(name, exchangeType string) error {
 }
 
 // Publish sends a message to the specified exchange with the given routing key.
-func (p *Publisher) Publish(exchange, routingKey string, body []byte) error {
+func (p *Publisher) Publish(exchange, routingKey string, body any) error {
 	if _, exists := p.exchanges[exchange]; !exists {
 		return fmt.Errorf("exchange %s is not declared", exchange)
 	}
 
-	err := p.channel.Publish(
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return errors.New("failed to marshal the loan message")
+	}
+
+	err = p.channel.Publish(
 		exchange,   // Exchange
 		routingKey, // Routing key
 		false,      // Mandatory
 		false,      // Immediate
 		amqp.Publishing{
 			ContentType: "application/json",
-			Body:        body,
+			Body:        bodyBytes,
 		},
 	)
 	if err != nil {
