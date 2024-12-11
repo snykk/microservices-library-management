@@ -1,23 +1,27 @@
 package utils
 
-type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+import (
+	"api_gateway/internal/constants"
+	"context"
+	"fmt"
+	"path/filepath"
+	"runtime"
+)
+
+func GetLocation() string {
+	_, file, line, _ := runtime.Caller(1)
+
+	dir := filepath.Base(filepath.Dir(file))
+	base := filepath.Base(file)
+
+	return fmt.Sprintf("%s/%s:%d", dir, base, line)
 }
 
-func ResponseSuccess(message string, data interface{}) Response {
-	return Response{
-		Success: true,
-		Message: message,
-		Data:    data,
+func GetRequestIDFromContext(ctx context.Context) string {
+	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
+	if !ok || requestID == "" {
+		requestID = "unknown"
 	}
-}
 
-func ResponseError(message string, err error) Response {
-	return Response{
-		Success: false,
-		Message: message,
-		Data:    err.Error(),
-	}
+	return requestID
 }

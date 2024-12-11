@@ -4,11 +4,12 @@ import (
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	"api_gateway/pkg/logger"
+	"api_gateway/pkg/utils"
 	protoAuthor "api_gateway/proto/author_service"
 	"context"
+	"log"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -23,53 +24,46 @@ type AuthorClient interface {
 
 type authorClient struct {
 	client protoAuthor.AuthorServiceClient
+	logger *logger.Logger
 }
 
-func NewAuthorClient() (AuthorClient, error) {
+func NewAuthorClient(logger *logger.Logger) (AuthorClient, error) {
 	conn, err := grpc.NewClient("author-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Log.Error("Failed to create AuthorClient",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-		)
+		log.Println("Failed to create AuthorClient:", err)
 		return nil, err
 	}
-
 	client := protoAuthor.NewAuthorServiceClient(conn)
-	logger.Log.Info("Successfully created AuthorClient",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-	)
+
+	log.Println("Successfully created AuthorClient")
 
 	return &authorClient{
 		client: client,
+		logger: logger,
 	}, nil
 }
 
 func (a *authorClient) CreateAuthor(ctx context.Context, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuthor.CreateAuthorRequest{
 		Name:      dto.Name,
 		Biography: dto.Biography,
 	}
 
-	logger.Log.Info("Sending CreateAuthor request to Author Service",
-		zap.String("name", dto.Name),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"name": dto.Name,
+	}
+
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateAuthor request to Author Service", extra, nil)
 
 	resp, err := a.client.CreateAuthor(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("CreateAuthor request failed",
-			zap.String("name", dto.Name),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateAuthor request failed", extra, err)
 		return datatransfers.AuthorResponse{}, err
 	}
 
-	logger.Log.Info("CreateAuthor request succeeded",
-		zap.String("name", resp.Author.Name),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "CreateAuthor request succeeded", extra, nil)
 
 	return datatransfers.AuthorResponse{
 		Id:        resp.Author.Id,
@@ -81,29 +75,25 @@ func (a *authorClient) CreateAuthor(ctx context.Context, dto datatransfers.Autho
 }
 
 func (a *authorClient) GetAuthor(ctx context.Context, id string) (datatransfers.AuthorResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuthor.GetAuthorRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending GetAuthor request to Author Service",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"id": id,
+	}
+
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetAuthor request to Author Service", extra, nil)
 
 	resp, err := a.client.GetAuthor(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetAuthor request failed",
-			zap.String("id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetAuthor request failed", extra, err)
 		return datatransfers.AuthorResponse{}, err
 	}
 
-	logger.Log.Info("GetAuthor request succeeded",
-		zap.String("id", resp.Author.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetAuthor request succeeded", extra, nil)
 
 	return datatransfers.AuthorResponse{
 		Id:        resp.Author.Id,
@@ -115,18 +105,14 @@ func (a *authorClient) GetAuthor(ctx context.Context, id string) (datatransfers.
 }
 
 func (a *authorClient) ListAuthors(ctx context.Context) ([]datatransfers.AuthorResponse, error) {
-	reqProto := protoAuthor.ListAuthorsRequest{}
+	requestID := utils.GetRequestIDFromContext(ctx)
 
-	logger.Log.Info("Sending ListAuthors request to Author Service",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	reqProto := protoAuthor.ListAuthorsRequest{}
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListAuthors request to Author Service", nil, nil)
 
 	resp, err := a.client.ListAuthors(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ListAuthors request failed",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListAuthors request failed", nil, err)
 		return nil, err
 	}
 
@@ -140,42 +126,34 @@ func (a *authorClient) ListAuthors(ctx context.Context) ([]datatransfers.AuthorR
 			UpdatedAt: time.Unix(author.UpdatedAt, 0),
 		})
 	}
-
-	logger.Log.Info("ListAuthors request succeeded",
-		zap.Int("author_count", len(authors)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListAuthors request succeeded", map[string]interface{}{"author_count": len(authors)}, nil)
 
 	return authors, nil
 }
 
 func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuthor.UpdateAuthorRequest{
 		Id:        authorId,
 		Name:      dto.Name,
 		Biography: dto.Biography,
 	}
 
-	logger.Log.Info("Sending UpdateAuthor request to Author Service",
-		zap.String("author_id", authorId),
-		zap.String("name", dto.Name),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"author_id": authorId,
+		"name":      dto.Name,
+	}
+
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateAuthor request to Author Service", extra, nil)
 
 	resp, err := a.client.UpdateAuthor(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("UpdateAuthor request failed",
-			zap.String("author_id", authorId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateAuthor request failed", extra, err)
 		return datatransfers.AuthorResponse{}, err
 	}
 
-	logger.Log.Info("UpdateAuthor request succeeded",
-		zap.String("author_id", resp.Author.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "UpdateAuthor request succeeded", extra, nil)
 
 	return datatransfers.AuthorResponse{
 		Id:        resp.Author.Id,
@@ -187,29 +165,23 @@ func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto da
 }
 
 func (a *authorClient) DeleteAuthor(ctx context.Context, id string) error {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuthor.DeleteAuthorRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending DeleteAuthor request to Author Service",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"id": id,
+	}
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteAuthor request to Author Service", extra, nil)
 
 	_, err := a.client.DeleteAuthor(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("DeleteAuthor request failed",
-			zap.String("id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "DeleteAuthor request failed", extra, err)
 		return err
 	}
-
-	logger.Log.Info("DeleteAuthor request succeeded",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "DeleteAuthor request succeeded", extra, nil)
 
 	return nil
 }

@@ -5,11 +5,12 @@ import (
 	"api_gateway/internal/datatransfers"
 	protoUser "api_gateway/proto/user_service"
 	"context"
+	"log"
 	"time"
 
 	"api_gateway/pkg/logger"
+	"api_gateway/pkg/utils"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,53 +23,45 @@ type UserClient interface {
 
 type userClient struct {
 	client protoUser.UserServiceClient
+	logger *logger.Logger
 }
 
-func NewUserClient() (UserClient, error) {
+func NewUserClient(logger *logger.Logger) (UserClient, error) {
 	conn, err := grpc.NewClient("user-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Log.Error("Failed to create UserClient",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-		)
+		log.Println("Failed to create UserClient:", err)
 		return nil, err
 	}
-
 	client := protoUser.NewUserServiceClient(conn)
 
-	logger.Log.Info("Successfully created UserClient",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-	)
+	log.Println("Successfully created UserClient")
 
 	return &userClient{
 		client: client,
+		logger: logger,
 	}, nil
 }
 
 func (u *userClient) GetUserById(ctx context.Context, userId string) (datatransfers.UserResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoUser.GetUserByIdRequest{
 		UserId: userId,
 	}
 
-	logger.Log.Info("Sending GetUserById request to User Service",
-		zap.String("user_id", userId),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"user_id": userId,
+	}
+
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserById request to User Service", extra, nil)
 
 	resp, err := u.client.GetUserById(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetUserById request failed",
-			zap.String("user_id", userId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserById request failed", extra, err)
 		return datatransfers.UserResponse{}, err
 	}
 
-	logger.Log.Info("GetUserById request succeeded",
-		zap.String("user_id", resp.User.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetUserById request succeeded", extra, nil)
 
 	return datatransfers.UserResponse{
 		Id:        resp.User.Id,
@@ -82,29 +75,25 @@ func (u *userClient) GetUserById(ctx context.Context, userId string) (datatransf
 }
 
 func (u *userClient) GetUserByEmail(ctx context.Context, email string) (datatransfers.UserResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoUser.GetUserByEmailRequest{
 		Email: email,
 	}
 
-	logger.Log.Info("Sending GetUserByEmail request to User Service",
-		zap.String("email", email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"email": email,
+	}
+
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserByEmail request to User Service", extra, nil)
 
 	resp, err := u.client.GetUserByEmail(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetUserByEmail request failed",
-			zap.String("email", email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserByEmail request failed", extra, err)
 		return datatransfers.UserResponse{}, err
 	}
 
-	logger.Log.Info("GetUserByEmail request succeeded",
-		zap.String("email", resp.User.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetUserByEmail request succeeded", extra, nil)
 
 	return datatransfers.UserResponse{
 		Id:        resp.User.Id,
@@ -118,18 +107,15 @@ func (u *userClient) GetUserByEmail(ctx context.Context, email string) (datatran
 }
 
 func (u *userClient) ListUsers(ctx context.Context) ([]datatransfers.UserResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoUser.ListUsersRequest{}
 
-	logger.Log.Info("Sending ListUsers request to User Service",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUsers request to User Service", nil, nil)
 
 	resp, err := u.client.ListUsers(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ListUsers request failed",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUsers request failed", nil, err)
 		return nil, err
 	}
 
@@ -146,10 +132,7 @@ func (u *userClient) ListUsers(ctx context.Context) ([]datatransfers.UserRespons
 		})
 	}
 
-	logger.Log.Info("ListUsers request succeeded",
-		zap.Int("users_count", len(users)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListUsers request succeeded", nil, nil)
 
 	return users, nil
 }

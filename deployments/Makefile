@@ -8,12 +8,13 @@ USER_BINARY=userApp
 AUTH_BINARY=authApp
 LOAN_BINARY=loanApp
 MAILER_BINARY=mailerApp
+LOGGER_BINARY=loggerApp
 
 # Default target
 .PHONY: up down restart logs build clean help
 
 # Build binary project and start the application
-up_build: build_gateway build_author build_book build_category build_user build_auth build_loan build_mailer
+up_build: build_gateway build_author build_book build_category build_user build_auth build_loan build_mailer build_logger
 	@echo "Stopping docker images (if running...)"
 	docker-compose down
 	@echo "Starting services..."
@@ -70,6 +71,11 @@ build_loan:
 build_mailer:
 	@echo "Building mailer binary..."
 	cd ../mailer_service && env GOOS=linux CGO_ENABLED=0 go build -o ${MAILER_BINARY} ./cmd
+	@echo "Done!"
+
+build_logger:
+	@echo "Building logger binary..."
+	cd ../logger_service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd
 	@echo "Done!"
 
 # Restart the application

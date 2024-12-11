@@ -4,6 +4,7 @@ import (
 	"api_gateway/internal/clients"
 	"api_gateway/internal/handlers"
 	"api_gateway/internal/middlewares"
+	"api_gateway/pkg/logger"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,8 +15,8 @@ type loanRoutes struct {
 	handler        handlers.LoanHandler
 }
 
-func NewLoanRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.LoanClient) *loanRoutes {
-	handler := handlers.NewLoanHandler(client)
+func NewLoanRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.LoanClient, logger *logger.Logger) *loanRoutes {
+	handler := handlers.NewLoanHandler(client, logger)
 
 	return &loanRoutes{
 		router:         router,

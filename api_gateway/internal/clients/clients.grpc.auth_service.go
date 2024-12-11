@@ -4,11 +4,12 @@ import (
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	"api_gateway/pkg/logger"
+	"api_gateway/pkg/utils"
 	protoAuth "api_gateway/proto/auth_service"
 	"context"
+	"log"
 	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -23,154 +24,81 @@ type AuthClient interface {
 
 type authClient struct {
 	client protoAuth.AuthServiceClient
+	logger *logger.Logger
 }
 
-func NewAuthClient() (AuthClient, error) {
+func NewAuthClient(logger *logger.Logger) (AuthClient, error) {
 	conn, err := grpc.NewClient("auth-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Log.Error("Failed to create AuthClient",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-		)
-
+		log.Println("Failed to create AuthClient:", err)
 		return nil, err
 	}
 	client := protoAuth.NewAuthServiceClient(conn)
 
-	logger.Log.Info("Success to create AuthClient",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-	)
+	log.Println("Successfully created AuthClient")
+
 	return &authClient{
 		client: client,
+		logger: logger,
 	}, nil
 }
 
 func (authC *authClient) Register(ctx context.Context, dto datatransfers.RegisterRequest) (datatransfers.RegisterResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuth.RegisterRequest{
 		Email:    dto.Email,
 		Username: dto.Username,
 		Password: dto.Password,
 	}
 
-	logger.Log.Info("Sending Register request to Auth Service",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"email":    dto.Email,
+		"username": dto.Username,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending Register request to Auth Service", extra, nil)
 
 	resp, err := authC.client.Register(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("Register request failed",
-			zap.String("email", dto.Email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Register request failed", extra, err)
 		return datatransfers.RegisterResponse{}, err
 	}
 
-	logger.Log.Info("Register request succeeded",
-		zap.String("email", resp.User.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Register request succeeded", extra, nil)
 
-	response := datatransfers.RegisterResponse{
+	return datatransfers.RegisterResponse{
 		Id:        resp.User.Id,
 		Email:     resp.User.Email,
 		Username:  resp.User.Username,
-		Password:  resp.User.Password,
+		Password:  dto.Password, // Password as sent, not returned by the service
 		Verified:  resp.User.Verified,
 		CreatedAt: time.Unix(resp.User.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.User.UpdatedAt, 0),
-	}
-
-	return response, nil
-}
-
-func (authC *authClient) SendOtp(ctx context.Context, dto datatransfers.SendOtpRequest) (datatransfers.SendOtpResponse, error) {
-	reqProto := protoAuth.SendOTPRequest{
-		Email: dto.Email,
-	}
-
-	logger.Log.Info("Sending SendOTP request to Auth Service",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
-
-	resp, err := authC.client.SendOTP(ctx, &reqProto)
-	if err != nil {
-		logger.Log.Error("SendOTP request failed",
-			zap.String("email", dto.Email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
-		return datatransfers.SendOtpResponse{}, err
-	}
-
-	logger.Log.Info("SendOTP request succeeded",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
-
-	return datatransfers.SendOtpResponse{
-		Message: resp.Message,
-	}, nil
-}
-
-func (authC *authClient) VerifyEmail(ctx context.Context, dto datatransfers.VerifyEmailRequest) (datatransfers.VerifyEmailResponse, error) {
-	reqProto := protoAuth.VerifyEmailRequest{
-		Email: dto.Email,
-		Otp:   dto.OTP,
-	}
-
-	logger.Log.Info("Sending VerifyEmail request to Auth Service",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
-
-	resp, err := authC.client.VerifyEmail(ctx, &reqProto)
-	if err != nil {
-		logger.Log.Error("VerifyEmail request failed",
-			zap.String("email", dto.Email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
-		return datatransfers.VerifyEmailResponse{}, err
-	}
-
-	logger.Log.Info("VerifyEmail request succeeded",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
-
-	return datatransfers.VerifyEmailResponse{
-		Message: resp.Message,
 	}, nil
 }
 
 func (authC *authClient) Login(ctx context.Context, dto datatransfers.LoginRequest) (datatransfers.LoginResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuth.LoginRequest{
 		Email:    dto.Email,
 		Password: dto.Password,
 	}
 
-	logger.Log.Info("Sending Login request to Auth Service",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"email": dto.Email,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending Login request to Auth Service", extra, nil)
 
 	resp, err := authC.client.Login(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("Login request failed",
-			zap.String("email", dto.Email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Login request failed", extra, err)
 		return datatransfers.LoginResponse{}, err
 	}
 
-	logger.Log.Info("Login request succeeded",
-		zap.String("email", dto.Email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Login request succeeded", extra, nil)
 
 	return datatransfers.LoginResponse{
 		AccessToken:  resp.AccessToken,
@@ -179,30 +107,80 @@ func (authC *authClient) Login(ctx context.Context, dto datatransfers.LoginReque
 	}, nil
 }
 
+func (authC *authClient) SendOtp(ctx context.Context, dto datatransfers.SendOtpRequest) (datatransfers.SendOtpResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
+	reqProto := protoAuth.SendOTPRequest{
+		Email: dto.Email,
+	}
+
+	extra := map[string]interface{}{
+		"email": dto.Email,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending SendOtp request to Auth Service", extra, nil)
+
+	resp, err := authC.client.SendOTP(ctx, &reqProto)
+	if err != nil {
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "SendOtp request failed", extra, err)
+		return datatransfers.SendOtpResponse{}, err
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "SendOtp request succeeded", extra, nil)
+
+	return datatransfers.SendOtpResponse{
+		Message: resp.Message,
+	}, nil
+}
+
+func (authC *authClient) VerifyEmail(ctx context.Context, dto datatransfers.VerifyEmailRequest) (datatransfers.VerifyEmailResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
+	reqProto := protoAuth.VerifyEmailRequest{
+		Email: dto.Email,
+		Otp:   dto.OTP,
+	}
+
+	extra := map[string]interface{}{
+		"email": dto.Email,
+		"otp":   dto.OTP,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending VerifyEmail request to Auth Service", extra, nil)
+
+	resp, err := authC.client.VerifyEmail(ctx, &reqProto)
+	if err != nil {
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "VerifyEmail request failed", extra, err)
+		return datatransfers.VerifyEmailResponse{}, err
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "VerifyEmail request succeeded", extra, nil)
+
+	return datatransfers.VerifyEmailResponse{
+		Message: resp.Message,
+	}, nil
+}
+
 func (authC *authClient) ValidateToken(ctx context.Context, dto datatransfers.ValidateTokenRequest) (datatransfers.ValidateTokenResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoAuth.ValidateTokenRequest{
 		Token: dto.Token,
 	}
 
-	logger.Log.Info("Sending ValidateToken request to Auth Service",
-		zap.String("token", dto.Token),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"token": dto.Token,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ValidateToken request to Auth Service", extra, nil)
 
 	resp, err := authC.client.ValidateToken(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ValidateToken request failed",
-			zap.String("token", dto.Token),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ValidateToken request failed", extra, err)
 		return datatransfers.ValidateTokenResponse{}, err
 	}
 
-	logger.Log.Info("ValidateToken request succeeded",
-		zap.String("token", dto.Token),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ValidateToken request succeeded", extra, nil)
 
 	return datatransfers.ValidateTokenResponse{
 		Valid:  resp.Valid,

@@ -3,13 +3,13 @@ package clients
 import (
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
+	"api_gateway/pkg/logger"
+	"api_gateway/pkg/utils"
 	protoBook "api_gateway/proto/book_service"
 	"context"
+	"log"
 	"time"
 
-	"api_gateway/pkg/logger"
-
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -26,30 +26,27 @@ type BookClient interface {
 
 type bookClient struct {
 	client protoBook.BookServiceClient
+	logger *logger.Logger
 }
 
-func NewBookClient() (BookClient, error) {
+func NewBookClient(logger *logger.Logger) (BookClient, error) {
 	conn, err := grpc.NewClient("book-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Log.Error("Failed to create BookClient",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-		)
+		log.Println("Failed to create BookClient:", err)
 		return nil, err
 	}
-
 	client := protoBook.NewBookServiceClient(conn)
 
-	logger.Log.Info("Successfully created BookClient",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-	)
+	log.Println("Successfully created BookClient")
 
 	return &bookClient{
 		client: client,
+		logger: logger,
 	}, nil
 }
 
 func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookRequest) (datatransfers.BookResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.CreateBookRequest{
 		Title:      dto.Title,
 		AuthorId:   dto.AuthorId,
@@ -57,25 +54,22 @@ func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookReque
 		Stock:      int32(dto.Stock),
 	}
 
-	logger.Log.Info("Sending CreateBook request to Book Service",
-		zap.String("title", dto.Title),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"title":       dto.Title,
+		"author_id":   dto.AuthorId,
+		"category_id": dto.CategoryId,
+		"stock":       dto.Stock,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateBook request to Book Service", extra, nil)
 
 	resp, err := b.client.CreateBook(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("CreateBook request failed",
-			zap.String("title", dto.Title),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateBook request failed", extra, err)
 		return datatransfers.BookResponse{}, err
 	}
 
-	logger.Log.Info("CreateBook request succeeded",
-		zap.String("title", resp.Book.Title),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "CreateBook request succeeded", extra, nil)
 
 	return datatransfers.BookResponse{
 		Id:         resp.Book.Id,
@@ -89,29 +83,24 @@ func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookReque
 }
 
 func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.BookResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.GetBookRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending GetBook request to Book Service",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"id": id,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBook request to Book Service", extra, nil)
 
 	resp, err := b.client.GetBook(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetBook request failed",
-			zap.String("id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBook request failed", extra, err)
 		return datatransfers.BookResponse{}, err
 	}
 
-	logger.Log.Info("GetBook request succeeded",
-		zap.String("id", resp.Book.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetBook request succeeded", extra, nil)
 
 	return datatransfers.BookResponse{
 		Id:         resp.Book.Id,
@@ -125,18 +114,14 @@ func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.Book
 }
 
 func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.ListBooksRequest{}
 
-	logger.Log.Info("Sending ListBooks request to Book Service",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListBooks request to Book Service", nil, nil)
 
 	resp, err := b.client.ListBooks(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ListBooks request failed",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListBooks request failed", nil, err)
 		return nil, err
 	}
 
@@ -153,15 +138,17 @@ func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookRespons
 		})
 	}
 
-	logger.Log.Info("ListBooks request succeeded",
-		zap.Int("books_count", len(books)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"books_count": len(books),
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListBooks request succeeded", extra, nil)
 
 	return books, nil
 }
 
 func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookRequest) (datatransfers.BookResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.UpdateBookRequest{
 		Id:         bookId,
 		Title:      dto.Title,
@@ -170,25 +157,23 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 		Stock:      int32(dto.Stock),
 	}
 
-	logger.Log.Info("Sending UpdateBook request to Book Service",
-		zap.String("id", bookId),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"id":          bookId,
+		"title":       dto.Title,
+		"author_id":   dto.AuthorId,
+		"category_id": dto.CategoryId,
+		"stock":       dto.Stock,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateBook request to Book Service", extra, nil)
 
 	resp, err := b.client.UpdateBook(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("UpdateBook request failed",
-			zap.String("id", bookId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateBook request failed", extra, err)
 		return datatransfers.BookResponse{}, err
 	}
 
-	logger.Log.Info("UpdateBook request succeeded",
-		zap.String("id", resp.Book.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "UpdateBook request succeeded", extra, nil)
 
 	return datatransfers.BookResponse{
 		Id:         resp.Book.Id,
@@ -202,50 +187,43 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 }
 
 func (b *bookClient) DeleteBook(ctx context.Context, id string) error {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.DeleteBookRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending DeleteBook request to Book Service",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"id": id,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteBook request to Book Service", extra, nil)
 
 	_, err := b.client.DeleteBook(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("DeleteBook request failed",
-			zap.String("id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "DeleteBook request failed", extra, err)
 		return err
 	}
 
-	logger.Log.Info("DeleteBook request succeeded",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "DeleteBook request succeeded", extra, nil)
 
 	return nil
 }
 
 func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string) ([]datatransfers.BookResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.GetBooksByCategoryRequest{
 		CategoryId: categoryId,
 	}
 
-	logger.Log.Info("Sending GetBooksByCategory request to Book Service",
-		zap.String("category_id", categoryId),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"category_id": categoryId,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByCategory request to Book Service", extra, nil)
 
 	resp, err := b.client.GetBooksByCategory(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetBooksByCategory request failed",
-			zap.String("category_id", categoryId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByCategory request failed", extra, err)
 		return nil, err
 	}
 
@@ -262,31 +240,26 @@ func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string
 		})
 	}
 
-	logger.Log.Info("GetBooksByCategory request succeeded",
-		zap.Int("books_count", len(books)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetBooksByCategory request succeeded", extra, nil)
 
 	return books, nil
 }
 
 func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string) ([]datatransfers.BookResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.GetBooksByAuthorRequest{
 		AuthorId: authorId,
 	}
 
-	logger.Log.Info("Sending GetBooksByAuthor request to Book Service",
-		zap.String("author_id", authorId),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"author_id": authorId,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByAuthor request to Book Service", extra, nil)
 
 	resp, err := b.client.GetBooksByAuthor(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetBooksByAuthor request failed",
-			zap.String("author_id", authorId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByAuthor request failed", extra, err)
 		return nil, err
 	}
 
@@ -303,10 +276,9 @@ func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string) ([
 		})
 	}
 
-	logger.Log.Info("GetBooksByAuthor request succeeded",
-		zap.Int("books_count", len(books)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra["books_count"] = len(books)
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetBooksByAuthor request succeeded", extra, nil)
 
 	return books, nil
 }

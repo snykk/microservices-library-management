@@ -9,6 +9,7 @@ services:
             - author-service
             - category-service
             - user-service
+            - rabbitmq
         networks:
             - library-network
         restart: always
@@ -16,11 +17,7 @@ services:
             mode: replicated
             replicas: 1
         environment:
-            - AUTH_SERVICE_URL=auth_service:50051
-            - USER_SERVICE_URL=user_service:50051
-            - BOOK_SERVICE_URL=book_service:50051
-            - AUTHOR_SERVICE_URL=author_service:50051
-            - CATEGORY_SERVICE_URL=category_service:50051
+            RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
         volumes:
             - ./../api_gateway/logs:/app/logs
 
@@ -144,6 +141,24 @@ services:
             DSN: "host=loan-db port=5432 user=fikri password=12345678 dbname=loandb sslmode=disable timezone=Asia/Jakarta connect_timeout=5"
             GRPC_PORT: "50051"
             RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
+
+    logger-service:
+        build:
+            context: ./../logger_service
+        networks:
+            - library-network
+        depends_on:
+            - mongo
+            - rabbitmq
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
+            MONGO_URL: "mongodb://admin:password@mongo:27017"
+        volumes:
+            - ./../logger_service/logs:/app/logs
 
     book-db:
         image: postgres:15
@@ -275,6 +290,24 @@ services:
             mode: replicated
             replicas: 1
 
+    mongo:
+        image: mongo:4.2.16-bionic
+        container_name: mongo
+        ports:
+            - "27017:27017"
+        networks:
+            - library-network
+        restart: always
+        deploy:
+            mode: replicated
+            replicas: 1
+        environment:
+            MONGO_INITDB_DATABASE: logs
+            MONGO_INITDB_ROOT_USERNAME: admin
+            MONGO_INITDB_ROOT_PASSWORD: password
+        volumes:
+            - mongo-data:/data/db
+
 networks:
     library-network:
         driver: bridge
@@ -285,6 +318,7 @@ volumes:
     category-db-data:
     user-db-data:
     loan-db-data:
+    mongo-data:
 
 secrets:
     email_sender:

@@ -4,6 +4,7 @@ import (
 	"api_gateway/internal/clients"
 	"api_gateway/internal/handlers"
 	"api_gateway/internal/middlewares"
+	"api_gateway/pkg/logger"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,8 +15,8 @@ type categoryRoutes struct {
 	handler        handlers.CategoryHandler
 }
 
-func NewCategoryRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.CategoryClient, bookClient clients.BookClient) *categoryRoutes {
-	handler := handlers.NewCategoryHandler(client, bookClient)
+func NewCategoryRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.CategoryClient, bookClient clients.BookClient, logger *logger.Logger) *categoryRoutes {
+	handler := handlers.NewCategoryHandler(client, bookClient, logger)
 
 	return &categoryRoutes{
 		router:         router,

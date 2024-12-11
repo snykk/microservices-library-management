@@ -5,9 +5,11 @@ import (
 	"api_gateway/internal/datatransfers"
 	protoCategory "api_gateway/proto/category_service"
 	"context"
+	"log"
 	"time"
 
 	"api_gateway/pkg/logger"
+	"api_gateway/pkg/utils"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -24,53 +26,45 @@ type CategoryClient interface {
 
 type categoryClient struct {
 	client protoCategory.CategoryServiceClient
+	logger *logger.Logger
 }
 
-func NewCategoryClient() (CategoryClient, error) {
+func NewCategoryClient(logger *logger.Logger) (CategoryClient, error) {
 	conn, err := grpc.NewClient("category-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Log.Error("Failed to create CategoryClient",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-		)
+		log.Println("Failed to create CategoryClient:", err)
 		return nil, err
 	}
-
 	client := protoCategory.NewCategoryServiceClient(conn)
 
-	logger.Log.Info("Successfully created CategoryClient",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-	)
+	log.Println("Successfully created CategoryClient")
 
 	return &categoryClient{
 		client: client,
+		logger: logger,
 	}, nil
 }
 
 func (c *categoryClient) CreateCategory(ctx context.Context, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoCategory.CreateCategoryRequest{
 		Name: dto.Name,
 	}
 
-	logger.Log.Info("Sending CreateCategory request to Category Service",
-		zap.String("name", dto.Name),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"category_name": dto.Name,
+	}
+
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateCategory request to Category Service", extra, nil)
 
 	resp, err := c.client.CreateCategory(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("CreateCategory request failed",
-			zap.String("name", dto.Name),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateCategory request failed", extra, err)
 		return datatransfers.CategoryResponse{}, err
 	}
 
-	logger.Log.Info("CreateCategory request succeeded",
-		zap.String("id", resp.Category.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "CreateCategory request succeeded", extra, nil)
 
 	return datatransfers.CategoryResponse{
 		Id:        resp.Category.Id,
@@ -81,29 +75,25 @@ func (c *categoryClient) CreateCategory(ctx context.Context, dto datatransfers.C
 }
 
 func (c *categoryClient) GetCategory(ctx context.Context, id string) (datatransfers.CategoryResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoCategory.GetCategoryRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending GetCategory request to Category Service",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"category_id": id,
+	}
+
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetCategory request to Category Service", extra, nil)
 
 	resp, err := c.client.GetCategory(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetCategory request failed",
-			zap.String("id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetCategory request failed", extra, err)
 		return datatransfers.CategoryResponse{}, err
 	}
 
-	logger.Log.Info("GetCategory request succeeded",
-		zap.String("id", resp.Category.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetCategory request succeeded", extra, nil)
 
 	return datatransfers.CategoryResponse{
 		Id:        resp.Category.Id,
@@ -114,18 +104,19 @@ func (c *categoryClient) GetCategory(ctx context.Context, id string) (datatransf
 }
 
 func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.CategoryResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoCategory.ListCategoriesRequest{}
 
 	logger.Log.Info("Sending ListCategories request to Category Service",
 		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
 	)
 
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListCategories request to Category Service", nil, nil)
+
 	resp, err := c.client.ListCategories(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ListCategories request failed",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Sending ListCategories request to Category Service", nil, err)
 		return nil, err
 	}
 
@@ -139,39 +130,33 @@ func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.Ca
 		})
 	}
 
-	logger.Log.Info("ListCategories request succeeded",
-		zap.Int("categories_count", len(categories)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListCategories request succeeded", map[string]interface{}{"categories_count": len(categories)}, nil)
 
 	return categories, nil
 }
 
 func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoCategory.UpdateCategoryRequest{
 		Id:   categoryId,
 		Name: dto.Name,
 	}
 
-	logger.Log.Info("Sending UpdateCategory request to Category Service",
-		zap.String("id", categoryId),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"category_id":   categoryId,
+		"category_name": dto.Name,
+	}
+
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateCategory request to Category Service", extra, nil)
 
 	resp, err := c.client.UpdateCategory(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("UpdateCategory request failed",
-			zap.String("id", categoryId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateCategory request failed", extra, err)
 		return datatransfers.CategoryResponse{}, err
 	}
 
-	logger.Log.Info("UpdateCategory request succeeded",
-		zap.String("id", resp.Category.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "UpdateCategory request succeeded", extra, nil)
 
 	return datatransfers.CategoryResponse{
 		Id:        resp.Category.Id,
@@ -182,29 +167,25 @@ func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, 
 }
 
 func (c *categoryClient) DeleteCategory(ctx context.Context, id string) error {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoCategory.DeleteCategoryRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending DeleteCategory request to Category Service",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"category_id": id,
+	}
+
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteCategory request to Category Service", extra, nil)
 
 	_, err := c.client.DeleteCategory(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("DeleteCategory request failed",
-			zap.String("id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "DeleteCategory request failed", extra, err)
 		return err
 	}
 
-	logger.Log.Info("DeleteCategory request succeeded",
-		zap.String("id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "DeleteCategory request succeeded", extra, nil)
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"api_gateway/internal/clients"
 	"api_gateway/internal/handlers"
 	"api_gateway/internal/middlewares"
+	"api_gateway/pkg/logger"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,8 +15,8 @@ type bookRoutes struct {
 	handler        handlers.BookHandler
 }
 
-func NewBookRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.BookClient, authorClient clients.AuthorClient, categoryClient clients.CategoryClient) *bookRoutes {
-	handler := handlers.NewBookHandler(client, authorClient, categoryClient)
+func NewBookRoute(router fiber.Router, authMiddleware middlewares.AuthMiddleware, client clients.BookClient, authorClient clients.AuthorClient, categoryClient clients.CategoryClient, logger *logger.Logger) *bookRoutes {
+	handler := handlers.NewBookHandler(client, authorClient, categoryClient, logger)
 
 	return &bookRoutes{
 		router:         router,

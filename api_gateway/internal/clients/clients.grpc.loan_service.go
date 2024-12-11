@@ -5,9 +5,11 @@ import (
 	"api_gateway/internal/datatransfers"
 	protoLoan "api_gateway/proto/loan_service"
 	"context"
+	"log"
 	"time"
 
 	"api_gateway/pkg/logger"
+	"api_gateway/pkg/utils"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -27,59 +29,51 @@ type LoanClient interface {
 
 type loanClient struct {
 	client protoLoan.LoanServiceClient
+	logger *logger.Logger
 }
 
-func NewLoanClient() (LoanClient, error) {
+func NewLoanClient(logger *logger.Logger) (LoanClient, error) {
 	conn, err := grpc.NewClient("loan-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Log.Error("Failed to create LoanClient",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-		)
+		log.Println("Failed to create LoanClient:", err)
 		return nil, err
 	}
-
 	client := protoLoan.NewLoanServiceClient(conn)
 
-	logger.Log.Info("Successfully created LoanClient",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryConnection),
-	)
+	log.Println("Successfully created LoanClient")
 
 	return &loanClient{
 		client: client,
+		logger: logger,
 	}, nil
 }
 
 func (l *loanClient) CreateLoan(ctx context.Context, userId, email string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.CreateLoanRequest{
 		UserId: userId,
 		BookId: dto.BookId,
 		Email:  email,
 	}
 
-	logger.Log.Info("Sending CreateLoan request to Loan Service",
-		zap.String("user_id", userId),
-		zap.String("book_id", dto.BookId),
-		zap.String("email", email),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"user_id": userId,
+		"book_id": dto.BookId,
+		"email":   email,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateLoan request to Loan Service", extra, nil)
 
 	resp, err := l.client.CreateLoan(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("CreateLoan request failed",
-			zap.String("user_id", userId),
-			zap.String("book_id", dto.BookId),
-			zap.String("email", email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateLoan request failed", extra, err)
 		return datatransfers.LoanResponse{}, err
 	}
 
-	logger.Log.Info("CreateLoan request succeeded",
-		zap.String("loan_id", resp.Loan.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra["loan_id"] = resp.Loan.Id
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "CreateLoan request succeeded", extra, nil)
 
 	return datatransfers.LoanResponse{
 		Id:         resp.Loan.Id,
@@ -94,22 +88,22 @@ func (l *loanClient) CreateLoan(ctx context.Context, userId, email string, dto d
 }
 
 func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.GetLoanRequest{
 		Id: id,
 	}
 
-	logger.Log.Info("Sending GetLoan request to Loan Service",
-		zap.String("loan_id", id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"loan_id": id,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetLoan request to Loan Service", extra, nil)
 
 	resp, err := l.client.GetLoan(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetLoan request failed",
-			zap.String("loan_id", id),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetLoan request failed", extra, err)
+
 		return datatransfers.LoanResponse{}, err
 	}
 
@@ -128,35 +122,31 @@ func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.Loan
 		loanResponse.ReturnDate = &returnDate
 	}
 
-	logger.Log.Info("GetLoan request succeeded",
-		zap.String("loan_id", resp.Loan.Id),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetLoan request succeeded", extra, nil)
 
 	return loanResponse, nil
 }
 
 func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.UpdateLoanStatusRequest{
 		Id:         loanId,
 		Status:     status,
 		ReturnDate: returnDate.Unix(),
 	}
 
-	logger.Log.Info("Sending UpdateLoanStatus request to Loan Service",
-		zap.String("loan_id", loanId),
-		zap.String("status", status),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"loan_id":          loanId,
+		"loan_status":      status,
+		"loan_return_date": returnDate,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateLoanStatus request to Loan Service", extra, nil)
 
 	resp, err := l.client.UpdateLoanStatus(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("UpdateLoanStatus request failed",
-			zap.String("loan_id", loanId),
-			zap.String("status", status),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateLoanStatus request failed", extra, err)
 		return datatransfers.LoanResponse{}, err
 	}
 
@@ -175,32 +165,28 @@ func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string
 		loanResponse.ReturnDate = &returnDate
 	}
 
-	logger.Log.Info("UpdateLoanStatus request succeeded",
-		zap.String("loan_id", resp.Loan.Id),
-		zap.String("status", resp.Loan.Status),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra["status"] = resp.Loan.Status
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "UpdateLoanStatus request succeeded", extra, nil)
 
 	return loanResponse, nil
 }
 
 func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.ListUserLoansRequest{
 		UserId: userId,
 	}
 
-	logger.Log.Info("Sending ListUserLoans request to Loan Service",
-		zap.String("user_id", userId),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"user_id": userId,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUserLoans request to Loan Service", extra, nil)
 
 	resp, err := l.client.ListUserLoans(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ListUserLoans request failed",
-			zap.String("user_id", userId),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUserLoans request failed", extra, err)
 		return nil, err
 	}
 
@@ -224,26 +210,20 @@ func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatr
 		loans = append(loans, loanResponse)
 	}
 
-	logger.Log.Info("ListUserLoans request succeeded",
-		zap.String("user_id", userId),
-		zap.Int("loans_count", len(loans)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListUserLoans request succeeded", extra, nil)
 
 	return loans, nil
 }
 
 func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error) {
-	logger.Log.Info("Sending ListLoans request to Loan Service",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	requestID := utils.GetRequestIDFromContext(ctx)
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListLoans request to Loan Service", nil, nil)
 
 	resp, err := l.client.ListLoans(ctx, &protoLoan.ListLoansRequest{})
 	if err != nil {
-		logger.Log.Error("ListLoans request failed",
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListLoans request failed", nil, err)
+
 		return nil, err
 	}
 
@@ -272,29 +252,29 @@ func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanRespons
 		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
 	)
 
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListLoans request to Loan Service", map[string]interface{}{"loans_count": len(loans)}, nil)
+
 	return loans, nil
 }
 
 func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.GetUserLoansByStatusRequest{
 		UserId: userId,
 		Status: status,
 	}
 
-	logger.Log.Info("Sending GetUserLoansByStatus request to Loan Service",
-		zap.String("user_id", userId),
-		zap.String("status", status),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"user_id":     userId,
+		"loan_status": status,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserLoansByStatus request to Loan Service", extra, nil)
 
 	resp, err := l.client.GetUserLoansByStatus(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetUserLoansByStatus request failed",
-			zap.String("user_id", userId),
-			zap.String("status", status),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserLoansByStatus request failed", extra, err)
 		return nil, err
 	}
 
@@ -318,33 +298,28 @@ func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status st
 		loans = append(loans, loanResponse)
 	}
 
-	logger.Log.Info("GetUserLoansByStatus request succeeded",
-		zap.String("user_id", userId),
-		zap.String("status", status),
-		zap.Int("loans_count", len(loans)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra["loans_count"] = len(loans)
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetUserLoansByStatus request succeeded", extra, nil)
 
 	return loans, nil
 }
 
 func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.GetLoansByStatusRequest{
 		Status: status,
 	}
 
-	logger.Log.Info("Sending GetLoansByStatus request to Loan Service",
-		zap.String("status", status),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"loan_status": status,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetLoansByStatus request to Loan Service", extra, nil)
 
 	resp, err := l.client.GetLoansByStatus(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("GetLoansByStatus request failed",
-			zap.String("status", status),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetLoansByStatus request failed", extra, err)
 		return nil, err
 	}
 
@@ -368,16 +343,15 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]dat
 		loans = append(loans, loanResponse)
 	}
 
-	logger.Log.Info("GetLoansByStatus request succeeded",
-		zap.String("status", status),
-		zap.Int("loans_count", len(loans)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra["loans_count"] = len(loans)
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetLoansByStatus request succeeded", extra, nil)
 
 	return loans, nil
 }
 
 func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
 	reqProto := protoLoan.ReturnLoanRequest{
 		Id:         id,
 		Email:      email,
@@ -385,23 +359,18 @@ func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, r
 		ReturnDate: returnDate.Unix(),
 	}
 
-	logger.Log.Info("Sending ReturnLoan request to Loan Service",
-		zap.String("loan_id", id),
-		zap.String("user_id", userId),
-		zap.String("email", email),
-		zap.String("return_date", returnDate.String()),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	extra := map[string]interface{}{
+		"loan_id":          id,
+		"email":            email,
+		"user_id":          userId,
+		"loan_return_date": returnDate,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ReturnLoan request to Loan Service", extra, nil)
 
 	resp, err := l.client.ReturnLoan(ctx, &reqProto)
 	if err != nil {
-		logger.Log.Error("ReturnLoan request failed",
-			zap.String("loan_id", id),
-			zap.String("user_id", userId),
-			zap.String("email", email),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-		)
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ReturnLoan request failed", extra, err)
 		return datatransfers.LoanResponse{}, err
 	}
 
@@ -420,11 +389,7 @@ func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, r
 		loanResponse.ReturnDate = &returnDate
 	}
 
-	logger.Log.Info("ReturnLoan request succeeded",
-		zap.String("loan_id", resp.Loan.Id),
-		zap.String("status", resp.Loan.Status),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ReturnLoan request succeeded", extra, nil)
 
 	return loanResponse, nil
 }
