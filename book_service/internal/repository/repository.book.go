@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -33,12 +34,12 @@ func NewBookRepository(db *sqlx.DB) BookRepository {
 }
 
 func (r *bookRepository) CreateBook(ctx context.Context, req *models.BookRecord) (*models.BookRecord, error) {
+	log.Printf("Creating book: %+v\n", req)
 	query := `
 		INSERT INTO books (title, author_id, category_id, stock)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, title, author_id, category_id, stock, created_at, updated_at
 	`
-
 	book := &models.BookRecord{}
 
 	err := r.db.QueryRowContext(ctx, query,
@@ -56,18 +57,19 @@ func (r *bookRepository) CreateBook(ctx context.Context, req *models.BookRecord)
 		&book.UpdatedAt,
 	)
 	if err != nil {
+		log.Printf("Error creating book: %v\n", err)
 		return nil, err
 	}
 
+	log.Printf("Book created successfully: %+v\n", book)
 	return book, nil
 }
 
 func (r *bookRepository) GetBook(ctx context.Context, id string) (*models.BookRecord, error) {
+	log.Printf("Fetching book with ID: %s\n", id)
 	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE id = $1`
-
 	book := &models.BookRecord{}
-
-	err := r.db.QueryRowContext(ctx, query,
+	if err := r.db.QueryRowContext(ctx, query,
 		id,
 	).Scan(
 		&book.Id,
@@ -77,27 +79,30 @@ func (r *bookRepository) GetBook(ctx context.Context, id string) (*models.BookRe
 		&book.Stock,
 		&book.CreatedAt,
 		&book.UpdatedAt,
-	)
-	if err != nil {
+	); err != nil {
 		if err == sql.ErrNoRows {
+			log.Printf("Book not found with ID: %s\n", id)
 			return nil, errors.New("book not found")
 		}
+		log.Printf("Error fetching book: %v\n", err)
 		return nil, err
 	}
 
+	log.Printf("Book fetched successfully: %+v\n", book)
 	return book, nil
 }
 
 func (r *bookRepository) GetBookByAuthorId(ctx context.Context, authorId string) ([]*models.BookRecord, error) {
+	log.Printf("Fetching books by author ID: %s\n", authorId)
 	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE author_id = $1`
 	rows, err := r.db.QueryContext(ctx, query, authorId)
 	if err != nil {
+		log.Printf("Error fetching books by author ID: %v\n", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	var books []*models.BookRecord
-
 	for rows.Next() {
 		book := &models.BookRecord{}
 		if err := rows.Scan(
@@ -109,27 +114,27 @@ func (r *bookRepository) GetBookByAuthorId(ctx context.Context, authorId string)
 			&book.CreatedAt,
 			&book.UpdatedAt,
 		); err != nil {
+			log.Printf("Error scanning book row: %v\n", err)
 			return nil, err
 		}
 		books = append(books, book)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
 
+	log.Printf("Books fetched successfully: %d books found for author ID: %s\n", len(books), authorId)
 	return books, nil
 }
 
 func (r *bookRepository) GetBookByCategoryId(ctx context.Context, categoryId string) ([]*models.BookRecord, error) {
+	log.Printf("Fetching books by category ID: %s\n", categoryId)
 	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE category_id = $1`
 	rows, err := r.db.QueryContext(ctx, query, categoryId)
 	if err != nil {
+		log.Printf("Error fetching books by category ID: %v\n", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	var books []*models.BookRecord
-
 	for rows.Next() {
 		book := &models.BookRecord{}
 		if err := rows.Scan(
@@ -141,27 +146,27 @@ func (r *bookRepository) GetBookByCategoryId(ctx context.Context, categoryId str
 			&book.CreatedAt,
 			&book.UpdatedAt,
 		); err != nil {
+			log.Printf("Error scanning book row: %v\n", err)
 			return nil, err
 		}
 		books = append(books, book)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
 
+	log.Printf("Books fetched successfully: %d books found for category ID: %s\n", len(books), categoryId)
 	return books, nil
 }
 
 func (r *bookRepository) ListBooks(ctx context.Context) ([]*models.BookRecord, error) {
+	log.Printf("Listing all books")
 	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books`
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
+		log.Printf("Error listing books: %v\n", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	var books []*models.BookRecord
-
 	for rows.Next() {
 		book := &models.BookRecord{}
 		if err := rows.Scan(
@@ -173,29 +178,33 @@ func (r *bookRepository) ListBooks(ctx context.Context) ([]*models.BookRecord, e
 			&book.CreatedAt,
 			&book.UpdatedAt,
 		); err != nil {
+			log.Printf("Error scanning book row: %v\n", err)
 			return nil, err
 		}
 		books = append(books, book)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
 
+	log.Printf("Books listed successfully: %d books found\n", len(books))
 	return books, nil
 }
 
 func (r *bookRepository) UpdateBook(ctx context.Context, req *models.BookRecord) (*models.BookRecord, error) {
+	log.Printf("Updating book with ID: %s\n", req.Id)
 	query := `
 		UPDATE books 
 		SET title = $1, author_id = $2, category_id = $3, stock = $4 
 		WHERE id = $5 
 		RETURNING id, title, author_id, category_id, stock, created_at, updated_at
 	`
-	row := r.db.QueryRowContext(ctx, query, req.Title, req.AuthorId, req.CategoryId, req.Stock, req.Id)
 
 	book := &models.BookRecord{}
-
-	if err := row.Scan(
+	if err := r.db.QueryRowContext(ctx, query,
+		req.Title,
+		req.AuthorId,
+		req.CategoryId,
+		req.Stock,
+		req.Id,
+	).Scan(
 		&book.Id,
 		&book.Title,
 		&book.AuthorId,
@@ -204,71 +213,95 @@ func (r *bookRepository) UpdateBook(ctx context.Context, req *models.BookRecord)
 		&book.CreatedAt,
 		&book.UpdatedAt,
 	); err != nil {
+		log.Printf("Error updating book: %v\n", err)
 		return nil, err
 	}
 
+	log.Printf("Book updated successfully: %+v\n", book)
 	return book, nil
 }
 
 func (r *bookRepository) DeleteBook(ctx context.Context, id string) error {
+	log.Printf("Deleting book with ID: %s\n", id)
 	query := `DELETE FROM books WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
-	return err
+	if err != nil {
+		log.Printf("Error deleting book: %v\n", err)
+		return err
+	}
+
+	log.Printf("Book deleted successfully with ID: %s\n", id)
+	return nil
 }
 
 func (r *bookRepository) UpdateBookStock(ctx context.Context, bookId string, newStock int) error {
+	log.Printf("Updating stock for book ID: %s to %d\n", bookId, newStock)
 	query := `UPDATE books SET stock = $1 WHERE id = $2`
 	result, err := r.db.ExecContext(ctx, query, newStock, bookId)
 	if err != nil {
+		log.Printf("Error updating book stock: %v\n", err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("Error fetching affected rows: %v\n", err)
 		return err
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("no book found with the given Id")
+		log.Printf("No book found with ID: %s\n", bookId)
+		return errors.New("no book found with the given ID")
 	}
 
+	log.Printf("Stock updated successfully for book ID: %s\n", bookId)
 	return nil
 }
 
 func (r *bookRepository) IncrementBookStock(ctx context.Context, bookId string) error {
+	log.Printf("Incrementing stock for book ID: %s\n", bookId)
 	query := `UPDATE books SET stock = stock + 1 WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, bookId)
 	if err != nil {
+		log.Printf("Error incrementing book stock: %v\n", err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("Error fetching affected rows: %v\n", err)
 		return err
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("no book found with the given Id")
+		log.Printf("No book found with ID: %s\n", bookId)
+		return errors.New("no book found with the given ID")
 	}
 
+	log.Printf("Stock incremented successfully for book ID: %s\n", bookId)
 	return nil
 }
 
 func (r *bookRepository) DecrementBookStock(ctx context.Context, bookId string) error {
+	log.Printf("Decrementing stock for book ID: %s\n", bookId)
 	query := `UPDATE books SET stock = stock - 1 WHERE id = $1 AND stock > 0`
 	result, err := r.db.ExecContext(ctx, query, bookId)
 	if err != nil {
+		log.Printf("Error decrementing book stock: %v\n", err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Printf("Error fetching affected rows: %v\n", err)
 		return err
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("no book found with the given Id or insufficient stock")
+		log.Printf("No book found with ID: %s or insufficient stock\n", bookId)
+		return errors.New("no book found with the given ID or insufficient stock")
 	}
 
+	log.Printf("Stock decremented successfully for book ID: %s\n", bookId)
 	return nil
 }

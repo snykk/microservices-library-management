@@ -2,9 +2,12 @@ package main
 
 import (
 	"book_service/internal/clients"
+	"book_service/internal/constants"
 	"book_service/internal/grpc_server"
 	"book_service/internal/repository"
 	"book_service/internal/service"
+	"book_service/pkg/logger"
+	"book_service/pkg/rabbitmq"
 	"log"
 	"net"
 	"os"
@@ -16,13 +19,14 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
 	grpcPort := os.Getenv("GRPC_PORT")
+	rabbitMQURL := os.Getenv("RABBITMQ_URL")
 	dsn := os.Getenv("DSN")
 
-	// Initialize postgres connection
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -33,6 +37,30 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
+
+	// Connect to RabbitMQ
+	conn, err := amqp.Dial(rabbitMQURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+	}
+	defer conn.Close()
+
+	// Initialize rabbitMQPublisher
+	rabbitMQPublisher, err := rabbitmq.NewPublisher(conn)
+	if err != nil {
+		log.Fatalf("Failed to initialize RabbitMQPublisher: %v", err)
+	}
+	defer rabbitMQPublisher.Close()
+
+	// Declare exchanges
+	err = rabbitMQPublisher.DeclareExchange(constants.LogExchange, constants.ExchangeTypeDirect)
+	if err != nil {
+		log.Fatalf("Failed to declare exchange: %v", err)
+	}
+
+	// logger
+	logger := logger.NewLoggerSingleWorker(rabbitMQPublisher, 100)
+	defer logger.Close()
 
 	// Clients
 	authorClient, err := clients.NewAuthorClient()
@@ -55,7 +83,7 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	bookServer := grpc_server.NewBookGRPCServer(bookService)
+	bookServer := grpc_server.NewBookGRPCServer(bookService, logger)
 	protoBook.RegisterBookServiceServer(grpcServer, bookServer)
 
 	// Enable gRPC reflection for debugging
