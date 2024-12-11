@@ -57,7 +57,7 @@ func (a *authorClient) CreateAuthor(ctx context.Context, dto datatransfers.Autho
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateAuthor request to Author Service", extra, nil)
 
-	resp, err := a.client.CreateAuthor(ctx, &reqProto)
+	resp, err := a.client.CreateAuthor(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateAuthor request failed", extra, err)
 		return datatransfers.AuthorResponse{}, err
@@ -87,7 +87,7 @@ func (a *authorClient) GetAuthor(ctx context.Context, id string) (datatransfers.
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetAuthor request to Author Service", extra, nil)
 
-	resp, err := a.client.GetAuthor(ctx, &reqProto)
+	resp, err := a.client.GetAuthor(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetAuthor request failed", extra, err)
 		return datatransfers.AuthorResponse{}, err
@@ -110,7 +110,7 @@ func (a *authorClient) ListAuthors(ctx context.Context) ([]datatransfers.AuthorR
 	reqProto := protoAuthor.ListAuthorsRequest{}
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListAuthors request to Author Service", nil, nil)
 
-	resp, err := a.client.ListAuthors(ctx, &reqProto)
+	resp, err := a.client.ListAuthors(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListAuthors request failed", nil, err)
 		return nil, err
@@ -147,7 +147,7 @@ func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto da
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateAuthor request to Author Service", extra, nil)
 
-	resp, err := a.client.UpdateAuthor(ctx, &reqProto)
+	resp, err := a.client.UpdateAuthor(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateAuthor request failed", extra, err)
 		return datatransfers.AuthorResponse{}, err
@@ -176,7 +176,7 @@ func (a *authorClient) DeleteAuthor(ctx context.Context, id string) error {
 	}
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteAuthor request to Author Service", extra, nil)
 
-	_, err := a.client.DeleteAuthor(ctx, &reqProto)
+	_, err := a.client.DeleteAuthor(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "DeleteAuthor request failed", extra, err)
 		return err

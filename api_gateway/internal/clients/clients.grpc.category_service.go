@@ -58,7 +58,7 @@ func (c *categoryClient) CreateCategory(ctx context.Context, dto datatransfers.C
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateCategory request to Category Service", extra, nil)
 
-	resp, err := c.client.CreateCategory(ctx, &reqProto)
+	resp, err := c.client.CreateCategory(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateCategory request failed", extra, err)
 		return datatransfers.CategoryResponse{}, err
@@ -87,7 +87,7 @@ func (c *categoryClient) GetCategory(ctx context.Context, id string) (datatransf
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetCategory request to Category Service", extra, nil)
 
-	resp, err := c.client.GetCategory(ctx, &reqProto)
+	resp, err := c.client.GetCategory(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetCategory request failed", extra, err)
 		return datatransfers.CategoryResponse{}, err
@@ -114,7 +114,7 @@ func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.Ca
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListCategories request to Category Service", nil, nil)
 
-	resp, err := c.client.ListCategories(ctx, &reqProto)
+	resp, err := c.client.ListCategories(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Sending ListCategories request to Category Service", nil, err)
 		return nil, err
@@ -150,7 +150,7 @@ func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, 
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateCategory request to Category Service", extra, nil)
 
-	resp, err := c.client.UpdateCategory(ctx, &reqProto)
+	resp, err := c.client.UpdateCategory(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateCategory request failed", extra, err)
 		return datatransfers.CategoryResponse{}, err
@@ -179,7 +179,7 @@ func (c *categoryClient) DeleteCategory(ctx context.Context, id string) error {
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteCategory request to Category Service", extra, nil)
 
-	_, err := c.client.DeleteCategory(ctx, &reqProto)
+	_, err := c.client.DeleteCategory(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "DeleteCategory request failed", extra, err)
 		return err

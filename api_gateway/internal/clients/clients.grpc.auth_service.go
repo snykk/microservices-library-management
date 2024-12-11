@@ -59,7 +59,7 @@ func (authC *authClient) Register(ctx context.Context, dto datatransfers.Registe
 
 	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending Register request to Auth Service", extra, nil)
 
-	resp, err := authC.client.Register(ctx, &reqProto)
+	resp, err := authC.client.Register(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Register request failed", extra, err)
 		return datatransfers.RegisterResponse{}, err
@@ -92,7 +92,7 @@ func (authC *authClient) Login(ctx context.Context, dto datatransfers.LoginReque
 
 	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending Login request to Auth Service", extra, nil)
 
-	resp, err := authC.client.Login(ctx, &reqProto)
+	resp, err := authC.client.Login(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Login request failed", extra, err)
 		return datatransfers.LoginResponse{}, err
@@ -120,7 +120,7 @@ func (authC *authClient) SendOtp(ctx context.Context, dto datatransfers.SendOtpR
 
 	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending SendOtp request to Auth Service", extra, nil)
 
-	resp, err := authC.client.SendOTP(ctx, &reqProto)
+	resp, err := authC.client.SendOTP(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "SendOtp request failed", extra, err)
 		return datatransfers.SendOtpResponse{}, err
@@ -148,7 +148,7 @@ func (authC *authClient) VerifyEmail(ctx context.Context, dto datatransfers.Veri
 
 	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending VerifyEmail request to Auth Service", extra, nil)
 
-	resp, err := authC.client.VerifyEmail(ctx, &reqProto)
+	resp, err := authC.client.VerifyEmail(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "VerifyEmail request failed", extra, err)
 		return datatransfers.VerifyEmailResponse{}, err
@@ -174,7 +174,7 @@ func (authC *authClient) ValidateToken(ctx context.Context, dto datatransfers.Va
 
 	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ValidateToken request to Auth Service", extra, nil)
 
-	resp, err := authC.client.ValidateToken(ctx, &reqProto)
+	resp, err := authC.client.ValidateToken(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ValidateToken request failed", extra, err)
 		return datatransfers.ValidateTokenResponse{}, err

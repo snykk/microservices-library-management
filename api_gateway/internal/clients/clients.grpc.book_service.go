@@ -63,7 +63,7 @@ func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookReque
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateBook request to Book Service", extra, nil)
 
-	resp, err := b.client.CreateBook(ctx, &reqProto)
+	resp, err := b.client.CreateBook(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateBook request failed", extra, err)
 		return datatransfers.BookResponse{}, err
@@ -94,7 +94,7 @@ func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.Book
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBook request to Book Service", extra, nil)
 
-	resp, err := b.client.GetBook(ctx, &reqProto)
+	resp, err := b.client.GetBook(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBook request failed", extra, err)
 		return datatransfers.BookResponse{}, err
@@ -119,7 +119,7 @@ func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookRespons
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListBooks request to Book Service", nil, nil)
 
-	resp, err := b.client.ListBooks(ctx, &reqProto)
+	resp, err := b.client.ListBooks(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListBooks request failed", nil, err)
 		return nil, err
@@ -167,7 +167,7 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateBook request to Book Service", extra, nil)
 
-	resp, err := b.client.UpdateBook(ctx, &reqProto)
+	resp, err := b.client.UpdateBook(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateBook request failed", extra, err)
 		return datatransfers.BookResponse{}, err
@@ -198,7 +198,7 @@ func (b *bookClient) DeleteBook(ctx context.Context, id string) error {
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteBook request to Book Service", extra, nil)
 
-	_, err := b.client.DeleteBook(ctx, &reqProto)
+	_, err := b.client.DeleteBook(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "DeleteBook request failed", extra, err)
 		return err
@@ -221,7 +221,7 @@ func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByCategory request to Book Service", extra, nil)
 
-	resp, err := b.client.GetBooksByCategory(ctx, &reqProto)
+	resp, err := b.client.GetBooksByCategory(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByCategory request failed", extra, err)
 		return nil, err
@@ -257,7 +257,7 @@ func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string) ([
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByAuthor request to Book Service", extra, nil)
 
-	resp, err := b.client.GetBooksByAuthor(ctx, &reqProto)
+	resp, err := b.client.GetBooksByAuthor(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByAuthor request failed", extra, err)
 		return nil, err

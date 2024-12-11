@@ -55,7 +55,7 @@ func (u *userClient) GetUserById(ctx context.Context, userId string) (datatransf
 
 	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserById request to User Service", extra, nil)
 
-	resp, err := u.client.GetUserById(ctx, &reqProto)
+	resp, err := u.client.GetUserById(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserById request failed", extra, err)
 		return datatransfers.UserResponse{}, err
@@ -87,7 +87,7 @@ func (u *userClient) GetUserByEmail(ctx context.Context, email string) (datatran
 
 	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserByEmail request to User Service", extra, nil)
 
-	resp, err := u.client.GetUserByEmail(ctx, &reqProto)
+	resp, err := u.client.GetUserByEmail(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserByEmail request failed", extra, err)
 		return datatransfers.UserResponse{}, err
@@ -113,7 +113,7 @@ func (u *userClient) ListUsers(ctx context.Context) ([]datatransfers.UserRespons
 
 	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUsers request to User Service", nil, nil)
 
-	resp, err := u.client.ListUsers(ctx, &reqProto)
+	resp, err := u.client.ListUsers(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUsers request failed", nil, err)
 		return nil, err

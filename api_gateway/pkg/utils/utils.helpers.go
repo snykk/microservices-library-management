@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+
+	"google.golang.org/grpc/metadata"
 )
 
 func GetLocation() string {
@@ -24,4 +26,13 @@ func GetRequestIDFromContext(ctx context.Context) string {
 	}
 
 	return requestID
+}
+
+// GetProtoContext adds a request ID to the gRPC metadata context.
+func GetProtoContext(ctx context.Context) context.Context {
+	requestID := GetRequestIDFromContext(ctx)
+
+	md := metadata.Pairs(constants.ContextProtoRequestIDKey, requestID) // all upercase md key automatically convert to lower
+
+	return metadata.NewOutgoingContext(ctx, md)
 }

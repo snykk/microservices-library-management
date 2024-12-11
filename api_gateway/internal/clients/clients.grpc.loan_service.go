@@ -65,7 +65,7 @@ func (l *loanClient) CreateLoan(ctx context.Context, userId, email string, dto d
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateLoan request to Loan Service", extra, nil)
 
-	resp, err := l.client.CreateLoan(ctx, &reqProto)
+	resp, err := l.client.CreateLoan(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "CreateLoan request failed", extra, err)
 		return datatransfers.LoanResponse{}, err
@@ -100,7 +100,7 @@ func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.Loan
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetLoan request to Loan Service", extra, nil)
 
-	resp, err := l.client.GetLoan(ctx, &reqProto)
+	resp, err := l.client.GetLoan(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetLoan request failed", extra, err)
 
@@ -144,7 +144,7 @@ func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateLoanStatus request to Loan Service", extra, nil)
 
-	resp, err := l.client.UpdateLoanStatus(ctx, &reqProto)
+	resp, err := l.client.UpdateLoanStatus(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "UpdateLoanStatus request failed", extra, err)
 		return datatransfers.LoanResponse{}, err
@@ -184,7 +184,7 @@ func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatr
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUserLoans request to Loan Service", extra, nil)
 
-	resp, err := l.client.ListUserLoans(ctx, &reqProto)
+	resp, err := l.client.ListUserLoans(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUserLoans request failed", extra, err)
 		return nil, err
@@ -272,7 +272,7 @@ func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status st
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserLoansByStatus request to Loan Service", extra, nil)
 
-	resp, err := l.client.GetUserLoansByStatus(ctx, &reqProto)
+	resp, err := l.client.GetUserLoansByStatus(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserLoansByStatus request failed", extra, err)
 		return nil, err
@@ -317,7 +317,7 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]dat
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetLoansByStatus request to Loan Service", extra, nil)
 
-	resp, err := l.client.GetLoansByStatus(ctx, &reqProto)
+	resp, err := l.client.GetLoansByStatus(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetLoansByStatus request failed", extra, err)
 		return nil, err
@@ -368,7 +368,7 @@ func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, r
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ReturnLoan request to Loan Service", extra, nil)
 
-	resp, err := l.client.ReturnLoan(ctx, &reqProto)
+	resp, err := l.client.ReturnLoan(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ReturnLoan request failed", extra, err)
 		return datatransfers.LoanResponse{}, err
