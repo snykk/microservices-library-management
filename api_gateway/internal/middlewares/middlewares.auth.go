@@ -103,7 +103,7 @@ func (m *AuthMiddleware) Authenticate() fiber.Handler {
 		dto := datatransfers.ValidateTokenRequest{
 			Token: token,
 		}
-		res, err := m.authClient.ValidateToken(context.Background(), dto) // Call auth_service to validate token
+		res, err := m.authClient.ValidateToken(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), dto) // Call auth_service to validate token
 		if err != nil || !res.Valid {
 			// logger.Log.Error("Authentication failed",
 			// 	zap.String("request_id", requestID),

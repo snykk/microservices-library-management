@@ -76,7 +76,7 @@ func main() {
 	userService := service.NewUserService(userRepo)
 
 	// gRPC Server
-	address := fmt.Sprintf(":%s")
+	address := fmt.Sprintf(":%s", configs.AppConfig.GrpcPort)
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatalf("Failed to listen on %s: %v", address, err)
