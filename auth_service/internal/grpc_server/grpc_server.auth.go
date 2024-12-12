@@ -32,7 +32,7 @@ func NewAuthServer(authService service.AuthService, redisCache redis.RedisCache,
 }
 
 func (s *authServer) Register(ctx context.Context, req *protoAuth.RegisterRequest) (*protoAuth.RegisterResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received Register request", map[string]interface{}{"email": req.Email, "username": req.Username}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -66,7 +66,7 @@ func (s *authServer) Register(ctx context.Context, req *protoAuth.RegisterReques
 }
 
 func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest) (*protoAuth.SendOTPResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received SendOTP request", map[string]interface{}{"email": req.Email}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -95,7 +95,7 @@ func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest)
 }
 
 func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmailRequest) (*protoAuth.VerifyEmailResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received VerifyEmail request", map[string]interface{}{"email": req.Email}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -134,7 +134,7 @@ func (s *authServer) VerifyEmail(ctx context.Context, req *protoAuth.VerifyEmail
 }
 
 func (s *authServer) Login(ctx context.Context, req *protoAuth.LoginRequest) (*protoAuth.LoginResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received Login request", map[string]interface{}{"email": req.Email}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -160,7 +160,7 @@ func (s *authServer) Login(ctx context.Context, req *protoAuth.LoginRequest) (*p
 }
 
 func (s *authServer) ValidateToken(ctx context.Context, req *protoAuth.ValidateTokenRequest) (*protoAuth.ValidateTokenResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ValidateToken request", map[string]interface{}{"token": req.Token}, nil)
 
 	if err := req.Validate(); err != nil {

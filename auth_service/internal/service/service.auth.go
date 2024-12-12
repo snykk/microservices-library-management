@@ -71,10 +71,7 @@ func (s *authService) Register(ctx context.Context, req *models.RegisterRequest)
 
 func (s *authService) SendOTP(ctx context.Context, email string) (*string, error) {
 	// Get requestID from context
-	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
-	if !ok || requestID == "" {
-		requestID = "unknown"
-	}
+	requestID := utils.GetRequestIDFromContext(ctx)
 
 	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {

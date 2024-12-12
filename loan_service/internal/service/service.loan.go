@@ -44,10 +44,7 @@ func NewLoanService(repo repository.LoanRepository, bookClient clients.BookClien
 
 func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId string) (*models.LoanRecord, codes.Code, error) {
 	// Get requestID from context
-	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
-	if !ok || requestID == "" {
-		requestID = "unknown"
-	}
+	requestID := utils.GetRequestIDFromContext(ctx)
 
 	log.Printf("[%s] Creating new loan for user %s and book %s\n", utils.GetLocation(), userId, bookId)
 
@@ -108,10 +105,7 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId stri
 
 func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
 	// Get requestID from context
-	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
-	if !ok || requestID == "" {
-		requestID = "unknown"
-	}
+	requestID := utils.GetRequestIDFromContext(ctx)
 
 	log.Printf("[%s] Returning loan with ID %s for user %s\n", utils.GetLocation(), id, userId)
 

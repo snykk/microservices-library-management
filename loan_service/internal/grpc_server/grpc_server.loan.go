@@ -27,7 +27,7 @@ func NewLoanGRPCServer(loanService service.LoanService, logger *logger.Logger) p
 }
 
 func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLoanRequest) (*protoLoan.LoanResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received CreateLoan request", map[string]interface{}{"user_id": req.UserId, "book_id": req.BookId, "email": req.Email}, nil)
 
 	// Validate request from client
@@ -58,7 +58,7 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 }
 
 func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLoanRequest) (*protoLoan.LoanResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ReturnLoan request", map[string]interface{}{"loan_id": req.Id, "user_id": req.UserId, "email": req.Email, "return_date": req.ReturnDate}, nil)
 
 	// Validate request from client
@@ -90,7 +90,7 @@ func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLo
 }
 
 func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequest) (*protoLoan.LoanResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetLoan request", map[string]interface{}{"loan_id": req.Id}, nil)
 
 	// Validate request from client
@@ -129,7 +129,7 @@ func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequ
 }
 
 func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.UpdateLoanStatusRequest) (*protoLoan.LoanResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received UpdateLoanStatus request", map[string]interface{}{"loan_id": req.Id, "status": req.Status}, nil)
 
 	// Validate request from client
@@ -168,7 +168,7 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 }
 
 func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListUserLoansRequest) (*protoLoan.ListLoansResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ListUserLoans request", map[string]interface{}{"user_id": req.UserId}, nil)
 
 	// Validate request from client
@@ -212,7 +212,7 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 }
 
 func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoansRequest) (*protoLoan.ListLoansResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ListLoans request", nil, nil)
 
 	// Validate request from client
@@ -257,7 +257,7 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 
 func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoan.GetUserLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
 	// Mendapatkan request ID dari konteks untuk logging
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 
 	// Logging permintaan untuk mendapatkan pinjaman berdasarkan status pengguna
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetUserLoansByStatus request", map[string]interface{}{"user_id": req.UserId, "status": req.Status}, nil)
@@ -310,7 +310,7 @@ func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoa
 
 func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.GetLoansByStatusRequest) (*protoLoan.ListLoansResponse, error) {
 	// Mendapatkan request ID dari konteks untuk logging
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 
 	// Logging permintaan untuk mendapatkan pinjaman berdasarkan status
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetLoansByStatus request", map[string]interface{}{"status": req.Status}, nil)

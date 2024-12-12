@@ -9,7 +9,7 @@ const (
 	OTPQueue = "otp_code"
 	LogQueue = "log_queue"
 
-	LogServiceAuth = "auth-service"
+	LogServiceUser = "user-service"
 
 	LogLevelInfo  = "info"
 	LogLevelDebug = "debug"

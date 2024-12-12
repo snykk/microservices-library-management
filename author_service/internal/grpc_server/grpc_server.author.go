@@ -29,7 +29,7 @@ func NewAuthorGRPCServer(authorService service.AuthorService, logger *logger.Log
 }
 
 func (s *authorGRPCServer) CreateAuthor(ctx context.Context, req *protoAuthor.CreateAuthorRequest) (*protoAuthor.CreateAuthorResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received CreateAuthor request", map[string]interface{}{"name": req.Name, "biography": req.Biography}, nil)
 
 	// Validate request from client
@@ -61,7 +61,7 @@ func (s *authorGRPCServer) CreateAuthor(ctx context.Context, req *protoAuthor.Cr
 }
 
 func (s *authorGRPCServer) GetAuthor(ctx context.Context, req *protoAuthor.GetAuthorRequest) (*protoAuthor.GetAuthorResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetAuthor request", map[string]interface{}{"author_id": req.Id}, nil)
 
 	// Validate request from client
@@ -90,7 +90,7 @@ func (s *authorGRPCServer) GetAuthor(ctx context.Context, req *protoAuthor.GetAu
 }
 
 func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.ListAuthorsRequest) (*protoAuthor.ListAuthorsResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ListAuthors request", nil, nil)
 
 	// Validate request from client
@@ -124,7 +124,7 @@ func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.Lis
 }
 
 func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.UpdateAuthorRequest) (*protoAuthor.UpdateAuthorResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received UpdateAuthor request", map[string]interface{}{"author_id": req.Id, "name": req.Name, "biography": req.Biography}, nil)
 
 	// Validate request from client
@@ -156,7 +156,7 @@ func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.Up
 }
 
 func (s *authorGRPCServer) DeleteAuthor(ctx context.Context, req *protoAuthor.DeleteAuthorRequest) (*protoAuthor.DeleteAuthorResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received DeleteAuthor request", map[string]interface{}{"author_id": req.Id}, nil)
 
 	// Validate request from client

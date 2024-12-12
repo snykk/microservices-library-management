@@ -11,7 +11,7 @@ const (
 	LoanNotificationQueue   = "loan_notification"
 	ReturnNotificationQueue = "return_notification"
 
-	LogServiceAuth = "auth-service"
+	LogServiceMailer = "mailer-service"
 
 	LogLevelInfo  = "info"
 	LogLevelDebug = "debug"

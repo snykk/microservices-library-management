@@ -27,7 +27,7 @@ func NewUserGRPCServer(userService service.UserService, logger *logger.Logger) p
 }
 
 func (s *userGRPCServer) GetUserById(ctx context.Context, req *protoUser.GetUserByIdRequest) (*protoUser.GetUserByIdResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetUserById request", map[string]interface{}{"user_id": req.UserId}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -58,7 +58,7 @@ func (s *userGRPCServer) GetUserById(ctx context.Context, req *protoUser.GetUser
 }
 
 func (s *userGRPCServer) GetUserByEmail(ctx context.Context, req *protoUser.GetUserByEmailRequest) (*protoUser.GetUserByEmailResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetUserByEmail request", map[string]interface{}{"email": req.Email}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -89,7 +89,7 @@ func (s *userGRPCServer) GetUserByEmail(ctx context.Context, req *protoUser.GetU
 }
 
 func (s *userGRPCServer) ListUsers(ctx context.Context, req *protoUser.ListUsersRequest) (*protoUser.ListUsersResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ListUsers request", nil, nil)
 
 	if err := req.Validate(); err != nil {

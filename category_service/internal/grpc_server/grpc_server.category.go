@@ -28,7 +28,7 @@ func NewCategoryGRPCServer(categoryService service.CategoryService, logger *logg
 }
 
 func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCategory.CreateCategoryRequest) (*protoCategory.CreateCategoryResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received CreateCategory request", map[string]interface{}{"name": req.Name}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -55,7 +55,7 @@ func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory.GetCategoryRequest) (*protoCategory.GetCategoryResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetCategory request", map[string]interface{}{"category_id": req.Id}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -82,7 +82,7 @@ func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory
 }
 
 func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCategory.ListCategoriesRequest) (*protoCategory.ListCategoriesResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ListCategories request", nil, nil)
 
 	if err := req.Validate(); err != nil {
@@ -114,7 +114,7 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCategory.UpdateCategoryRequest) (*protoCategory.UpdateCategoryResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received UpdateCategory request", map[string]interface{}{"category_id": req.Id, "name": req.Name}, nil)
 
 	if err := req.Validate(); err != nil {
@@ -141,7 +141,7 @@ func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCateg
 }
 
 func (s *categoryGRPCServer) DeleteCategory(ctx context.Context, req *protoCategory.DeleteCategoryRequest) (*protoCategory.DeleteCategoryResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received DeleteCategory request", map[string]interface{}{"category_id": req.Id}, nil)
 
 	if err := req.Validate(); err != nil {

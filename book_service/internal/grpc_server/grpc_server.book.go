@@ -29,7 +29,7 @@ func NewBookGRPCServer(bookService service.BookService, logger *logger.Logger) p
 }
 
 func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBookRequest) (*protoBook.CreateBookResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received CreateBook request", map[string]interface{}{"title": req.Title, "author_id": req.AuthorId, "category_id": req.CategoryId}, nil)
 
 	// Validate request from client
@@ -79,7 +79,7 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 }
 
 func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.GetBooksByAuthorRequest) (*protoBook.ListBooksResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetBooksByAuthor request", map[string]interface{}{"author_id": req.AuthorId}, nil)
 
 	// Validate request from client
@@ -115,7 +115,7 @@ func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.Ge
 }
 
 func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.GetBooksByCategoryRequest) (*protoBook.ListBooksResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetBooksByCategory request", map[string]interface{}{"category_id": req.CategoryId}, nil)
 
 	// Validate request from client
@@ -151,7 +151,7 @@ func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.
 }
 
 func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequest) (*protoBook.GetBookResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received GetBook request", map[string]interface{}{"book_id": req.Id}, nil)
 
 	// Validate request from client
@@ -182,7 +182,7 @@ func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequ
 }
 
 func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooksRequest) (*protoBook.ListBooksResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received ListBooks request", nil, nil)
 
 	// Validate request from client
@@ -218,7 +218,7 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 }
 
 func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBookRequest) (*protoBook.UpdateBookResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received UpdateBook request", map[string]interface{}{"book_id": req.Id, "title": req.Title, "author_id": req.AuthorId, "category_id": req.CategoryId}, nil)
 
 	// Validate request from client
@@ -268,7 +268,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 }
 
 func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBookRequest) (*protoBook.DeleteBookResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received DeleteBook request", map[string]interface{}{"book_id": req.Id}, nil)
 
 	// Validate request from client
@@ -291,7 +291,7 @@ func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBo
 }
 
 func (s *bookGRPCServer) UpdateBookStock(ctx context.Context, req *protoBook.UpdateBookStockRequest) (*protoBook.UpdateBookStockResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received UpdateBookStock request", map[string]interface{}{"book_id": req.Id, "new_stock": req.Stock}, nil)
 
 	// Validate request from client
@@ -314,7 +314,7 @@ func (s *bookGRPCServer) UpdateBookStock(ctx context.Context, req *protoBook.Upd
 }
 
 func (s *bookGRPCServer) IncrementBookStock(ctx context.Context, req *protoBook.IncrementBookStockRequest) (*protoBook.IncrementBookStockResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received IncrementBookStock request", map[string]interface{}{"book_id": req.Id}, nil)
 
 	// Validate request from client
@@ -337,7 +337,7 @@ func (s *bookGRPCServer) IncrementBookStock(ctx context.Context, req *protoBook.
 }
 
 func (s *bookGRPCServer) DecrementBookStock(ctx context.Context, req *protoBook.DecrementBookStockRequest) (*protoBook.DecrementBookStockResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received DecrementBookStock request", map[string]interface{}{"book_id": req.Id}, nil)
 
 	// Validate request from client

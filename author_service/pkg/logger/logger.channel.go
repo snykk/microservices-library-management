@@ -75,7 +75,7 @@ func (l *Logger) LogMessage(caller, requestID, level, message string, extra map[
 
 	logMsg := models.LogMessage{
 		Timestamp:      time.Now(),
-		Service:        constants.LogServiceAuth,
+		Service:        constants.LogServiceAuthor,
 		Level:          level,
 		XCorrelationID: requestID,
 		Caller:         caller,
