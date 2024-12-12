@@ -74,7 +74,7 @@ func (s *authServer) SendOTP(ctx context.Context, req *protoAuth.SendOTPRequest)
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	otpCode, err := s.authService.SendOTP(ctx, req.Email)
+	otpCode, err := s.authService.SendOTP(context.WithValue(ctx, constants.ContextRequestIDKey, requestID), req.Email)
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to send OTP", nil, err)
 		return nil, exception.GRPCErrorFormatter(err)

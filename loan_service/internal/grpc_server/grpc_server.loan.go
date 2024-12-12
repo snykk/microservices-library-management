@@ -36,7 +36,7 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loan, code, err := s.loanService.CreateLoan(ctx, req.UserId, req.Email, req.BookId)
+	loan, code, err := s.loanService.CreateLoan(context.WithValue(ctx, constants.ContextRequestIDKey, requestID), req.UserId, req.Email, req.BookId)
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to create loan", nil, err)
 		return nil, status.Error(code, err.Error())
@@ -67,7 +67,7 @@ func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLo
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loan, code, err := s.loanService.ReturnLoan(ctx, req.Id, req.UserId, req.Email, time.Unix(req.ReturnDate, 0))
+	loan, code, err := s.loanService.ReturnLoan(context.WithValue(ctx, constants.ContextRequestIDKey, requestID), req.Id, req.UserId, req.Email, time.Unix(req.ReturnDate, 0))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to return loan", nil, err)
 		return nil, status.Error(code, err.Error())

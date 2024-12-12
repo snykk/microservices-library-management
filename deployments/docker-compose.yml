@@ -156,6 +156,9 @@ services:
             EMAIL_SENDER_CONTAINER_FILE: "/run/secrets/email_sender"
             EMAIL_PASSWORD_CONTAINER_FILE: "/run/secrets/email_password"
             RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
+            LOGGER_WORKER_TYPE: "single"
+            LOGGER_WORKER_NUM: 5
+            LOGGER_WORKER_BUFFER_SIZE: 100
         secrets:
             - email_sender
             - email_password

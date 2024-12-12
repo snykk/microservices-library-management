@@ -43,6 +43,12 @@ func NewLoanService(repo repository.LoanRepository, bookClient clients.BookClien
 }
 
 func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId string) (*models.LoanRecord, codes.Code, error) {
+	// Get requestID from context
+	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
+	if !ok || requestID == "" {
+		requestID = "unknown"
+	}
+
 	log.Printf("[%s] Creating new loan for user %s and book %s\n", utils.GetLocation(), userId, bookId)
 
 	// Check if the user already borrowed this book
@@ -86,9 +92,10 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId stri
 
 	// Publish loan notification
 	err = s.publisher.Publish(constants.EmailExchange, constants.LoanNotificationQueue, models.LoanNotificationMessage{
-		Email: email,
-		Book:  book.Title,
-		Due:   time.Now().AddDate(0, 0, 7),
+		RequestID: requestID,
+		Email:     email,
+		Book:      book.Title,
+		Due:       time.Now().AddDate(0, 0, 7),
 	})
 	if err != nil {
 		log.Printf("[%s] Failed to publish loan notification for user %s: %v\n", utils.GetLocation(), userId, err)
@@ -100,6 +107,12 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId stri
 }
 
 func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
+	// Get requestID from context
+	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
+	if !ok || requestID == "" {
+		requestID = "unknown"
+	}
+
 	log.Printf("[%s] Returning loan with ID %s for user %s\n", utils.GetLocation(), id, userId)
 
 	// Fetch the loan record
@@ -140,8 +153,9 @@ func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, 
 
 	// Publish return notification
 	err = s.publisher.Publish(constants.EmailExchange, constants.ReturnNotificationQueue, models.ReturnNotificationMessage{
-		Email: email,
-		Book:  book.Title,
+		RequestID: requestID,
+		Email:     email,
+		Book:      book.Title,
 	})
 	if err != nil {
 		log.Printf("[%s] Failed to publish return notification for user %s: %v\n", utils.GetLocation(), userId, err)

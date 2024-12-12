@@ -2,31 +2,37 @@ package consumer
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"mailer_service/internal/constants"
 	"mailer_service/internal/mailer"
+	"mailer_service/pkg/logger"
+	"mailer_service/pkg/utils"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type OTPMessage struct {
-	Email string `json:"email"`
-	OTP   string `json:"otp"`
+	RequestID string `json:"X-Correlation-ID"` // for logging purpose
+	Email     string `json:"email"`
+	OTP       string `json:"otp"`
 }
 
 type LoanNotificationMessage struct {
-	Email string    `json:"email"`
-	Book  string    `json:"book"`
-	Due   time.Time `json:"due"`
+	RequestID string    `json:"X-Correlation-ID"` // for logging purpose
+	Email     string    `json:"email"`
+	Book      string    `json:"book"`
+	Due       time.Time `json:"due"`
 }
 
 type ReturnNotificationMessage struct {
-	Email string `json:"email"`
-	Book  string `json:"book"`
+	RequestID string `json:"X-Correlation-ID"` // for logging purpose
+	Email     string `json:"email"`
+	Book      string `json:"book"`
 }
 
-func StartConsuming(ch *amqp.Channel, mailerService mailer.MailerService) error {
+func StartConsuming(ch *amqp.Channel, mailerService mailer.MailerService, logger *logger.Logger) error {
 	// Declare exchange (e.g., direct exchange)
 	err := ch.ExchangeDeclare(
 		constants.EmailExchange, // Exchange name
@@ -72,7 +78,7 @@ func StartConsuming(ch *amqp.Channel, mailerService mailer.MailerService) error 
 
 	// Consume all queues
 	for _, queueName := range queues {
-		go consumeQueue(ch, queueName, mailerService)
+		go consumeQueue(ch, queueName, mailerService, logger)
 	}
 
 	// Wait for consumer processes
@@ -80,7 +86,7 @@ func StartConsuming(ch *amqp.Channel, mailerService mailer.MailerService) error 
 	select {}
 }
 
-func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.MailerService) {
+func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.MailerService, logger *logger.Logger) {
 	msgs, err := ch.Consume(
 		queueName, // Queue
 		"",        // Consumer
@@ -95,13 +101,22 @@ func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.Maile
 	}
 
 	for d := range msgs {
+		var requestID string = "unknown"
+		var extra map[string]interface{}
 		switch queueName {
 		case constants.OTPQueue:
 			var message OTPMessage
 			if err := json.Unmarshal(d.Body, &message); err != nil {
 				log.Printf("Failed to parse OTP message: %v", err)
 				d.Nack(false, true)
+				log.Println("Retry later...")
+				logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to parse OTP message: %v", err), extra, err)
 				continue
+			}
+			requestID = message.RequestID
+			extra = map[string]interface{}{
+				"email": message.Email,
+				"otp":   message.OTP,
 			}
 			err = mailerService.SendOTP(message.Email, message.OTP)
 
@@ -110,7 +125,15 @@ func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.Maile
 			if err := json.Unmarshal(d.Body, &message); err != nil {
 				log.Printf("Failed to parse loan notification message: %v", err)
 				d.Nack(false, true)
+				log.Println("Retry later...")
+				logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to parse loan notification message: %v", err), extra, err)
 				continue
+			}
+			requestID = message.RequestID
+			extra = map[string]interface{}{
+				"email":      message.Email,
+				"book_title": message.Book,
+				"due_date":   message.Due,
 			}
 			err = mailerService.SendLoanNotification(message.Email, message.Book, message.Due)
 
@@ -119,15 +142,25 @@ func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.Maile
 			if err := json.Unmarshal(d.Body, &message); err != nil {
 				log.Printf("Failed to parse return notification message: %v", err)
 				d.Nack(false, true)
+				log.Println("Retry later...")
+				logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to parse return notification message: %v", err), extra, err)
 				continue
+			}
+			requestID = message.RequestID
+			extra = map[string]interface{}{
+				"email":      message.Email,
+				"book_title": message.Book,
 			}
 			err = mailerService.SendReturnNotification(message.Email, message.Book)
 		}
 
 		if err != nil {
+			logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to send email for queue %s: %v", queueName, err), extra, err)
 			log.Printf("Failed to send email for queue %s: %v", queueName, err)
 			d.Nack(false, true)
+			log.Println("Retry later...")
 		} else {
+			logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, fmt.Sprintf("Successfully processed message from exchange:%s queue:%s", constants.EmailExchange, queueName), extra, nil)
 			log.Printf("Successfully processed message from queue %s", queueName)
 			d.Ack(false)
 		}

@@ -70,6 +70,12 @@ func (s *authService) Register(ctx context.Context, req *models.RegisterRequest)
 }
 
 func (s *authService) SendOTP(ctx context.Context, email string) (*string, error) {
+	// Get requestID from context
+	requestID, ok := ctx.Value(constants.ContextRequestIDKey).(string)
+	if !ok || requestID == "" {
+		requestID = "unknown"
+	}
+
 	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		log.Printf("[%s] Failed when get email %s: %v\n", utils.GetLocation(), email, err)
@@ -89,8 +95,9 @@ func (s *authService) SendOTP(ctx context.Context, email string) (*string, error
 
 	// Publish to RabbitMQ
 	err = s.publisher.Publish(constants.EmailExchange, constants.OTPQueue, map[string]string{
-		"email": email,
-		"otp":   otp,
+		"X-Correlation-ID": requestID,
+		"email":            email,
+		"otp":              otp,
 	})
 	if err != nil {
 		log.Printf("[%s] Failed to publish to RabbitMQ: %v\n", utils.GetLocation(), err)
