@@ -43,7 +43,7 @@ func (cache *redisCache) Set(key string, value interface{}) error {
 		return err
 	}
 
-	return cache.client.Set(cache.client.Context(), key, json, cache.expires*time.Minute).Err()
+	return cache.client.Set(cache.client.Context(), key, json, cache.expires).Err()
 }
 
 func (cache *redisCache) SetWithExpiration(key string, value interface{}, expiration time.Duration) error {

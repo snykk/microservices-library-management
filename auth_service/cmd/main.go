@@ -1,12 +1,13 @@
 package main
 
 import (
+	"auth_service/configs"
 	"auth_service/internal/constants"
 	"auth_service/internal/grpc_server"
 	"auth_service/internal/repository"
 	"auth_service/internal/service"
 	"auth_service/pkg/jwt"
-	"auth_service/pkg/logger"
+	loggerPackage "auth_service/pkg/logger"
 	"auth_service/pkg/mailer"
 	"auth_service/pkg/rabbitmq"
 	"auth_service/pkg/redis"
@@ -15,8 +16,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"os"
-	"time"
 
 	protoAuth "auth_service/proto/auth_service"
 
@@ -31,20 +30,16 @@ import (
 )
 
 func init() {
-	log.Println("Initializing application...")
+	// Load app config
+	if err := configs.InitializeAppConfig(); err != nil {
+		log.Fatal("Failed to load app config", err)
+	}
+	log.Println("App configuration loaded")
 }
 
 func main() {
-	redisHost := os.Getenv("REDIS_HOST")
-	redisPort := os.Getenv("REDIS_PORT")
-	redisPassword := os.Getenv("REDIS_PASSWORD")
-	grpcPort := os.Getenv("GRPC_PORT")
-	jwtSecret := os.Getenv("JWT_SECRET")
-	dsn := os.Getenv("DSN")
-	rabbitMQURL := os.Getenv("RABBITMQ_URL")
-
 	// Connect to RabbitMQ
-	conn, err := amqp.Dial(rabbitMQURL)
+	conn, err := amqp.Dial(configs.AppConfig.RabbitMQURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
@@ -69,21 +64,26 @@ func main() {
 	}
 
 	// logger
-	logger := logger.NewLoggerSingleWorker(rabbitMQPublisher, 100)
+	var logger *loggerPackage.Logger
+	if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeSingle {
+		logger = loggerPackage.NewLoggerSingleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerBufferSize)
+	} else if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeMultiple {
+		logger = loggerPackage.NewLoggerMultipleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerNum, configs.AppConfig.LoggerWorkerBufferSize)
+	}
 	defer logger.Close()
 
 	// Email service env
-	emailSenderBytes, err := ioutil.ReadFile(os.Getenv("EMAIL_SENDER_CONTAINER_FILE"))
+	emailSenderBytes, err := ioutil.ReadFile(configs.AppConfig.EmailSenderContainerFile)
 	if err != nil {
 		log.Fatalf("Error reading email sender secret: %v", err)
 	}
 
-	emailPasswordBytes, err := ioutil.ReadFile(os.Getenv("EMAIL_PASSWORD_CONTAINER_FILE"))
+	emailPasswordBytes, err := ioutil.ReadFile(configs.AppConfig.EmailPasswordContainerFile)
 	if err != nil {
 		log.Fatalf("Error reading email password secret: %v", err)
 	}
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := sql.Open("pgx", configs.AppConfig.DSN)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -95,10 +95,10 @@ func main() {
 	}
 
 	// Redis cache
-	redisCache := redis.NewRedisCache(fmt.Sprintf("%s:%s", redisHost, redisPort), 0, redisPassword, 10*time.Minute)
+	redisCache := redis.NewRedisCache(fmt.Sprintf("%s:%s", configs.AppConfig.RedisHost, configs.AppConfig.RedisPort), configs.AppConfig.RedisDB, configs.AppConfig.RedisPassword, configs.AppConfig.RedisDefaultExp)
 
 	// JWT Service
-	jwtService := jwt.NewJWTService(jwtSecret, "auth_service", 15, 60)
+	jwtService := jwt.NewJWTService(configs.AppConfig.JwtSecret, configs.AppConfig.JwtIssuer, configs.AppConfig.JwtExpAccessToken, configs.AppConfig.JwtExpRefreshToken)
 
 	// Mailer Service
 	mailerService := mailer.NewOTPMailer(string(emailSenderBytes), string(emailPasswordBytes))
@@ -108,9 +108,10 @@ func main() {
 	authService := service.NewAuthService(authRepo, jwtService, mailerService, rabbitMQPublisher)
 
 	// gRPC Server
-	lis, err := net.Listen("tcp", ":"+grpcPort)
+	address := fmt.Sprintf(":%s", configs.AppConfig.GrpcPort)
+	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
+		log.Fatalf("Failed to listen on %s: %v", address, err)
 	}
 
 	grpcServer := grpc.NewServer()
@@ -120,7 +121,7 @@ func main() {
 	// Enable gRPC reflection for debugging
 	reflection.Register(grpcServer)
 
-	log.Printf("gRPC server is running on port %s", grpcPort)
+	log.Printf("gRPC server is running on %s", address)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve gRPC: %v", err)
 	}

@@ -23,11 +23,11 @@ type JwtCustomClaim struct {
 type jwtService struct {
 	secretKey           string
 	issuer              string
-	expiredAccessToken  int
-	expiredRefreshToken int
+	expiredAccessToken  time.Duration
+	expiredRefreshToken time.Duration
 }
 
-func NewJWTService(secretKey, issuer string, expiredAccessToken int, expiredRefreshToken int) JWTService {
+func NewJWTService(secretKey, issuer string, expiredAccessToken, expiredRefreshToken time.Duration) JWTService {
 	return &jwtService{
 		issuer:              issuer,
 		secretKey:           secretKey,
@@ -43,7 +43,7 @@ func (j *jwtService) GenerateToken(userID string, Role string, email string) (t 
 		Role,
 		email,
 		driJWT.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * time.Duration(j.expiredAccessToken)).Unix(),
+			ExpiresAt: time.Now().Add(j.expiredAccessToken).Unix(),
 			Issuer:    j.issuer,
 			IssuedAt:  time.Now().Unix(),
 		},
@@ -59,7 +59,7 @@ func (j *jwtService) GenerateRefreshToken(userID string, Role string, email stri
 		Role,
 		email,
 		driJWT.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * time.Duration(j.expiredRefreshToken)).Unix(),
+			ExpiresAt: time.Now().Add(j.expiredRefreshToken).Unix(),
 			Issuer:    j.issuer,
 			IssuedAt:  time.Now().Unix(),
 		},
