@@ -1,16 +1,17 @@
 package main
 
 import (
+	"book_service/configs"
 	"book_service/internal/clients"
 	"book_service/internal/constants"
 	"book_service/internal/grpc_server"
 	"book_service/internal/repository"
 	"book_service/internal/service"
-	"book_service/pkg/logger"
+	loggerPackage "book_service/pkg/logger"
 	"book_service/pkg/rabbitmq"
+	"fmt"
 	"log"
 	"net"
-	"os"
 
 	protoBook "book_service/proto/book_service"
 
@@ -22,12 +23,16 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func main() {
-	grpcPort := os.Getenv("GRPC_PORT")
-	rabbitMQURL := os.Getenv("RABBITMQ_URL")
-	dsn := os.Getenv("DSN")
+func init() {
+	// Load app config
+	if err := configs.InitializeAppConfig(); err != nil {
+		log.Fatal("Failed to load app config", err)
+	}
+	log.Println("App configuration loaded")
+}
 
-	db, err := sqlx.Open("postgres", dsn)
+func main() {
+	db, err := sqlx.Open("postgres", configs.AppConfig.DSN)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -39,7 +44,7 @@ func main() {
 	}
 
 	// Connect to RabbitMQ
-	conn, err := amqp.Dial(rabbitMQURL)
+	conn, err := amqp.Dial(configs.AppConfig.RabbitMQURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
@@ -59,7 +64,12 @@ func main() {
 	}
 
 	// logger
-	logger := logger.NewLoggerSingleWorker(rabbitMQPublisher, 100)
+	var logger *loggerPackage.Logger
+	if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeSingle {
+		logger = loggerPackage.NewLoggerSingleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerBufferSize)
+	} else if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeMultiple {
+		logger = loggerPackage.NewLoggerMultipleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerNum, configs.AppConfig.LoggerWorkerBufferSize)
+	}
 	defer logger.Close()
 
 	// Clients
@@ -77,9 +87,10 @@ func main() {
 	bookService := service.NewBookService(bookRepo, authorClient, categoryClient)
 
 	// gRPC Server
-	lis, err := net.Listen("tcp", ":"+grpcPort)
+	address := fmt.Sprintf(":%s", configs.AppConfig.GrpcPort)
+	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("Failed to listen on port %s: %v", grpcPort, err)
+		log.Fatalf("Failed to listen on %s: %v", address, err)
 	}
 
 	grpcServer := grpc.NewServer()
@@ -89,7 +100,7 @@ func main() {
 	// Enable gRPC reflection for debugging
 	reflection.Register(grpcServer)
 
-	log.Printf("gRPC server is running on port %s", grpcPort)
+	log.Printf("gRPC server is running on %s", address)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve gRPC: %v", err)
 	}
