@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"loan_service/internal/clients"
+	"loan_service/internal/constants"
 	"loan_service/internal/models"
 	"loan_service/internal/repository"
 	"loan_service/pkg/rabbitmq"
@@ -84,7 +85,7 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId stri
 	}
 
 	// Publish loan notification
-	err = s.publisher.Publish("email_exchange", "loan_notification", models.LoanNotificationMessage{
+	err = s.publisher.Publish(constants.EmailExchange, constants.LoanNotificationQueue, models.LoanNotificationMessage{
 		Email: email,
 		Book:  book.Title,
 		Due:   time.Now().AddDate(0, 0, 7),
@@ -138,7 +139,7 @@ func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, 
 	}
 
 	// Publish return notification
-	err = s.publisher.Publish("email_exchange", "return_notification", models.ReturnNotificationMessage{
+	err = s.publisher.Publish(constants.EmailExchange, constants.ReturnNotificationQueue, models.ReturnNotificationMessage{
 		Email: email,
 		Book:  book.Title,
 	})

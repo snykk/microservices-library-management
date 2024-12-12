@@ -6,8 +6,10 @@ const (
 	EmailExchange = "email_exchange"
 	LogExchange   = "log_exchange"
 
-	OTPQueue = "otp_code"
-	LogQueue = "log_queue"
+	OTPQueue                = "otp_code"
+	LoanNotificationQueue   = "loan_notification"
+	ReturnNotificationQueue = "return_notification"
+	LogQueue                = "log_queue"
 
 	LogServiceAuth = "auth-service"
 
