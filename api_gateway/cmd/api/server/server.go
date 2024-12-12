@@ -21,11 +21,18 @@ import (
 )
 
 type App struct {
-	HttpServer *fiber.App
+	HttpServer        *fiber.App
+	amqpConn          *amqp.Connection
+	rabbitMQPublisher *rabbitmq.Publisher
+	logger            *logger.Logger
 }
 
 func NewApp() (*App, error) {
 	rabbitMQURL := os.Getenv("RABBITMQ_URL")
+
+	if rabbitMQURL == "" {
+		log.Fatalf("Environment variable RABBITMQ_URL is required but not set")
+	}
 
 	// Setup Fiber app
 	app := fiber.New(fiber.Config{
@@ -34,21 +41,19 @@ func NewApp() (*App, error) {
 	})
 
 	// Connect to RabbitMQ
-	conn, err := amqp.Dial(rabbitMQURL)
+	amqpConn, err := amqp.Dial(rabbitMQURL)
 	if err != nil {
 		log.Println("Failed to connect to RabbitMQ:", err)
 		return nil, err
 	}
-	// defer conn.Close()
 	log.Println("Success connect to rabbitMQ")
 
 	// Initialize publisher
-	rabbitMQPublisher, err := rabbitmq.NewPublisher(conn)
+	rabbitMQPublisher, err := rabbitmq.NewPublisher(amqpConn)
 	if err != nil {
 		log.Println("Failed to initialize RabbitMQPublisher:", err)
 		return nil, err
 	}
-	// defer rabbitMQPublisher.Close()
 
 	// Declare exchanges
 	err = rabbitMQPublisher.DeclareExchange("log_exchange", "direct")
@@ -112,11 +117,43 @@ func NewApp() (*App, error) {
 	log.Println("Fiber app initialized successfully")
 
 	return &App{
-		HttpServer: app,
+		HttpServer:        app,
+		amqpConn:          amqpConn,
+		rabbitMQPublisher: rabbitMQPublisher,
+		logger:            logger,
 	}, nil
 }
 
+// Run starts the application and handles graceful shutdown
 func (a *App) Run() error {
+	// Defer resource cleanup
+	defer func() {
+		if a.amqpConn != nil {
+			log.Println("Closing AMQP connection...")
+			if err := a.amqpConn.Close(); err != nil {
+				log.Println("Error closing RabbitMQ connection:", err)
+			}
+		} else {
+			log.Println("AMQP connection is nil, skipping close")
+		}
+
+		if a.rabbitMQPublisher != nil {
+			log.Println("Closing RabbitMQ publisher...")
+			if err := a.rabbitMQPublisher.Close(); err != nil {
+				log.Println("Error closing RabbitMQ publisher:", err)
+			}
+		} else {
+			log.Println("Rabbit channel is nil, skipping close")
+		}
+
+		if a.logger != nil {
+			log.Println("Closing logger...")
+			a.logger.Close()
+		} else {
+			log.Println("Logger is nil, skipping close")
+		}
+	}()
+
 	// Start server in a goroutine
 	go func() {
 		address := ":80"
@@ -132,17 +169,17 @@ func (a *App) Run() error {
 
 	// Wait for termination signal
 	sig := <-quit
-	log.Println("Shutdown signal reveived:", sig.String())
+	log.Println("Shutdown signal received:", sig.String())
 
 	// Shutdown with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := a.HttpServer.ShutdownWithContext(ctx); err != nil {
-		log.Println("Error during server shutdown:", err)
+		log.Printf("Error during server shutdown: %v", err)
 		return fmt.Errorf("error when shutting down server: %v", err)
 	}
 
-	log.Println("server exited properly")
+	log.Println("Application exited gracefully")
 	return nil
 }

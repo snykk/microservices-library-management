@@ -76,6 +76,6 @@ func (p *Publisher) Publish(exchange, routingKey string, body any) error {
 }
 
 // Close closes the publisher channel.
-func (p *Publisher) Close() {
-	p.channel.Close()
+func (p *Publisher) Close() error {
+	return p.channel.Close()
 }
