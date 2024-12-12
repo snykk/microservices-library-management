@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	"api_gateway/pkg/logger"
@@ -28,7 +29,7 @@ type authorClient struct {
 }
 
 func NewAuthorClient(logger *logger.Logger) (AuthorClient, error) {
-	conn, err := grpc.NewClient("author-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.AuthorServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Failed to create AuthorClient:", err)
 		return nil, err

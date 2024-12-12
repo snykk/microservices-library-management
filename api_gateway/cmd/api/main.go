@@ -2,6 +2,7 @@ package main
 
 import (
 	"api_gateway/cmd/api/server"
+	"api_gateway/configs"
 	"api_gateway/pkg/logger"
 	"log"
 	"runtime"
@@ -9,6 +10,12 @@ import (
 )
 
 func init() {
+	// Load app config
+	if err := configs.InitializeAppConfig(); err != nil {
+		log.Fatal("Failed to load app config", err)
+	}
+	log.Println("App configuration loaded")
+
 	// Load Asia/Jakarta time zone globally
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {

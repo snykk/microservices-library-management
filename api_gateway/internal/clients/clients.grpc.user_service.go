@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	protoUser "api_gateway/proto/user_service"
@@ -27,7 +28,7 @@ type userClient struct {
 }
 
 func NewUserClient(logger *logger.Logger) (UserClient, error) {
-	conn, err := grpc.NewClient("user-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.UserServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Failed to create UserClient:", err)
 		return nil, err

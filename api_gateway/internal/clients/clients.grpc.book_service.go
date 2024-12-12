@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	"api_gateway/pkg/logger"
@@ -30,7 +31,7 @@ type bookClient struct {
 }
 
 func NewBookClient(logger *logger.Logger) (BookClient, error) {
-	conn, err := grpc.NewClient("book-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.BookServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Failed to create BookClient:", err)
 		return nil, err

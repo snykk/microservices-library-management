@@ -1,6 +1,8 @@
 package constants
 
 const (
+	ExchangeTypeDirect = "direct"
+
 	LogExchange = "log_exchange"
 	LogQueue    = "log_queue"
 

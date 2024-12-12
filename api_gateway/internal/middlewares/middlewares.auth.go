@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"go.uber.org/zap"
 )
 
 type AuthMiddleware struct {
@@ -183,40 +182,28 @@ func (m *AuthMiddleware) HasAuthority(allowedRoles []string) fiber.Handler {
 		requestID := c.Locals(constants.ContextRequestIDKey).(string)
 		role := c.Locals("role").(string)
 
+		extra := map[string]interface{}{
+			"method": c.Method(),
+			"url":    c.OriginalURL(),
+			"role":   role,
+		}
+
 		// Log role check attempt
-		logger.Log.Info("Checking user role for access",
-			zap.String("request_id", requestID),
-			zap.String("method", c.Method()),
-			zap.String("url", c.OriginalURL()),
-			zap.String("role", role),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryMiddleware),
-		)
+		m.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Checking user role for access", extra, nil)
 
 		// Check if the user's role is authorized
 		for _, allowedRole := range allowedRoles {
 			if role == allowedRole {
 				// Log authorized access
-				logger.Log.Info("Access granted based on role",
-					zap.String("request_id", requestID),
-					zap.String("method", c.Method()),
-					zap.String("url", c.OriginalURL()),
-					zap.String("role", role),
-					zap.String(constants.LoggerCategory, constants.LoggerCategoryMiddleware),
-				)
+				m.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Access granted based on role", extra, nil)
+
 				return c.Next() // Access granted
 			}
 		}
 
 		// Log failed authorization attempt
 		err := errors.New("access denied")
-		logger.Log.Warn("Authorization failed",
-			zap.String("request_id", requestID),
-			zap.String("method", c.Method()),
-			zap.String("url", c.OriginalURL()),
-			zap.String("role", role),
-			zap.Error(err),
-			zap.String(constants.LoggerCategory, constants.LoggerCategoryMiddleware),
-		)
+		m.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelWarn, "Authorization failed", extra, err)
 
 		return c.Status(fiber.StatusForbidden).JSON(datatransfers.ResponseError("Middleware authorization failed", err))
 	}

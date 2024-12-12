@@ -1,10 +1,12 @@
 package server
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/clients"
+	"api_gateway/internal/constants"
 	"api_gateway/internal/middlewares"
 	"api_gateway/internal/routes"
-	"api_gateway/pkg/logger"
+	loggerPackage "api_gateway/pkg/logger"
 	"api_gateway/pkg/rabbitmq"
 	"context"
 	"fmt"
@@ -24,24 +26,18 @@ type App struct {
 	HttpServer        *fiber.App
 	amqpConn          *amqp.Connection
 	rabbitMQPublisher *rabbitmq.Publisher
-	logger            *logger.Logger
+	logger            *loggerPackage.Logger
 }
 
 func NewApp() (*App, error) {
-	rabbitMQURL := os.Getenv("RABBITMQ_URL")
-
-	if rabbitMQURL == "" {
-		log.Fatalf("Environment variable RABBITMQ_URL is required but not set")
-	}
-
 	// Setup Fiber app
 	app := fiber.New(fiber.Config{
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  time.Duration(configs.AppConfig.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(configs.AppConfig.WriteTimeout) * time.Second,
 	})
 
 	// Connect to RabbitMQ
-	amqpConn, err := amqp.Dial(rabbitMQURL)
+	amqpConn, err := amqp.Dial(configs.AppConfig.RabbitMQURL)
 	if err != nil {
 		log.Println("Failed to connect to RabbitMQ:", err)
 		return nil, err
@@ -56,14 +52,19 @@ func NewApp() (*App, error) {
 	}
 
 	// Declare exchanges
-	err = rabbitMQPublisher.DeclareExchange("log_exchange", "direct")
+	err = rabbitMQPublisher.DeclareExchange(constants.LogExchange, constants.ExchangeTypeDirect)
 	if err != nil {
 		log.Println("Failed to declare exchange:", err)
 		return nil, err
 	}
 
 	// logger
-	logger := logger.NewLoggerSingleWorker(rabbitMQPublisher, 100)
+	var logger *loggerPackage.Logger
+	if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeSingle {
+		logger = loggerPackage.NewLoggerSingleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerBufferSize)
+	} else if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeMultiple {
+		logger = loggerPackage.NewLoggerMultipleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerNum, configs.AppConfig.LoggerWorkerBufferSize)
+	}
 
 	// Client gRPC
 	authClient, err := clients.NewAuthClient(logger)
@@ -156,7 +157,7 @@ func (a *App) Run() error {
 
 	// Start server in a goroutine
 	go func() {
-		address := ":80"
+		address := fmt.Sprintf(":%s", configs.AppConfig.AppPort)
 		log.Println("Server is starting on", address)
 		if err := a.HttpServer.Listen(address); err != nil && err != fiber.ErrServiceUnavailable {
 			log.Fatalf("Failed to listen and serve: %v", err)

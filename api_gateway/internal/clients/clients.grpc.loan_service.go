@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	protoLoan "api_gateway/proto/loan_service"
@@ -11,7 +12,6 @@ import (
 	"api_gateway/pkg/logger"
 	"api_gateway/pkg/utils"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -33,7 +33,7 @@ type loanClient struct {
 }
 
 func NewLoanClient(logger *logger.Logger) (LoanClient, error) {
-	conn, err := grpc.NewClient("loan-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.LoanServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Failed to create LoanClient:", err)
 		return nil, err
@@ -246,11 +246,6 @@ func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanRespons
 
 		loans = append(loans, loanResponse)
 	}
-
-	logger.Log.Info("ListLoans request succeeded",
-		zap.Int("loans_count", len(loans)),
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListLoans request to Loan Service", map[string]interface{}{"loans_count": len(loans)}, nil)
 

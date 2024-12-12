@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	protoCategory "api_gateway/proto/category_service"
@@ -11,7 +12,6 @@ import (
 	"api_gateway/pkg/logger"
 	"api_gateway/pkg/utils"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -30,7 +30,7 @@ type categoryClient struct {
 }
 
 func NewCategoryClient(logger *logger.Logger) (CategoryClient, error) {
-	conn, err := grpc.NewClient("category-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.CategoryServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Failed to create CategoryClient:", err)
 		return nil, err
@@ -107,10 +107,6 @@ func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.Ca
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoCategory.ListCategoriesRequest{}
-
-	logger.Log.Info("Sending ListCategories request to Category Service",
-		zap.String(constants.LoggerCategory, constants.LoggerCategoryGrpcClient),
-	)
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListCategories request to Category Service", nil, nil)
 

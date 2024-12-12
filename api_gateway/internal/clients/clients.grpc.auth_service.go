@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"api_gateway/configs"
 	"api_gateway/internal/constants"
 	"api_gateway/internal/datatransfers"
 	"api_gateway/pkg/logger"
@@ -28,7 +29,7 @@ type authClient struct {
 }
 
 func NewAuthClient(logger *logger.Logger) (AuthClient, error) {
-	conn, err := grpc.NewClient("auth-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.AuthServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Failed to create AuthClient:", err)
 		return nil, err
