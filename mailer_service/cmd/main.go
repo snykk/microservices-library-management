@@ -3,29 +3,35 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"mailer_service/configs"
 	"mailer_service/internal/consumer"
 	"mailer_service/internal/mailer"
-	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func main() {
-	rabbitMQURL := os.Getenv("RABBITMQ_URL")
+func init() {
+	// Load app config
+	if err := configs.InitializeAppConfig(); err != nil {
+		log.Fatal("Failed to load app config", err)
+	}
+	log.Println("App configuration loaded")
+}
 
+func main() {
 	// Email service env
-	emailSenderBytes, err := ioutil.ReadFile(os.Getenv("EMAIL_SENDER_CONTAINER_FILE"))
+	emailSenderBytes, err := ioutil.ReadFile(configs.AppConfig.EmailSenderContainerFile)
 	if err != nil {
 		log.Fatalf("Error reading email sender secret: %v", err)
 	}
 
-	emailPasswordBytes, err := ioutil.ReadFile(os.Getenv("EMAIL_PASSWORD_CONTAINER_FILE"))
+	emailPasswordBytes, err := ioutil.ReadFile(configs.AppConfig.EmailPasswordContainerFile)
 	if err != nil {
 		log.Fatalf("Error reading email password secret: %v", err)
 	}
 
 	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	conn, err := amqp.Dial(rabbitMQURL)
+	conn, err := amqp.Dial(configs.AppConfig.RabbitMQURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}

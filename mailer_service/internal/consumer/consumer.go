@@ -3,6 +3,7 @@ package consumer
 import (
 	"encoding/json"
 	"log"
+	"mailer_service/internal/constants"
 	"mailer_service/internal/mailer"
 	"time"
 
@@ -28,20 +29,20 @@ type ReturnNotificationMessage struct {
 func StartConsuming(ch *amqp.Channel, mailerService mailer.MailerService) error {
 	// Declare exchange (e.g., direct exchange)
 	err := ch.ExchangeDeclare(
-		"email_exchange", // Exchange name
-		"direct",         // Exchange type
-		true,             // Durable
-		false,            // Auto-deleted
-		false,            // Internal
-		false,            // No-wait
-		nil,              // Arguments
+		constants.EmailExchange, // Exchange name
+		"direct",                // Exchange type
+		true,                    // Durable
+		false,                   // Auto-deleted
+		false,                   // Internal
+		false,                   // No-wait
+		nil,                     // Arguments
 	)
 	if err != nil {
 		log.Fatalf("Failed to declare exchange: %v", err)
 	}
 
 	// Declare queues and bind them to the exchange
-	queues := []string{"otp_code", "loan_notification", "return_notification"}
+	queues := []string{constants.OTPQueue, constants.LoanNotificationQueue, constants.ReturnNotificationQueue}
 	for _, queueName := range queues {
 		// Declare queue
 		_, err := ch.QueueDeclare(
@@ -58,11 +59,11 @@ func StartConsuming(ch *amqp.Channel, mailerService mailer.MailerService) error 
 
 		// Bind queue to the exchange
 		err = ch.QueueBind(
-			queueName,        // Queue name
-			queueName,        // Routing key (same as the queue name for direct exchange)
-			"email_exchange", // Exchange name
-			false,            // No-wait
-			nil,              // Arguments
+			queueName,               // Queue name
+			queueName,               // Routing key (same as the queue name for direct exchange)
+			constants.EmailExchange, // Exchange name
+			false,                   // No-wait
+			nil,                     // Arguments
 		)
 		if err != nil {
 			log.Fatalf("Failed to bind queue %s to exchange: %v", queueName, err)
@@ -95,7 +96,7 @@ func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.Maile
 
 	for d := range msgs {
 		switch queueName {
-		case "otp_code":
+		case constants.OTPQueue:
 			var message OTPMessage
 			if err := json.Unmarshal(d.Body, &message); err != nil {
 				log.Printf("Failed to parse OTP message: %v", err)
@@ -104,7 +105,7 @@ func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.Maile
 			}
 			err = mailerService.SendOTP(message.Email, message.OTP)
 
-		case "loan_notification":
+		case constants.LoanNotificationQueue:
 			var message LoanNotificationMessage
 			if err := json.Unmarshal(d.Body, &message); err != nil {
 				log.Printf("Failed to parse loan notification message: %v", err)
@@ -113,7 +114,7 @@ func consumeQueue(ch *amqp.Channel, queueName string, mailerService mailer.Maile
 			}
 			err = mailerService.SendLoanNotification(message.Email, message.Book, message.Due)
 
-		case "return_notification":
+		case constants.ReturnNotificationQueue:
 			var message ReturnNotificationMessage
 			if err := json.Unmarshal(d.Body, &message); err != nil {
 				log.Printf("Failed to parse return notification message: %v", err)
