@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"logger_service/configs"
 	"logger_service/internal/constants"
 	"logger_service/internal/logger"
 	"logger_service/internal/model"
@@ -16,20 +17,20 @@ import (
 func StartConsuming(ch *amqp.Channel, mongoClient *mongo.Client) error {
 	// Declare exchange (direct exchange)
 	err := ch.ExchangeDeclare(
-		"log_exchange", // Exchange name
-		"direct",       // Exchange type
-		true,           // Durable
-		false,          // Auto-deleted
-		false,          // Internal
-		false,          // No-wait
-		nil,            // Arguments
+		constants.LogExchange, // Exchange name
+		"direct",              // Exchange type
+		true,                  // Durable
+		false,                 // Auto-deleted
+		false,                 // Internal
+		false,                 // No-wait
+		nil,                   // Arguments
 	)
 	if err != nil {
 		log.Fatalf("Failed to declare exchange: %v", err)
 	}
 
 	// Declare queue
-	queueName := "log_queue"
+	queueName := constants.LogQueue
 	_, err = ch.QueueDeclare(
 		queueName,
 		true,  // Durable
@@ -77,7 +78,7 @@ func consumeQueue(ch *amqp.Channel, queueName string, mongoClient *mongo.Client)
 	}
 
 	// MongoDB collection for logs
-	logCollection := mongoClient.Database("logs").Collection("logs")
+	logCollection := mongoClient.Database(configs.AppConfig.MongoDB).Collection(configs.AppConfig.MongoCollection)
 
 	for d := range msgs {
 		var logMsg model.LogMessage

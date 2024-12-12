@@ -13,4 +13,7 @@ const (
 	LogFieldXCorrelationID = "X-Correlation-ID"
 	LogFieldCaller         = "caller"
 	LogFieldExtra          = "extra"
+
+	LogExchange = "log_exchange"
+	LogQueue    = "log_queue"
 )
