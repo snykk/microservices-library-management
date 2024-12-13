@@ -71,6 +71,12 @@ func (authH *AuthHandler) RegisterHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
 	}
 
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
 	extra["email"] = req.Email
 	extra["password"] = req.Password
 
@@ -99,6 +105,12 @@ func (authH *AuthHandler) LoginHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse login request body", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["email"] = req.Email
@@ -130,6 +142,12 @@ func (authH *AuthHandler) SendOtpHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
 	}
 
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
 	extra["email"] = req.Email
 
 	resp, err := authH.client.SendOtp(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), req)
@@ -157,6 +175,12 @@ func (authH *AuthHandler) VerifyEmailHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse verify email request body", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["email"] = req.Email
@@ -187,6 +211,12 @@ func (authH *AuthHandler) ValidateTokenHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse validate token request body", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	resp, err := authH.client.ValidateToken(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), req)

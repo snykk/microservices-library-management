@@ -48,6 +48,12 @@ func (l *LoanHandler) CreateLoanHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
 	}
 
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
 	extra["loan_book_id"] = req.BookId
 
 	resp, err := l.client.CreateLoan(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userID, userEmail, req)
@@ -136,6 +142,12 @@ func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update loan status request body", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["loan_status"] = req.Status

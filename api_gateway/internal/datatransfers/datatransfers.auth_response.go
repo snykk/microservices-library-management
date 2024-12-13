@@ -1,35 +1,29 @@
 package datatransfers
 
-type SendOtpRequest struct {
-	Email string `json:"email"`
+import "time"
+
+type RegisterResponse struct {
+	Id        string    `json:"id"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
+	Verified  bool      `json:"verified"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type SendOtpResponse struct {
 	Message string `json:"message"`
 }
 
-type VerifyEmailRequest struct {
-	Email string `json:"email"`
-	OTP   string `json:"otp"`
-}
-
 type VerifyEmailResponse struct {
 	Message string `json:"message"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
 }
 
 type LoginResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	Message      string `json:"message"`
-}
-
-type ValidateTokenRequest struct {
-	Token string `json:"token"`
 }
 
 type ValidateTokenResponse struct {

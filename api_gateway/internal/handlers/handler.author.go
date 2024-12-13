@@ -45,6 +45,12 @@ func (a *AuthorHandler) CreateAuthorHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
 	}
 
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
 	extra["author_name"] = req.Name
 	extra["author_biography"] = req.Biography
 
@@ -152,6 +158,12 @@ func (a *AuthorHandler) UpdateAuthorByIdHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update author request body", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["author_name"] = req.Name

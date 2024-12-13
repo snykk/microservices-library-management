@@ -45,6 +45,12 @@ func (b *BookHandler) CreateBookHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
 	}
 
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
 	extra["book_title"] = req.Title
 	extra["book_author_id"] = req.AuthorId
 	extra["book_category_id"] = req.CategoryId
@@ -270,6 +276,12 @@ func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to parse update book request", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["book_title"] = req.Title
