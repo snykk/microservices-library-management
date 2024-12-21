@@ -21,6 +21,7 @@ import (
 	protoBook "book_service/proto/book_service"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/jmoiron/sqlx"
@@ -102,6 +103,8 @@ func main() {
 	grpcServer := grpc.NewServer()
 	bookServer := grpc_server.NewBookGRPCServer(bookService, logger)
 	protoBook.RegisterBookServiceServer(grpcServer, bookServer)
+	healthCheckServer := grpc_server.NewHealthGRPCServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthCheckServer)
 
 	// Enable gRPC reflection for debugging
 	reflection.Register(grpcServer)
