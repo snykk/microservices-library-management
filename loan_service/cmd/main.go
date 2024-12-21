@@ -27,6 +27,7 @@ import (
 	_ "github.com/lib/pq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func init() {
@@ -103,6 +104,8 @@ func main() {
 	grpcServer := grpc.NewServer()
 	loanServer := grpc_server.NewLoanGRPCServer(loanService, logger)
 	protoLoan.RegisterLoanServiceServer(grpcServer, loanServer)
+	healthCheckServer := grpc_server.NewHealthGRPCServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthCheckServer)
 
 	// Enable gRPC reflection for debugging
 	reflection.Register(grpcServer)
