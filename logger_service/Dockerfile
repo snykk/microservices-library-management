@@ -14,6 +14,8 @@
 # Stage 2: Runtime
 FROM alpine:latest
 
+RUN apk add --no-cache curl
+
 RUN mkdir /app
 
 # COPY --from=builder /app/loggerApp /app/

@@ -10,6 +10,7 @@ import (
 
 	"logger_service/configs"
 	"logger_service/internal/consumer"
+	"logger_service/internal/healthcheck"
 	"logger_service/internal/logger"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -72,6 +73,9 @@ func main() {
 	// Listen for interrupt signals to trigger graceful shutdown
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start health check server in a separate goroutine
+	go healthcheck.StartHealthCheckServer(ctx, conn, mongoClient)
 
 	// Start consuming logs in a separate goroutine
 	go func() {

@@ -12,6 +12,7 @@ type Config struct {
 	MongoURL        string
 	MongoDB         string
 	MongoCollection string
+	HEALTH_API_PORT string
 }
 
 var AppConfig Config
@@ -26,6 +27,7 @@ func InitializeAppConfig() error {
 		"MONGO_URL":        &AppConfig.MongoURL,
 		"MONGO_DB":         &AppConfig.MongoDB,
 		"MONGO_COLLECTION": &AppConfig.MongoCollection,
+		"HEALTH_API_PORT":  &AppConfig.HEALTH_API_PORT,
 	}
 
 	// Assign string values
