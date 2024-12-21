@@ -5,11 +5,18 @@ services:
         ports:
             - "8080:80"
         depends_on:
-            - book-service
-            - author-service
-            - category-service
-            - user-service
-            - rabbitmq
+            book-service:
+                condition: service_healthy
+            author-service:
+                condition: service_healthy
+            category-service:
+                condition: service_healthy
+            user-service:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
         networks:
             - library-network
         restart: always
@@ -30,7 +37,13 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "curl --fail --silent http://localhost:80/api/healthy | grep 'API healthy!!!' || exit 1"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 2s
 
     book-service:
         build:
@@ -38,7 +51,10 @@ services:
         networks:
             - library-network
         depends_on:
-            - book-db
+            logger-service:
+                condition: service_healthy
+            book-db:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
@@ -52,7 +68,13 @@ services:
             LOGGER_WORKER_BUFFER_SIZE: 100
             AUTHOR_SERVICE_URL: "author-service:50051"
             CATEGORY_SERVICE_URL: "category-service:50051"
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "grpc_health_probe", "-addr", "localhost:50051", "-service=book_service"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 21s
 
     author-service:
         build:
@@ -60,7 +82,10 @@ services:
         networks:
             - library-network
         depends_on:
-            - author-db
+            author-db:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
@@ -72,7 +97,13 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "grpc_health_probe", "-addr", "localhost:50051", "-service=author_service"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 21s
 
     category-service:
         build:
@@ -80,7 +111,10 @@ services:
         networks:
             - library-network
         depends_on:
-            - category-db
+            category-db:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
@@ -92,7 +126,13 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "grpc_health_probe", "-addr", "localhost:50051", "-service=category_service"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 21s
 
     user-service:
         build:
@@ -100,7 +140,10 @@ services:
         networks:
             - library-network
         depends_on:
-            - user-db
+            user-db:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
@@ -112,7 +155,13 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "grpc_health_probe", "-addr", "localhost:50051", "-service=user_service"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 21s
 
     auth-service:
         build:
@@ -120,8 +169,14 @@ services:
         networks:
             - library-network
         depends_on:
-            - user-db
-            - rabbitmq
+            user-db:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
+            mailer-service:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
@@ -147,7 +202,13 @@ services:
         secrets:
             - email_sender
             - email_password
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "grpc_health_probe", "-addr", "localhost:50051", "-service=auth_service"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 21s
 
     mailer-service:
         build:
@@ -155,12 +216,16 @@ services:
         networks:
             - library-network
         depends_on:
-            - rabbitmq
+            rabbitmq:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
             replicas: 1
         environment:
+            HEALTH_API_PORT: "80"
             EMAIL_SENDER_CONTAINER_FILE: "/run/secrets/email_sender"
             EMAIL_PASSWORD_CONTAINER_FILE: "/run/secrets/email_password"
             RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
@@ -170,7 +235,13 @@ services:
         secrets:
             - email_sender
             - email_password
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "curl --fail --silent http://localhost/healthy | grep 'Service is healthy!!!' || exit 1"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 21s
 
     loan-service:
         build:
@@ -178,7 +249,12 @@ services:
         networks:
             - library-network
         depends_on:
-            - loan-db
+            loan-db:
+                condition: service_healthy
+            logger-service:
+                condition: service_healthy
+            mailer-service:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
@@ -191,7 +267,13 @@ services:
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
             BOOK_SERVICE_URL: "book-service:50051"
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "grpc_health_probe", "-addr", "localhost:50051", "-service=loan_service"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 21s
 
     logger-service:
         build:
@@ -199,13 +281,16 @@ services:
         networks:
             - library-network
         depends_on:
-            - mongo
-            - rabbitmq
+            mongo:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
         restart: always
         deploy:
             mode: replicated
             replicas: 1
         environment:
+            HEALTH_API_PORT: "80"
             LOG_PATH: "/app/logs/history.log"
             RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
             MONGO_URL: "mongodb://admin:password@mongo:27017"
@@ -213,7 +298,13 @@ services:
             MONGO_COLLECTION: "logs"
         volumes:
             - ./../logger_service/logs:/app/logs
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "curl --fail --silent http://localhost/healthy | grep 'Service is healthy!!!' || exit 1"]
+            interval: 10s
+            retries: 3
+            timeout: 10s
+            start_period: 21s
 
     book-db:
         image: postgres:15
@@ -234,7 +325,13 @@ services:
             - book-db-data:/var/lib/postgresql/data
             - ./sql/book-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/book-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U fikri -d bookdb -h localhost -p 5432"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 20s
 
     author-db:
         image: postgres:15
@@ -255,7 +352,13 @@ services:
             - author-db-data:/var/lib/postgresql/data
             - ./sql/author-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/author-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U fikri -d authordb -h localhost -p 5432"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 20s
 
     category-db:
         image: postgres:15
@@ -276,7 +379,13 @@ services:
             - category-db-data:/var/lib/postgresql/data
             - ./sql/category-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/category-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U fikri -d categorydb -h localhost -p 5432"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 20s
 
     user-db:
         image: postgres:15
@@ -297,7 +406,13 @@ services:
             - user-db-data:/var/lib/postgresql/data
             - ./sql/user-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/user-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U fikri -d userdb -h localhost -p 5432"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 20s
 
     loan-db:
         image: postgres:15
@@ -317,7 +432,13 @@ services:
         volumes:
             - loan-db-data:/var/lib/postgresql/data
             - ./sql/loan-init.sql:/docker-entrypoint-initdb.d/init.sql
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U fikri -d loandb -h localhost -p 5432"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 20s
 
     redis:
         image: redis:7.4.1-alpine
@@ -328,7 +449,13 @@ services:
             mode: replicated
             replicas: 1
         command: ["redis-server", "--requirepass", "mypasswordtralala"]
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "redis-cli", "-a", "mypasswordtralala", "ping"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 21s
 
     rabbitmq:
         image: rabbitmq:3.12-management-alpine
@@ -345,7 +472,13 @@ services:
         deploy:
             mode: replicated
             replicas: 1
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: rabbitmq-diagnostics check_port_connectivity
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 21s
 
     mongo:
         image: mongo:4.2.16-bionic
@@ -364,7 +497,13 @@ services:
             MONGO_INITDB_ROOT_PASSWORD: password
         volumes:
             - mongo-data:/data/db
-        stop_grace_period: 20s # Graceful shutdown timeout
+        stop_grace_period: 20s
+        healthcheck:
+            test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok == 1", "--username", "admin", "--password", "password", "--authenticationDatabase", "admin"]
+            interval: 10s
+            retries: 3
+            timeout: 5s
+            start_period: 21s
 
 networks:
     library-network:
