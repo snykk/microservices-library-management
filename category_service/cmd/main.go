@@ -8,9 +8,14 @@ import (
 	"category_service/internal/service"
 	loggerPackage "category_service/pkg/logger"
 	"category_service/pkg/rabbitmq"
+	"context"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	protoCategory "category_service/proto/category_service"
 
@@ -49,7 +54,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	// Initialize rabbitMQPublisher
+	// Initialize RabbitMQ Publisher
 	rabbitMQPublisher, err := rabbitmq.NewPublisher(conn)
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQPublisher: %v", err)
@@ -62,7 +67,7 @@ func main() {
 		log.Fatalf("Failed to declare exchange: %v", err)
 	}
 
-	// logger
+	// Logger
 	var logger *loggerPackage.Logger
 	if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeSingle {
 		logger = loggerPackage.NewLoggerSingleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerBufferSize)
@@ -89,8 +94,42 @@ func main() {
 	// Enable gRPC reflection for debugging
 	reflection.Register(grpcServer)
 
-	log.Printf("gRPC server is running on %s", address)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve gRPC: %v", err)
+	// Start gRPC server in a goroutine
+	go func() {
+		log.Printf("gRPC server is running on %s", address)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
+
+	// Setup signal handling for graceful shutdown
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for termination signal
+	sigReceived := <-signalChannel
+	log.Printf("Received signal: %v, initiating graceful shutdown...", sigReceived)
+
+	// Log for starting cleanup
+	log.Println("Starting cleanup tasks...")
+
+	// Gracefully stop the gRPC server with a timeout
+	gracefulShutdownTimeout := 10 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	defer cancel()
+
+	// Gracefully stop the gRPC server
+	// grpcServer.Stop()
+	grpcServer.GracefulStop()
+	log.Println("gRPC server stopped")
+
+	// Perform additional cleanup tasks ???
+	// ...
+
+	// Wait until all cleanup tasks are done
+	<-ctx.Done() // Directly receive from the channel
+	if ctx.Err() == context.DeadlineExceeded {
+		log.Println("Timeout reached during graceful shutdown")
 	}
+	log.Println("Graceful shutdown completed successfully")
 }

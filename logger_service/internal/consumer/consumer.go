@@ -14,7 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func StartConsuming(ch *amqp.Channel, mongoClient *mongo.Client) error {
+// Starts consuming messages from the RabbitMQ queue.
+func StartConsuming(ctx context.Context, ch *amqp.Channel, mongoClient *mongo.Client) error {
 	// Declare exchange (direct exchange)
 	err := ch.ExchangeDeclare(
 		constants.LogExchange, // Exchange name
@@ -56,14 +57,6 @@ func StartConsuming(ch *amqp.Channel, mongoClient *mongo.Client) error {
 	}
 
 	// Start consuming logs from the queue
-	go consumeQueue(ch, queueName, mongoClient)
-
-	// Wait for consumer process
-	log.Println("Waiting for log messages...")
-	select {}
-}
-
-func consumeQueue(ch *amqp.Channel, queueName string, mongoClient *mongo.Client) {
 	msgs, err := ch.Consume(
 		queueName, // Queue
 		"",        // Consumer
@@ -80,38 +73,45 @@ func consumeQueue(ch *amqp.Channel, queueName string, mongoClient *mongo.Client)
 	// MongoDB collection for logs
 	logCollection := mongoClient.Database(configs.AppConfig.MongoDB).Collection(configs.AppConfig.MongoCollection)
 
-	for d := range msgs {
-		var logMsg model.LogMessage
-		if err := json.Unmarshal(d.Body, &logMsg); err != nil {
-			log.Printf("Failed to parse log message: %v", err)
-			d.Nack(false, true)
-			continue
-		}
+	// Consumer loop
+	for {
+		select {
+		case <-ctx.Done(): // Stop consuming when the context is canceled
+			log.Println("Graceful shutdown: stopping message consumption")
+			return nil
+		case d := <-msgs:
+			var logMsg model.LogMessage
+			if err := json.Unmarshal(d.Body, &logMsg); err != nil {
+				log.Printf("Failed to parse log message: %v", err)
+				d.Nack(false, true)
+				continue
+			}
 
-		// Save log to MongoDB
-		err := saveLogToMongoDB(logCollection, logMsg)
-		if err != nil {
-			log.Printf("Failed to save log to MongoDB: %v", err)
-			d.Nack(false, true)
-			continue
-		}
+			// Save log to MongoDB
+			err := saveLogToMongoDB(ctx, logCollection, logMsg)
+			if err != nil {
+				log.Printf("Failed to save log to MongoDB: %v", err)
+				d.Nack(false, true)
+				continue
+			}
 
-		// Write log based on its level (e.g., Info, Error)
-		err = writeLogToFile(logger.Log, logMsg)
-		if err != nil {
-			log.Printf("Failed to log to file: %v", err)
-			d.Nack(false, true) // Negative acknowledgment with requeue
-			continue
-		}
+			// Write log based on its level (e.g., Info, Error)
+			err = writeLogToFile(logger.Log, logMsg)
+			if err != nil {
+				log.Printf("Failed to log to file: %v", err)
+				d.Nack(false, true) // Negative acknowledgment with requeue
+				continue
+			}
 
-		// Acknowledge the message after successful processing
-		log.Printf("Successfully processed log message: %v", logMsg)
-		d.Ack(false)
+			// Acknowledge the message after successful processing
+			log.Printf("Successfully processed log message: %v", logMsg)
+			d.Ack(false)
+		}
 	}
 }
 
-func saveLogToMongoDB(collection *mongo.Collection, logMsg model.LogMessage) error {
-	_, err := collection.InsertOne(context.TODO(), logMsg)
+func saveLogToMongoDB(ctx context.Context, collection *mongo.Collection, logMsg model.LogMessage) error {
+	_, err := collection.InsertOne(ctx, logMsg)
 	return err
 }
 

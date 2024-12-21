@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"mailer_service/configs"
@@ -9,6 +10,10 @@ import (
 	"mailer_service/internal/mailer"
 	loggerPackage "mailer_service/pkg/logger"
 	"mailer_service/pkg/rabbitmq"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -33,7 +38,7 @@ func main() {
 		log.Fatalf("Error reading email password secret: %v", err)
 	}
 
-	// conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	// Connect to RabbitMQ
 	conn, err := amqp.Dial(configs.AppConfig.RabbitMQURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
@@ -65,7 +70,7 @@ func main() {
 		log.Fatalf("Failed to create mailer service %v", err)
 	}
 
-	// logger
+	// Logger
 	var logger *loggerPackage.Logger
 	if configs.AppConfig.LoggerWorkerType == constants.LoggerWorkerTypeSingle {
 		logger = loggerPackage.NewLoggerSingleWorker(rabbitMQPublisher, configs.AppConfig.LoggerWorkerBufferSize)
@@ -74,8 +79,29 @@ func main() {
 	}
 	defer logger.Close()
 
-	err = consumer.StartConsuming(ch, mailerService, logger)
-	if err != nil {
-		log.Fatalf("Failed to start consuming: %v", err)
-	}
+	// Set up context with cancel for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
+
+	// Handle OS signals for shutdown
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	// Start consumer in a goroutine
+	go func() {
+		if err := consumer.StartConsuming(ctx, ch, mailerService, logger); err != nil {
+			log.Fatalf("Failed to start consuming: %v", err)
+		}
+	}()
+
+	// Wait for shutdown signal
+	<-signalChan
+	log.Println("Shutdown signal received, cleaning up resources...")
+
+	// Cancel context to signal goroutines to stop
+	cancel()
+
+	// Allow time for graceful shutdown
+	<-time.After(5 * time.Second)
+	log.Println("Service shutdown completed gracefully.")
 }

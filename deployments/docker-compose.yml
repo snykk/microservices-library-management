@@ -30,6 +30,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     book-service:
         build:
@@ -49,6 +50,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     author-service:
         build:
@@ -68,6 +70,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     category-service:
         build:
@@ -87,6 +90,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     user-service:
         build:
@@ -106,6 +110,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     auth-service:
         build:
@@ -140,6 +145,7 @@ services:
         secrets:
             - email_sender
             - email_password
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     mailer-service:
         build:
@@ -162,6 +168,7 @@ services:
         secrets:
             - email_sender
             - email_password
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     loan-service:
         build:
@@ -181,6 +188,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     logger-service:
         build:
@@ -202,6 +210,7 @@ services:
             MONGO_COLLECTION: "logs"
         volumes:
             - ./../logger_service/logs:/app/logs
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     book-db:
         image: postgres:15
@@ -212,7 +221,6 @@ services:
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: bookdb
             TZ: Asia/Jakarta
-
         networks:
             - library-network
         restart: always
@@ -223,6 +231,7 @@ services:
             - book-db-data:/var/lib/postgresql/data
             - ./sql/book-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/book-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     author-db:
         image: postgres:15
@@ -233,7 +242,6 @@ services:
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: authordb
             TZ: Asia/Jakarta
-
         networks:
             - library-network
         restart: always
@@ -244,6 +252,7 @@ services:
             - author-db-data:/var/lib/postgresql/data
             - ./sql/author-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/author-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     category-db:
         image: postgres:15
@@ -254,7 +263,6 @@ services:
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: categorydb
             TZ: Asia/Jakarta
-
         networks:
             - library-network
         restart: always
@@ -265,6 +273,7 @@ services:
             - category-db-data:/var/lib/postgresql/data
             - ./sql/category-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/category-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     user-db:
         image: postgres:15
@@ -275,7 +284,6 @@ services:
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: userdb
             TZ: Asia/Jakarta
-
         networks:
             - library-network
         restart: always
@@ -286,6 +294,7 @@ services:
             - user-db-data:/var/lib/postgresql/data
             - ./sql/user-init.sql:/docker-entrypoint-initdb.d/init.sql
             - ./sql/user-seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     loan-db:
         image: postgres:15
@@ -296,7 +305,6 @@ services:
             POSTGRES_PASSWORD: 12345678
             POSTGRES_DB: loandb
             TZ: Asia/Jakarta
-
         networks:
             - library-network
         restart: always
@@ -306,6 +314,7 @@ services:
         volumes:
             - loan-db-data:/var/lib/postgresql/data
             - ./sql/loan-init.sql:/docker-entrypoint-initdb.d/init.sql
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     redis:
         image: redis:7.4.1-alpine
@@ -316,6 +325,7 @@ services:
             mode: replicated
             replicas: 1
         command: ["redis-server", "--requirepass", "mypasswordtralala"]
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     rabbitmq:
         image: rabbitmq:3.12-management-alpine
@@ -332,6 +342,7 @@ services:
         deploy:
             mode: replicated
             replicas: 1
+        stop_grace_period: 20s # Graceful shutdown timeout
 
     mongo:
         image: mongo:4.2.16-bionic
@@ -350,6 +361,7 @@ services:
             MONGO_INITDB_ROOT_PASSWORD: password
         volumes:
             - mongo-data:/data/db
+        stop_grace_period: 20s # Graceful shutdown timeout
 
 networks:
     library-network:
