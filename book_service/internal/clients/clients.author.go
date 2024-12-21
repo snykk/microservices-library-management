@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"book_service/configs"
 	protoAuthor "book_service/proto/author_service"
 	"context"
 
@@ -17,7 +18,7 @@ type authorClient struct {
 }
 
 func NewAuthorClient() (AuthorClient, error) {
-	conn, err := grpc.NewClient("author-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.AuthorServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

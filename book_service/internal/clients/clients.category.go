@@ -1,6 +1,7 @@
 package clients
 
 import (
+	"book_service/configs"
 	protoCategory "book_service/proto/category_service"
 	"context"
 
@@ -17,7 +18,7 @@ type categoryClient struct {
 }
 
 func NewCategoryClient() (CategoryClient, error) {
-	conn, err := grpc.NewClient("Category-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.CategoryServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

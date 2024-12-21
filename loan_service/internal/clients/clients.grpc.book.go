@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"loan_service/configs"
 	protoBook "loan_service/proto/book_service"
 
 	"google.golang.org/grpc"
@@ -20,7 +21,7 @@ type bookClient struct {
 }
 
 func NewBookClient() (BookClient, error) {
-	conn, err := grpc.NewClient("book-service:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(configs.AppConfig.BookServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

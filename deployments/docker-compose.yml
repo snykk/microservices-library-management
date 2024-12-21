@@ -50,6 +50,8 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+            AUTHOR_SERVICE_URL: "author-service:50051"
+            CATEGORY_SERVICE_URL: "category-service:50051"
         stop_grace_period: 20s # Graceful shutdown timeout
 
     author-service:
@@ -188,6 +190,7 @@ services:
             LOGGER_WORKER_TYPE: "single"
             LOGGER_WORKER_NUM: 5
             LOGGER_WORKER_BUFFER_SIZE: 100
+            BOOK_SERVICE_URL: "book-service:50051"
         stop_grace_period: 20s # Graceful shutdown timeout
 
     logger-service:

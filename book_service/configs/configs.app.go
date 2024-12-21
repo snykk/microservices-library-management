@@ -12,6 +12,8 @@ type Config struct {
 	DSN                    string
 	RabbitMQURL            string
 	LoggerWorkerType       string
+	AuthorServiceURL       string
+	CategoryServiceURL     string
 	LoggerWorkerNum        int
 	LoggerWorkerBufferSize int
 }
@@ -36,10 +38,12 @@ func InitializeAppConfig() error {
 
 	// Direct assignments for string values
 	requiredStringKeys := map[string]*string{
-		"GRPC_PORT":          &AppConfig.GrpcPort,
-		"DSN":                &AppConfig.DSN,
-		"RABBITMQ_URL":       &AppConfig.RabbitMQURL,
-		"LOGGER_WORKER_TYPE": &AppConfig.LoggerWorkerType,
+		"GRPC_PORT":            &AppConfig.GrpcPort,
+		"DSN":                  &AppConfig.DSN,
+		"RABBITMQ_URL":         &AppConfig.RabbitMQURL,
+		"LOGGER_WORKER_TYPE":   &AppConfig.LoggerWorkerType,
+		"AUTHOR_SERVICE_URL":   &AppConfig.AuthorServiceURL,
+		"CATEGORY_SERVICE_URL": &AppConfig.CategoryServiceURL,
 	}
 
 	// Assign string values

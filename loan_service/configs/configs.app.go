@@ -12,6 +12,7 @@ type Config struct {
 	DSN                    string
 	RabbitMQURL            string
 	LoggerWorkerType       string
+	BookServiceURL         string
 	LoggerWorkerNum        int
 	LoggerWorkerBufferSize int
 }
@@ -40,6 +41,7 @@ func InitializeAppConfig() error {
 		"DSN":                &AppConfig.DSN,
 		"RABBITMQ_URL":       &AppConfig.RabbitMQURL,
 		"LOGGER_WORKER_TYPE": &AppConfig.LoggerWorkerType,
+		"BOOK_SERVICE_URL":   &AppConfig.BookServiceURL,
 	}
 
 	// Assign string values
