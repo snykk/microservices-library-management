@@ -12,6 +12,7 @@ type Config struct {
 	EmailPasswordContainerFile string
 	RabbitMQURL                string
 	LoggerWorkerType           string
+	HEALTH_API_PORT            string
 	LoggerWorkerNum            int
 	LoggerWorkerBufferSize     int
 }
@@ -40,6 +41,7 @@ func InitializeAppConfig() error {
 		"EMAIL_PASSWORD_CONTAINER_FILE": &AppConfig.EmailPasswordContainerFile,
 		"RABBITMQ_URL":                  &AppConfig.RabbitMQURL,
 		"LOGGER_WORKER_TYPE":            &AppConfig.LoggerWorkerType,
+		"HEALTH_API_PORT":               &AppConfig.HEALTH_API_PORT,
 	}
 
 	// Assign string values

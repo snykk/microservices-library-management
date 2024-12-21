@@ -7,6 +7,7 @@ import (
 	"mailer_service/configs"
 	"mailer_service/internal/constants"
 	"mailer_service/internal/consumer"
+	"mailer_service/internal/healthcheck"
 	"mailer_service/internal/mailer"
 	loggerPackage "mailer_service/pkg/logger"
 	"mailer_service/pkg/rabbitmq"
@@ -86,6 +87,9 @@ func main() {
 	// Handle OS signals for shutdown
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+
+	// Start the health check server in a separate goroutine
+	go healthcheck.StartHealthCheckServer(ctx, conn) // Start healthcheck server
 
 	// Start consumer in a goroutine
 	go func() {
