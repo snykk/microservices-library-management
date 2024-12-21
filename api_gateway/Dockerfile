@@ -14,7 +14,7 @@
 # Stage 2: Runtime
 FROM alpine:latest
 
-RUN apk add --no-cache tzdata
+RUN apk add --no-cache tzdata curl
 
 RUN cp /usr/share/zoneinfo/Asia/Jakarta /etc/localtime && echo "Asia/Jakarta" > /etc/timezone
 
