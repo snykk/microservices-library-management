@@ -102,7 +102,7 @@ func NewApp() (*App, error) {
 	app.Use(middlewares.RequestIDMiddleware(logger)) // Add the RequestID middleware
 	app.Use(cors.New())
 	app.Use(loggerFiber.New())
-	app.Use(middlewares.ThrottleMiddleware())
+	app.Use(middlewares.ThrottleMiddleware(logger))
 
 	// Authentication middleware
 	authMiddleware := middlewares.NewAuthMiddleware(authClient, logger)
