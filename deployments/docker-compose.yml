@@ -39,7 +39,7 @@ services:
             LOGGER_WORKER_BUFFER_SIZE: 100
         stop_grace_period: 20s
         healthcheck:
-            test: ["CMD-SHELL", "curl --fail --silent http://localhost:80/api/healthy | grep 'API healthy!!!' || exit 1"]
+            test: ["CMD-SHELL", "curl --fail --silent http://localhost/api/healthy | grep 'API healthy!!!' || exit 1"]
             interval: 10s
             timeout: 5s
             retries: 3
