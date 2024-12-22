@@ -4,7 +4,6 @@ import (
 	"api_gateway/configs"
 	"api_gateway/internal/clients"
 	"api_gateway/internal/constants"
-	"api_gateway/internal/handlers"
 	"api_gateway/internal/middlewares"
 	"api_gateway/internal/routes"
 	loggerPackage "api_gateway/pkg/logger"
@@ -109,8 +108,7 @@ func NewApp() (*App, error) {
 
 	// Routes
 	router := app.Group("/api")
-	router.Get("/", handlers.Root)
-	router.Get("/healthy", handlers.Healthy)
+	routes.NewCommonRoute(router).Routes()
 	routes.NewAuthRoute(router, authClient, logger).Routes()
 	routes.NewBookRoute(router, authMiddleware, bookClient, authorClient, categoryClient, logger).Routes()
 	routes.NewCategoryRoute(router, authMiddleware, categoryClient, bookClient, logger).Routes()

@@ -6,10 +6,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Root(c *fiber.Ctx) error {
+type CommonHandler struct{}
+
+func NewCommonHandler() CommonHandler {
+	return CommonHandler{}
+}
+
+func (h *CommonHandler) Root(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("API online!!!", nil))
 }
 
-func Healthy(c *fiber.Ctx) error {
+func (h *CommonHandler) Healthy(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("API healthy!!!", nil))
 }
