@@ -3,6 +3,7 @@ package handlers
 import (
 	"api_gateway/internal/clients"
 	"api_gateway/internal/constants"
+	"api_gateway/internal/datatransfers"
 	"api_gateway/pkg/logger"
 	"api_gateway/pkg/utils"
 	"context"
@@ -38,12 +39,12 @@ func (b *UserHandler) GetAllUsersHandler(c *fiber.Ctx) error {
 	resp, err := b.client.ListUsers(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get list users", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get list users", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get list users", err))
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched all users successfully", extra, nil)
 
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("User data fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("User data fetched successfully", resp))
 }
 
 func (b *UserHandler) GetMe(c *fiber.Ctx) error {
@@ -65,10 +66,10 @@ func (b *UserHandler) GetMe(c *fiber.Ctx) error {
 	resp, err := b.client.GetUserById(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userID)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get user data", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get user data", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get user data", err))
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched user data successfully", extra, nil)
 
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("User data fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("User data fetched successfully", resp))
 }

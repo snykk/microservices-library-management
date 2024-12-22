@@ -42,13 +42,13 @@ func (a *AuthorHandler) CreateAuthorHandler(c *fiber.Ctx) error {
 	var req datatransfers.AuthorRequest
 	if err := c.BodyParser(&req); err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse create author request body", extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["author_name"] = req.Name
@@ -58,7 +58,7 @@ func (a *AuthorHandler) CreateAuthorHandler(c *fiber.Ctx) error {
 	resp, err := a.client.CreateAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), req)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to create author", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to create author", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to create author", err))
 	}
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Author created successfully", extra, nil)
@@ -86,7 +86,7 @@ func (a *AuthorHandler) GetAuthorByIdHandler(c *fiber.Ctx) error {
 	resp, err := a.client.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get author by ID", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get author", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get author", err))
 	}
 
 	// If includeBooks query param is true, get books for the author
@@ -99,7 +99,7 @@ func (a *AuthorHandler) GetAuthorByIdHandler(c *fiber.Ctx) error {
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Author data fetched successfully", extra, nil)
 
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Author data with id '%s' fetched successfully", authorId), resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Author data with id '%s' fetched successfully", authorId), resp))
 }
 
 func (a *AuthorHandler) GetAllAuthorsHandler(c *fiber.Ctx) error {
@@ -120,7 +120,7 @@ func (a *AuthorHandler) GetAllAuthorsHandler(c *fiber.Ctx) error {
 	resp, err := a.client.ListAuthors(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get author list", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get author list", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get author list", err))
 	}
 
 	// If includeBooks query param is true, get books for each author
@@ -135,7 +135,7 @@ func (a *AuthorHandler) GetAllAuthorsHandler(c *fiber.Ctx) error {
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "All authors data fetched successfully", extra, nil)
 
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("Author data fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Author data fetched successfully", resp))
 }
 
 func (a *AuthorHandler) UpdateAuthorByIdHandler(c *fiber.Ctx) error {
@@ -157,13 +157,13 @@ func (a *AuthorHandler) UpdateAuthorByIdHandler(c *fiber.Ctx) error {
 	var req datatransfers.AuthorRequest
 	if err := c.BodyParser(&req); err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update author request body", extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["author_name"] = req.Name
@@ -173,7 +173,7 @@ func (a *AuthorHandler) UpdateAuthorByIdHandler(c *fiber.Ctx) error {
 	resp, err := a.client.UpdateAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId, req)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to update author", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update author", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to update author", err))
 	}
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Author updated successfully", extra, nil)
@@ -200,7 +200,7 @@ func (a *AuthorHandler) DeleteAuthorByIdHandler(c *fiber.Ctx) error {
 	err := a.client.DeleteAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to delete author", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to delete author", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to delete author", err))
 	}
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Author deleted successfully", extra, nil)

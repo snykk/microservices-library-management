@@ -1,24 +1,31 @@
 package datatransfers
 
-type Response struct {
+type response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Errors  interface{} `json:"errors,omitempty"`
 }
 
-func ResponseSuccess(message string, data interface{}) Response {
-	return Response{
+func ResponseSuccess(message string, data interface{}) response {
+	return response{
 		Success: true,
 		Message: message,
 		Data:    data,
 	}
 }
 
-func ResponseError(message string, err error) Response {
-	return Response{
+func ResponseError(message string, err interface{}) response {
+	switch e := err.(type) {
+	case error:
+		err = e.Error()
+	default:
+		// No action required; keep err as is
+	}
+
+	return response{
 		Success: false,
 		Message: message,
-		Error:   err.Error(),
+		Errors:  err,
 	}
 }

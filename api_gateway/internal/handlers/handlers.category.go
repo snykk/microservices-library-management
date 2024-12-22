@@ -42,13 +42,13 @@ func (c *CategoryHandler) CreateCategoryHandler(ctx *fiber.Ctx) error {
 	var req datatransfers.CategoryRequest
 	if err := ctx.BodyParser(&req); err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse create category request body", extra, err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+		return ctx.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+		return ctx.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["category_name"] = req.Name
@@ -57,7 +57,7 @@ func (c *CategoryHandler) CreateCategoryHandler(ctx *fiber.Ctx) error {
 	resp, err := c.client.CreateCategory(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), req)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to create category", extra, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to create category", err))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to create category", err))
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Category created successfully", extra, nil)
@@ -84,7 +84,7 @@ func (c *CategoryHandler) GetCategoryByIdHandler(ctx *fiber.Ctx) error {
 	resp, err := c.client.GetCategory(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), categoryId)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get category", extra, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get category", err))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get category", err))
 	}
 
 	// If includeBooks query param is true, get books for the category
@@ -96,7 +96,7 @@ func (c *CategoryHandler) GetCategoryByIdHandler(ctx *fiber.Ctx) error {
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Category data fetched successfully", extra, nil)
-	return ctx.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Category data with id '%s' fetched successfully", categoryId), resp))
+	return ctx.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Category data with id '%s' fetched successfully", categoryId), resp))
 }
 
 func (c *CategoryHandler) GetAllCategoriesHandler(ctx *fiber.Ctx) error {
@@ -116,7 +116,7 @@ func (c *CategoryHandler) GetAllCategoriesHandler(ctx *fiber.Ctx) error {
 	resp, err := c.client.ListCategories(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID))
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to list categories", extra, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list categories", err))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to list categories", err))
 	}
 
 	// If includeBooks query param is true, get books for each category
@@ -130,7 +130,7 @@ func (c *CategoryHandler) GetAllCategoriesHandler(ctx *fiber.Ctx) error {
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched all categories successfully", extra, nil)
-	return ctx.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("Category data fetched successfully", resp))
+	return ctx.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Category data fetched successfully", resp))
 }
 
 func (c *CategoryHandler) UpdateCategoryByIdHandler(ctx *fiber.Ctx) error {
@@ -150,13 +150,13 @@ func (c *CategoryHandler) UpdateCategoryByIdHandler(ctx *fiber.Ctx) error {
 	var req datatransfers.CategoryRequest
 	if err := ctx.BodyParser(&req); err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update category request body", extra, err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+		return ctx.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+		return ctx.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["category_name"] = req.Name
@@ -165,7 +165,7 @@ func (c *CategoryHandler) UpdateCategoryByIdHandler(ctx *fiber.Ctx) error {
 	resp, err := c.client.UpdateCategory(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), categoryId, req)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to update category", extra, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update category", err))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to update category", err))
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Category updated successfully", extra, nil)
@@ -190,7 +190,7 @@ func (c *CategoryHandler) DeleteCategoryByIdHandler(ctx *fiber.Ctx) error {
 	err := c.client.DeleteCategory(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), categoryId)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to delete category", extra, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to delete category", err))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to delete category", err))
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Category deleted successfully", extra, nil)

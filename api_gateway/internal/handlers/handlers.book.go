@@ -42,13 +42,13 @@ func (b *BookHandler) CreateBookHandler(c *fiber.Ctx) error {
 	var req datatransfers.BookRequest
 	if err := c.BodyParser(&req); err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to parse create book request", extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["book_title"] = req.Title
@@ -59,7 +59,7 @@ func (b *BookHandler) CreateBookHandler(c *fiber.Ctx) error {
 	resp, err := b.client.CreateBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), req)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to create book", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to create book", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to create book", err))
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Book created successfully", extra, nil)
@@ -87,7 +87,7 @@ func (b *BookHandler) GetBookByIdHandler(c *fiber.Ctx) error {
 	resp, err := b.client.GetBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), bookId)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get book by id", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get book", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get book", err))
 	}
 
 	if includeAuthor || includeCategory {
@@ -109,7 +109,7 @@ func (b *BookHandler) GetBookByIdHandler(c *fiber.Ctx) error {
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched book data by id", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Book data with id '%s' fetched successfully", bookId), resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Book data with id '%s' fetched successfully", bookId), resp))
 }
 
 func (b *BookHandler) GetBooksByAuthorIdHandler(c *fiber.Ctx) error {
@@ -134,7 +134,7 @@ func (b *BookHandler) GetBooksByAuthorIdHandler(c *fiber.Ctx) error {
 	resp, err := b.client.GetBooksByAuthorId(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get books by author", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get books by author", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get books by author", err))
 	}
 
 	// If includeAuthor or includeCategory are true, fetch related data
@@ -159,7 +159,7 @@ func (b *BookHandler) GetBooksByAuthorIdHandler(c *fiber.Ctx) error {
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched books by author", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Books by author '%s' fetched successfully", authorId), resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Books by author '%s' fetched successfully", authorId), resp))
 }
 
 func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
@@ -184,7 +184,7 @@ func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
 	resp, err := b.client.GetBooksByCategoryId(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), categoryId)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get books by category", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to get books by category", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get books by category", err))
 	}
 
 	// If includeAuthor or includeCategory are true, fetch related data
@@ -209,7 +209,7 @@ func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched books by category", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess(fmt.Sprintf("Books under category '%s' fetched successfully", categoryId), resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Books under category '%s' fetched successfully", categoryId), resp))
 }
 
 func (b *BookHandler) GetAllBooksHandler(c *fiber.Ctx) error {
@@ -231,7 +231,7 @@ func (b *BookHandler) GetAllBooksHandler(c *fiber.Ctx) error {
 	resp, err := b.client.ListBooks(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to list books", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to list books", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to list books", err))
 	}
 
 	if includeAuthor || includeCategory {
@@ -255,7 +255,7 @@ func (b *BookHandler) GetAllBooksHandler(c *fiber.Ctx) error {
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched all books", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(utils.ResponseSuccess("Book data fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Book data fetched successfully", resp))
 }
 
 func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
@@ -275,13 +275,13 @@ func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
 	var req datatransfers.BookRequest
 	if err := c.BodyParser(&req); err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to parse update book request", extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError("Invalid request body", err))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ResponseError(constants.ErrValidationMessage, errorsMap))
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
 
 	extra["book_title"] = req.Title
@@ -292,7 +292,7 @@ func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
 	resp, err := b.client.UpdateBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), bookId, req)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to update book", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to update book", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to update book", err))
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Book updated successfully", extra, nil)
@@ -316,7 +316,7 @@ func (b *BookHandler) DeleteBookByIdHandler(c *fiber.Ctx) error {
 	err := b.client.DeleteBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), bookId)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to delete book", extra, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ResponseError("Failed to delete book", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to delete book", err))
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Book deleted successfully", extra, nil)

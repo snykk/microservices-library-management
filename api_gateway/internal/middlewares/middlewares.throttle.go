@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"api_gateway/configs"
-	"api_gateway/pkg/utils"
+	"api_gateway/internal/datatransfers"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -20,7 +20,7 @@ func ThrottleMiddleware() fiber.Handler {
 		},
 		LimitReached: func(c *fiber.Ctx) error {
 			// Respond with a 429 Too Many Requests error when the limit is exceeded
-			return c.Status(fiber.StatusTooManyRequests).JSON(utils.ResponseError("You have exceeded the request limit. Please try again later.", "Too many requests"))
+			return c.Status(fiber.StatusTooManyRequests).JSON(datatransfers.ResponseError("You have exceeded the request limit. Please try again later.", "Too many requests"))
 		},
 	})
 }
