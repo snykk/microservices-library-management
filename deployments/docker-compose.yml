@@ -28,6 +28,7 @@ services:
             RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"
             READ_TIMEOUT: 10 # second unit
             WRITE_TIMEOUT: 10 # second unit
+            MAX_REQUEST_PER_MINUTE: 50
             AUTH_SERVICE_URL: "auth-service:50051"
             AUTHOR_SERVICE_URL: "author-service:50051"
             BOOK_SERVICE_URL: "book-service:50051"

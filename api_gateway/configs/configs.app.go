@@ -21,6 +21,7 @@ type Config struct {
 	LoggerWorkerType       string
 	LoggerWorkerNum        int
 	LoggerWorkerBufferSize int
+	MaxRequestPerMinute    int
 } // mapstrucuture issue: should assign manually
 
 var AppConfig Config
@@ -79,6 +80,11 @@ func InitializeAppConfig() error {
 	}
 
 	AppConfig.LoggerWorkerBufferSize, err = getIntEnv("LOGGER_WORKER_BUFFER_SIZE")
+	if err != nil {
+		return err
+	}
+
+	AppConfig.MaxRequestPerMinute, err = getIntEnv("MAX_REQUEST_PER_MINUTE")
 	if err != nil {
 		return err
 	}
