@@ -37,7 +37,7 @@ func GRPCErrorFormatter(err error) error {
 		return status.Error(codes.Internal, err.Error())
 	case errors.Is(err, service.ErrGenerateRefreshToken):
 		return status.Error(codes.Internal, err.Error())
-	case errors.Is(err, service.ErrPareseToken):
+	case errors.Is(err, service.ErrParseToken):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, service.ErrInvalidRefreshToken):
 		return status.Error(codes.Unauthenticated, err.Error())

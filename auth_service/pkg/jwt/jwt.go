@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"auth_service/internal/constants"
 	"errors"
 	"time"
 
@@ -10,13 +11,14 @@ import (
 type JWTService interface {
 	GenerateToken(userId string, Role string, email string) (t string, err error)
 	GenerateRefreshToken(userID string, Role string, email string) (t string, err error)
-	ParseToken(tokenString string) (claims JwtCustomClaim, err error)
+	ParseToken(tokenString string, expectedType string) (claims JwtCustomClaim, err error)
 }
 
 type JwtCustomClaim struct {
-	UserID string
-	Role   string
-	Email  string
+	UserID    string
+	Role      string
+	Email     string
+	TokenType string
 	driJWT.StandardClaims
 }
 
@@ -39,10 +41,11 @@ func NewJWTService(secretKey, issuer string, expiredAccessToken, expiredRefreshT
 // GenerateToken creates a new JWT token for authentication with short expiry (e.g., 15 minutes)
 func (j *jwtService) GenerateToken(userID string, Role string, email string) (t string, err error) {
 	claims := &JwtCustomClaim{
-		userID,
-		Role,
-		email,
-		driJWT.StandardClaims{
+		UserID:    userID,
+		Role:      Role,
+		Email:     email,
+		TokenType: constants.TokenAccess,
+		StandardClaims: driJWT.StandardClaims{
 			ExpiresAt: time.Now().Add(j.expiredAccessToken).Unix(),
 			Issuer:    j.issuer,
 			IssuedAt:  time.Now().Unix(),
@@ -55,28 +58,33 @@ func (j *jwtService) GenerateToken(userID string, Role string, email string) (t 
 
 func (j *jwtService) GenerateRefreshToken(userID string, Role string, email string) (t string, err error) {
 	claims := &JwtCustomClaim{
-		userID,
-		Role,
-		email,
-		driJWT.StandardClaims{
+		UserID:    userID,
+		Role:      Role,
+		Email:     email,
+		TokenType: constants.TokenRefresh,
+		StandardClaims: driJWT.StandardClaims{
 			ExpiresAt: time.Now().Add(j.expiredRefreshToken).Unix(),
 			Issuer:    j.issuer,
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
-
 	token := driJWT.NewWithClaims(driJWT.SigningMethodHS256, claims)
 	t, err = token.SignedString([]byte(j.secretKey))
 	return
 }
 
 // ParseToken parses and validates the JWT token, extracting the claims.
-func (j *jwtService) ParseToken(tokenString string) (claims JwtCustomClaim, err error) {
-	if token, err := driJWT.ParseWithClaims(tokenString, &claims, func(token *driJWT.Token) (interface{}, error) {
+func (j *jwtService) ParseToken(tokenString string, expectedType string) (claims JwtCustomClaim, err error) {
+	token, err := driJWT.ParseWithClaims(tokenString, &claims, func(token *driJWT.Token) (interface{}, error) {
 		return []byte(j.secretKey), nil
-	}); err != nil || !token.Valid {
+	})
+	if err != nil || !token.Valid {
 		return JwtCustomClaim{}, errors.New("token is not valid")
 	}
 
-	return
+	if claims.TokenType != expectedType {
+		return JwtCustomClaim{}, errors.New("invalid token type")
+	}
+
+	return claims, nil
 }

@@ -185,10 +185,10 @@ func (s *authService) Login(ctx context.Context, req *models.LoginRequest) (*mod
 }
 
 func (s *authService) ValidateToken(ctx context.Context, req *models.ValidateTokenRequest) (*models.ValidateTokenResponse, error) {
-	claims, err := s.jwtService.ParseToken(req.Token)
+	claims, err := s.jwtService.ParseToken(req.Token, constants.TokenAccess)
 	if err != nil {
 		log.Printf("[%s] Failed to parse token: %v\n", utils.GetLocation(), err)
-		return nil, ErrPareseToken
+		return nil, ErrParseToken
 	}
 
 	log.Printf("[%s] Token validation successful for user ID %s\n", utils.GetLocation(), claims.UserID)
