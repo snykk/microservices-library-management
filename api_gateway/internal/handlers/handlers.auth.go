@@ -228,3 +228,65 @@ func (authH *AuthHandler) ValidateTokenHandler(c *fiber.Ctx) error {
 	authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Token validation successful", extra, nil)
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Token validation successful", resp))
 }
+
+func (authH *AuthHandler) RefreshTokenHandler(c *fiber.Ctx) error {
+	requestID, ok := c.Locals(constants.ContextRequestIDKey).(string)
+	if !ok || requestID == "" {
+		requestID = "unknown"
+	}
+
+	userID := c.Locals("userID").(string)
+
+	extra := map[string]interface{}{
+		"method": c.Method(),
+		"url":    c.OriginalURL(),
+	}
+
+	var req datatransfers.RefreshTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse refresh token request body", extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
+	extra["refresh_token"] = req.RefreshToken
+
+	resp, err := authH.client.RefreshToken(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userID, req)
+	if err != nil {
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to refresh token", extra, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to refresh token", err))
+	}
+
+	authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Token refresh successful", extra, nil)
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Token refresh successful", resp))
+}
+
+func (authH *AuthHandler) LogoutHandler(c *fiber.Ctx) error {
+	requestID, ok := c.Locals(constants.ContextRequestIDKey).(string)
+	if !ok || requestID == "" {
+		requestID = "unknown"
+	}
+
+	userID := c.Locals("userID").(string)
+
+	extra := map[string]interface{}{
+		"method": c.Method(),
+		"url":    c.OriginalURL(),
+	}
+
+	extra["user_id"] = userID
+
+	resp, err := authH.client.Logout(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userID)
+	if err != nil {
+		authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to logout", extra, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to logout", err))
+	}
+
+	authH.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Logout successful", extra, nil)
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Logout successful", resp))
+}

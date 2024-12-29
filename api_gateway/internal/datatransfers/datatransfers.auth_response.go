@@ -32,3 +32,12 @@ type ValidateTokenResponse struct {
 	Role   string `json:"role"`
 	Email  string `json:"email"`
 }
+
+type RefreshTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type LogoutResponse struct {
+	Message string `json:"message"`
+}

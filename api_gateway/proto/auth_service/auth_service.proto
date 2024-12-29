@@ -13,6 +13,7 @@ service AuthService {
     rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
     rpc Logout (LogoutRequest) returns (LogoutResponse);
     rpc SendOTP (SendOTPRequest) returns (SendOTPResponse);
+    rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
 }
 
 message User {
@@ -81,4 +82,15 @@ message SendOTPRequest {
 
 message SendOTPResponse {
     string message = 1;
+}
+
+message RefreshTokenRequest {
+    string userId = 1 [(validate.rules).string.min_len = 1];  // User ID must not be empty
+    string refreshToken = 2 [(validate.rules).string.min_len = 1];  // Refresh token must not be empty
+}
+
+message RefreshTokenResponse {
+    string accessToken = 1;
+    string refreshToken = 2;
+    string message = 3;
 }

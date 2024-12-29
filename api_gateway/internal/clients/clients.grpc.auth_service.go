@@ -21,6 +21,8 @@ type AuthClient interface {
 	SendOtp(ctx context.Context, dto datatransfers.SendOtpRequest) (datatransfers.SendOtpResponse, error)
 	VerifyEmail(ctx context.Context, dto datatransfers.VerifyEmailRequest) (datatransfers.VerifyEmailResponse, error)
 	ValidateToken(ctx context.Context, dto datatransfers.ValidateTokenRequest) (datatransfers.ValidateTokenResponse, error)
+	RefreshToken(ctx context.Context, userId string, dto datatransfers.RefreshTokenRequest) (datatransfers.RefreshTokenResponse, error)
+	Logout(ctx context.Context, userId string) (datatransfers.LogoutResponse, error)
 }
 
 type authClient struct {
@@ -188,5 +190,59 @@ func (authC *authClient) ValidateToken(ctx context.Context, dto datatransfers.Va
 		UserID: resp.UserId,
 		Role:   resp.Role,
 		Email:  resp.Email,
+	}, nil
+}
+
+func (authC *authClient) RefreshToken(ctx context.Context, userId string, dto datatransfers.RefreshTokenRequest) (datatransfers.RefreshTokenResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
+	reqProto := protoAuth.RefreshTokenRequest{
+		UserId:       userId,
+		RefreshToken: dto.RefreshToken,
+	}
+
+	extra := map[string]interface{}{
+		"refresh_token": dto.RefreshToken,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending RefreshToken request to Auth Service", extra, nil)
+
+	resp, err := authC.client.RefreshToken(utils.GetProtoContext(ctx), &reqProto)
+	if err != nil {
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "RefreshToken request failed", extra, err)
+		return datatransfers.RefreshTokenResponse{}, err
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "RefreshToken request succeeded", extra, nil)
+
+	return datatransfers.RefreshTokenResponse{
+		AccessToken:  resp.AccessToken,
+		RefreshToken: resp.RefreshToken,
+	}, nil
+}
+
+func (authC *authClient) Logout(ctx context.Context, userId string) (datatransfers.LogoutResponse, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+
+	reqProto := protoAuth.LogoutRequest{
+		UserId: userId,
+	}
+
+	extra := map[string]interface{}{
+		"user_id": userId,
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending Logout request to Auth Service", extra, nil)
+
+	resp, err := authC.client.Logout(utils.GetProtoContext(ctx), &reqProto)
+	if err != nil {
+		authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Logout request failed", extra, err)
+		return datatransfers.LogoutResponse{}, err
+	}
+
+	authC.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Logout request succeeded", extra, nil)
+
+	return datatransfers.LogoutResponse{
+		Message: resp.Message,
 	}, nil
 }

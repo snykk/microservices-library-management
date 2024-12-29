@@ -182,3 +182,37 @@ func (s *authServer) ValidateToken(ctx context.Context, req *protoAuth.ValidateT
 		Email:  result.Email,
 	}, nil
 }
+
+func (s *authServer) RefreshToken(ctx context.Context, req *protoAuth.RefreshTokenRequest) (*protoAuth.RefreshTokenResponse, error) {
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
+	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received RefreshTokens request", map[string]interface{}{"user_id": req.UserId}, nil)
+
+	result, err := s.authService.RefreshToken(ctx, req.UserId, req.RefreshToken)
+	if err != nil {
+		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "RefreshTokens service failed", nil, err)
+		return nil, exception.GRPCErrorFormatter(err)
+	}
+
+	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Tokens refreshed successfully", nil, nil)
+	return &protoAuth.RefreshTokenResponse{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		Message:      result.Message,
+	}, nil
+}
+
+func (s *authServer) Logout(ctx context.Context, req *protoAuth.LogoutRequest) (*protoAuth.LogoutResponse, error) {
+	requestID := utils.GetRequestIDFromMetadataContext(ctx)
+	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Received Logout request", map[string]interface{}{"user_id": req.UserId}, nil)
+
+	err := s.authService.Logout(ctx, req.UserId)
+	if err != nil {
+		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Logout service failed", nil, err)
+		return nil, status.Errorf(codes.Internal, "Logout failed: %v", err)
+	}
+
+	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Logout successful", nil, nil)
+	return &protoAuth.LogoutResponse{
+		Message: "Logout successful",
+	}, nil
+}

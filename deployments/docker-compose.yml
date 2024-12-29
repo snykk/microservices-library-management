@@ -193,7 +193,7 @@ services:
             JWT_ISSUER: "auth-service"
             JWT_SECRET: "supersecretkeywjerjrqwowijfoqjfoaqjdoajflakjoewjroewijrwwoijoj"
             JWT_EXP_ACCESS_TOKEN: 15 # minute unit
-            JWT_EXP_REFRESH_TOKEN: 38880 # minute unit (7 days)
+            JWT_EXP_REFRESH_TOKEN: 10080 # minute unit (7 days)
             EMAIL_SENDER_CONTAINER_FILE: "/run/secrets/email_sender"
             EMAIL_PASSWORD_CONTAINER_FILE: "/run/secrets/email_password"
             RABBITMQ_URL: "amqp://user:password@rabbitmq:5672"

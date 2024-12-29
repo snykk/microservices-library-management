@@ -18,6 +18,8 @@ type AuthService interface {
 	VerifyEmail(ctx context.Context, req *models.VerifyEmailRequest, redisOtp string) (*models.VerifyEmailResponse, error)
 	Login(ctx context.Context, req *models.LoginRequest) (*models.LoginResponse, error)
 	ValidateToken(ctx context.Context, req *models.ValidateTokenRequest) (*models.ValidateTokenResponse, error)
+	RefreshToken(ctx context.Context, userID string, oldRefreshToken string) (*models.LoginResponse, error)
+	Logout(ctx context.Context, userID string) error
 }
 
 type authService struct {
@@ -164,6 +166,16 @@ func (s *authService) Login(ctx context.Context, req *models.LoginRequest) (*mod
 		return nil, ErrGenerateRefreshToken
 	}
 
+	// Update refresh token in database
+	if err := s.repo.UpdateRefreshToken(ctx, user.ID, refreshToken); err != nil {
+		return nil, ErrUpdateRefreshToken
+	}
+
+	// Update last login
+	if err := s.repo.UpdateLastLogin(ctx, user.ID); err != nil {
+		return nil, ErrUpdateLastLogin
+	}
+
 	log.Printf("[%s] Login successful for email %s\n", utils.GetLocation(), req.Email)
 	return &models.LoginResponse{
 		AccessToken:  accessToken,
@@ -186,4 +198,45 @@ func (s *authService) ValidateToken(ctx context.Context, req *models.ValidateTok
 		Role:   claims.Role,
 		Email:  claims.Email,
 	}, nil
+}
+
+func (s *authService) RefreshToken(ctx context.Context, userID string, oldRefreshToken string) (*models.LoginResponse, error) {
+	user, err := s.repo.GetUserById(ctx, userID)
+	if err != nil || user.RefreshToken != oldRefreshToken {
+		log.Printf("[%s] Invalid or expired refresh token for user ID %s\n", utils.GetLocation(), userID)
+		return nil, ErrInvalidRefreshToken
+	}
+
+	// Generate new tokens
+	accessToken, err := s.jwtService.GenerateToken(user.ID, user.Role, user.Email)
+	if err != nil {
+		return nil, ErrGenerateAccessToken
+	}
+
+	// Generate Refresh Token
+	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID, user.Role, user.Email)
+	if err != nil {
+		return nil, ErrGenerateRefreshToken
+	}
+
+	// Update refresh token in database
+	if err := s.repo.UpdateRefreshToken(ctx, user.ID, refreshToken); err != nil {
+		return nil, ErrUpdateRefreshToken
+	}
+
+	return &models.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		Message:      "Tokens refreshed successfully",
+	}, nil
+}
+
+func (s *authService) Logout(ctx context.Context, userID string) error {
+	err := s.repo.DeleteRefreshToken(ctx, userID)
+	if err != nil {
+		log.Printf("[%s] Failed to log out user ID %s: %v\n", utils.GetLocation(), userID, err)
+		return ErrLogoutFailed
+	}
+	log.Printf("[%s] Logout successful for user ID %s\n", utils.GetLocation(), userID)
+	return nil
 }

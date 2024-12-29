@@ -39,6 +39,12 @@ func GRPCErrorFormatter(err error) error {
 		return status.Error(codes.Internal, err.Error())
 	case errors.Is(err, service.ErrPareseToken):
 		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, service.ErrInvalidRefreshToken):
+		return status.Error(codes.Unauthenticated, err.Error())
+	case errors.Is(err, service.ErrUpdateRefreshToken):
+		return status.Error(codes.Internal, err.Error())
+	case errors.Is(err, service.ErrUpdateLastLogin):
+		return status.Error(codes.Internal, err.Error())
 	default:
 		// Fallback for unknown errors
 		return status.Error(codes.Unknown, err.Error())

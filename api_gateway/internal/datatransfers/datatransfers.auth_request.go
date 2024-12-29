@@ -23,3 +23,7 @@ type LoginRequest struct {
 type ValidateTokenRequest struct {
 	Token string `json:"token" validate:"required"`
 }
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}

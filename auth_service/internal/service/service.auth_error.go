@@ -19,4 +19,8 @@ var (
 	ErrPareseToken            = errors.New("error parse token")
 	ErrMarshalOTPMessage      = errors.New("error marshal otp message")
 	ErrPublishToQueue         = errors.New("error publish message to queue")
+	ErrInvalidRefreshToken    = errors.New("invalid refresh token")
+	ErrUpdateRefreshToken     = errors.New("error update refresh token")
+	ErrUpdateLastLogin        = errors.New("error update last login")
+	ErrLogoutFailed           = errors.New("error logout")
 )
