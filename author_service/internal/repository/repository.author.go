@@ -14,9 +14,10 @@ import (
 type AuthorRepository interface {
 	CreateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error)
 	GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error)
-	ListAuthors(ctx context.Context) ([]*models.AuthorRecord, error)
+	ListAuthors(ctx context.Context, page int, pageSize int) ([]*models.AuthorRecord, error)
 	UpdateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error)
 	DeleteAuthor(ctx context.Context, id string) error
+	CountAuthors(ctx context.Context) (int, error)
 }
 
 // authorRepository implements the AuthorRepository interface
@@ -83,10 +84,12 @@ func (r *authorRepository) GetAuthor(ctx context.Context, id string) (*models.Au
 }
 
 // ListAuthors retrieves all authors from the database.
-func (r *authorRepository) ListAuthors(ctx context.Context) ([]*models.AuthorRecord, error) {
-	query := `SELECT id, name, biography, created_at, updated_at FROM authors`
+func (r *authorRepository) ListAuthors(ctx context.Context, page int, pageSize int) ([]*models.AuthorRecord, error) {
+	log.Printf("Listing authors with pagination (Page: %d, PageSize: %d)", page, pageSize)
 
-	rows, err := r.db.QueryContext(ctx, query)
+	offset := (page - 1) * pageSize
+	query := `SELECT id, name, biography, created_at, updated_at FROM authors LIMIT $1 OFFSET $2`
+	rows, err := r.db.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
 		log.Printf("Error listing authors: %v\n", err)
 		return nil, err
@@ -151,4 +154,17 @@ func (r *authorRepository) DeleteAuthor(ctx context.Context, id string) error {
 
 	log.Printf("Deleted author with ID: %s\n", id)
 	return nil
+}
+
+// CountAuthors counts the total number of authors in the database.
+func (r *authorRepository) CountAuthors(ctx context.Context) (int, error) {
+	log.Printf("Counting total authors")
+	query := `SELECT COUNT(*) FROM authors`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting authors: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
 }

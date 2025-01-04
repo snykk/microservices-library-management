@@ -13,9 +13,9 @@ import (
 type BookService interface {
 	CreateBook(ctx context.Context, req *models.BookRequest) (*models.BookRecord, error)
 	GetBook(ctx context.Context, id string) (*models.BookRecord, error)
-	GetBookByAuthorId(ctx context.Context, authorId string) ([]*models.BookRecord, error)
-	GetBookByCategoryId(ctx context.Context, categoryId string) ([]*models.BookRecord, error)
-	ListBooks(ctx context.Context) ([]*models.BookRecord, error)
+	GetBookByAuthorId(ctx context.Context, authorId string, page int, pageSize int) (books []*models.BookRecord, totalItems int, err error)
+	GetBookByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) (books []*models.BookRecord, totalItems int, err error)
+	ListBooks(ctx context.Context, page int, pageSize int) (books []*models.BookRecord, totalItems int, err error)
 	UpdateBook(ctx context.Context, id string, req *models.BookRequest) (*models.BookRecord, error)
 	DeleteBook(ctx context.Context, id string) error
 	UpdateBookStock(ctx context.Context, id string, newStock int) error
@@ -73,43 +73,60 @@ func (s *bookService) GetBook(ctx context.Context, id string) (*models.BookRecor
 	return book, nil
 }
 
-func (s *bookService) GetBookByAuthorId(ctx context.Context, authorId string) ([]*models.BookRecord, error) {
-	log.Printf("[%s] Fetching books by author ID: %s\n", utils.GetLocation(), authorId)
+func (s *bookService) GetBookByAuthorId(ctx context.Context, authorId string, page int, pageSize int) ([]*models.BookRecord, int, error) {
+	log.Printf("[%s] Fetching list of books by author ID: %s with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), authorId, page, pageSize)
 
-	books, err := s.repo.GetBookByAuthorId(ctx, authorId)
+	books, err := s.repo.GetBookByAuthorId(ctx, authorId, page, pageSize)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch books by author ID %s: %v\n", utils.GetLocation(), authorId, err)
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalItems, err := s.repo.CountBooksByAuthorId(ctx, authorId)
+	if err != nil {
+		log.Printf("[%s] Failed to count books by author ID %s: %v\n", utils.GetLocation(), authorId, err)
+		return nil, 0, err
 	}
 
 	log.Printf("[%s] Successfully fetched %d books by author ID %s\n", utils.GetLocation(), len(books), authorId)
-	return books, nil
+	return books, totalItems, nil
 }
 
-func (s *bookService) GetBookByCategoryId(ctx context.Context, categoryId string) ([]*models.BookRecord, error) {
-	log.Printf("[%s] Fetching books by category ID: %s\n", utils.GetLocation(), categoryId)
+func (s *bookService) GetBookByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) ([]*models.BookRecord, int, error) {
+	log.Printf("[%s] Fetching list of books by category ID: %s with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), categoryId, page, pageSize)
 
-	books, err := s.repo.GetBookByCategoryId(ctx, categoryId)
+	books, err := s.repo.GetBookByCategoryId(ctx, categoryId, page, pageSize)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch books by category ID %s: %v\n", utils.GetLocation(), categoryId, err)
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalItems, err := s.repo.CountBooksByCategoryId(ctx, categoryId)
+	if err != nil {
+		log.Printf("[%s] Failed to count books by category ID %s: %v\n", utils.GetLocation(), categoryId, err)
+		return nil, 0, err
 	}
 
 	log.Printf("[%s] Successfully fetched %d books by category ID %s\n", utils.GetLocation(), len(books), categoryId)
-	return books, nil
+	return books, totalItems, nil
 }
 
-func (s *bookService) ListBooks(ctx context.Context) ([]*models.BookRecord, error) {
-	log.Printf("[%s] Fetching list of books\n", utils.GetLocation())
+func (s *bookService) ListBooks(ctx context.Context, page int, pageSize int) (books []*models.BookRecord, totalItems int, err error) {
+	log.Printf("[%s] Fetching list of books with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), page, pageSize)
 
-	books, err := s.repo.ListBooks(ctx)
+	books, err = s.repo.ListBooks(ctx, page, pageSize)
 	if err != nil {
-		log.Printf("[%s] Failed to list books: %v\n", utils.GetLocation(), err)
-		return nil, err
+		log.Printf("[%s] Failed to fetch books: %v\n", utils.GetLocation(), err)
+		return nil, 0, err
 	}
 
-	log.Printf("[%s] Successfully fetched %d books\n", utils.GetLocation(), len(books))
-	return books, nil
+	totalItems, err = s.repo.CountBooks(ctx)
+	if err != nil {
+		log.Printf("[%s] Failed to count books: %v\n", utils.GetLocation(), err)
+		return nil, 0, err
+	}
+
+	return books, totalItems, nil
 }
 
 func (s *bookService) UpdateBook(ctx context.Context, id string, req *models.BookRequest) (*models.BookRecord, error) {

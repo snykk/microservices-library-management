@@ -13,14 +13,17 @@ import (
 type BookRepository interface {
 	CreateBook(ctx context.Context, req *models.BookRecord) (*models.BookRecord, error)
 	GetBook(ctx context.Context, id string) (*models.BookRecord, error)
-	GetBookByAuthorId(ctx context.Context, authorId string) ([]*models.BookRecord, error)
-	GetBookByCategoryId(ctx context.Context, categoryId string) ([]*models.BookRecord, error)
-	ListBooks(ctx context.Context) ([]*models.BookRecord, error)
+	GetBookByAuthorId(ctx context.Context, authorId string, page int, pageSize int) ([]*models.BookRecord, error)
+	GetBookByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) ([]*models.BookRecord, error)
+	ListBooks(ctx context.Context, page int, pageSize int) ([]*models.BookRecord, error)
 	UpdateBook(ctx context.Context, req *models.BookRecord) (*models.BookRecord, error)
 	DeleteBook(ctx context.Context, id string) error
 	UpdateBookStock(ctx context.Context, bookId string, newStock int) error
 	IncrementBookStock(ctx context.Context, bookId string) error
 	DecrementBookStock(ctx context.Context, bookId string) error
+	CountBooks(ctx context.Context) (int, error)
+	CountBooksByCategoryId(ctx context.Context, categoryId string) (int, error)
+	CountBooksByAuthorId(ctx context.Context, authorid string) (int, error)
 }
 
 type bookRepository struct {
@@ -92,10 +95,12 @@ func (r *bookRepository) GetBook(ctx context.Context, id string) (*models.BookRe
 	return book, nil
 }
 
-func (r *bookRepository) GetBookByAuthorId(ctx context.Context, authorId string) ([]*models.BookRecord, error) {
-	log.Printf("Fetching books by author ID: %s\n", authorId)
-	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE author_id = $1`
-	rows, err := r.db.QueryContext(ctx, query, authorId)
+func (r *bookRepository) GetBookByAuthorId(ctx context.Context, authorId string, page int, pageSize int) ([]*models.BookRecord, error) {
+	log.Printf("Fetching books by author ID: %s with pagination (Page: %d, PageSize: %d)\n", authorId, page, pageSize)
+
+	offset := (page - 1) * pageSize
+	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE author_id = $1 LIMIT $2 OFFSET $3`
+	rows, err := r.db.QueryContext(ctx, query, authorId, pageSize, offset)
 	if err != nil {
 		log.Printf("Error fetching books by author ID: %v\n", err)
 		return nil, err
@@ -124,10 +129,12 @@ func (r *bookRepository) GetBookByAuthorId(ctx context.Context, authorId string)
 	return books, nil
 }
 
-func (r *bookRepository) GetBookByCategoryId(ctx context.Context, categoryId string) ([]*models.BookRecord, error) {
-	log.Printf("Fetching books by category ID: %s\n", categoryId)
-	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE category_id = $1`
-	rows, err := r.db.QueryContext(ctx, query, categoryId)
+func (r *bookRepository) GetBookByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) ([]*models.BookRecord, error) {
+	log.Printf("Fetching books by category ID: %s with pagination (Page: %d, PageSize: %d)\n", categoryId, page, pageSize)
+
+	offset := (page - 1) * pageSize
+	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books WHERE category_id = $1 LIMIT $2 OFFSET $3`
+	rows, err := r.db.QueryContext(ctx, query, categoryId, pageSize, offset)
 	if err != nil {
 		log.Printf("Error fetching books by category ID: %v\n", err)
 		return nil, err
@@ -156,10 +163,12 @@ func (r *bookRepository) GetBookByCategoryId(ctx context.Context, categoryId str
 	return books, nil
 }
 
-func (r *bookRepository) ListBooks(ctx context.Context) ([]*models.BookRecord, error) {
-	log.Printf("Listing all books")
-	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books`
-	rows, err := r.db.QueryContext(ctx, query)
+func (r *bookRepository) ListBooks(ctx context.Context, page int, pageSize int) ([]*models.BookRecord, error) {
+	log.Printf("Listing books with pagination (Page: %d, PageSize: %d)", page, pageSize)
+
+	offset := (page - 1) * pageSize
+	query := `SELECT id, title, author_id, category_id, stock, created_at, updated_at FROM books LIMIT $1 OFFSET $2`
+	rows, err := r.db.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
 		log.Printf("Error listing books: %v\n", err)
 		return nil, err
@@ -304,4 +313,43 @@ func (r *bookRepository) DecrementBookStock(ctx context.Context, bookId string) 
 
 	log.Printf("Stock decremented successfully for book ID: %s\n", bookId)
 	return nil
+}
+
+// CountBooks counts the total number of books in the database.
+func (r *bookRepository) CountBooks(ctx context.Context) (int, error) {
+	log.Printf("Counting total books")
+	query := `SELECT COUNT(*) FROM books`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting books: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
+}
+
+// CountBooksByCategoryId counts the total number of books in the database by category ID.
+func (r *bookRepository) CountBooksByCategoryId(ctx context.Context, categoryId string) (int, error) {
+	log.Printf("Counting total books by category ID: %s\n", categoryId)
+	query := `SELECT COUNT(*) FROM books WHERE category_id = $1`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query, categoryId).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting books: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
+}
+
+// CountBooksByAuthorId counts the total number of books in the database by author ID.
+func (r *bookRepository) CountBooksByAuthorId(ctx context.Context, authorid string) (int, error) {
+	log.Printf("Counting total books by author ID: %s\n", authorid)
+	query := `SELECT COUNT(*) FROM books WHERE author_id = $1`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query, authorid).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting books: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
 }

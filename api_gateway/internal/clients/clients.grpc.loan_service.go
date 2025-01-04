@@ -20,10 +20,10 @@ type LoanClient interface {
 	CreateLoan(ctx context.Context, userId, email string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error)
 	GetLoan(ctx context.Context, id string) (datatransfers.LoanResponse, error)
 	UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
-	ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error)
-	ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error)
-	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error)
-	GetLoansByStatus(ctx context.Context, status string) ([]datatransfers.LoanResponse, error)
+	ListUserLoans(ctx context.Context, userId string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
+	ListLoans(ctx context.Context, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
+	GetUserLoansByStatus(ctx context.Context, userId, status string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
+	GetLoansByStatus(ctx context.Context, status string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
 	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error)
 }
 
@@ -171,15 +171,19 @@ func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string
 	return loanResponse, nil
 }
 
-func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatransfers.LoanResponse, error) {
+func (l *loanClient) ListUserLoans(ctx context.Context, userId string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoLoan.ListUserLoansRequest{
-		UserId: userId,
+		UserId:   userId,
+		Page:     int32(page),
+		PageSize: int32(pageSize),
 	}
 
 	extra := map[string]interface{}{
-		"user_id": userId,
+		"user_id":   userId,
+		"page":      page,
+		"page_size": pageSize,
 	}
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUserLoans request to Loan Service", extra, nil)
@@ -187,7 +191,7 @@ func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatr
 	resp, err := l.client.ListUserLoans(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUserLoans request failed", extra, err)
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	var loans []datatransfers.LoanResponse
@@ -210,21 +214,34 @@ func (l *loanClient) ListUserLoans(ctx context.Context, userId string) ([]datatr
 		loans = append(loans, loanResponse)
 	}
 
+	extra["loans_count"] = len(loans)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListUserLoans request succeeded", extra, nil)
 
-	return loans, nil
+	return loans, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanResponse, error) {
+func (l *loanClient) ListLoans(ctx context.Context, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
-	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListLoans request to Loan Service", nil, nil)
+	reqProto := protoLoan.ListLoansRequest{
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	}
 
-	resp, err := l.client.ListLoans(ctx, &protoLoan.ListLoansRequest{})
+	extra := map[string]interface{}{
+		"page":      page,
+		"page_size": pageSize,
+	}
+
+	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListLoans request to Loan Service", extra, nil)
+
+	resp, err := l.client.ListLoans(ctx, &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListLoans request failed", nil, err)
 
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	var loans []datatransfers.LoanResponse
@@ -247,22 +264,29 @@ func (l *loanClient) ListLoans(ctx context.Context) ([]datatransfers.LoanRespons
 		loans = append(loans, loanResponse)
 	}
 
+	extra["loans_count"] = len(loans)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListLoans request to Loan Service", map[string]interface{}{"loans_count": len(loans)}, nil)
 
-	return loans, nil
+	return loans, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status string) ([]datatransfers.LoanResponse, error) {
+func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoLoan.GetUserLoansByStatusRequest{
-		UserId: userId,
-		Status: status,
+		UserId:   userId,
+		Status:   status,
+		Page:     int32(page),
+		PageSize: int32(pageSize),
 	}
 
 	extra := map[string]interface{}{
 		"user_id":     userId,
 		"loan_status": status,
+		"page":        page,
+		"page_size":   pageSize,
 	}
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetUserLoansByStatus request to Loan Service", extra, nil)
@@ -270,7 +294,7 @@ func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status st
 	resp, err := l.client.GetUserLoansByStatus(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetUserLoansByStatus request failed", extra, err)
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	var loans []datatransfers.LoanResponse
@@ -294,20 +318,26 @@ func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status st
 	}
 
 	extra["loans_count"] = len(loans)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetUserLoansByStatus request succeeded", extra, nil)
 
-	return loans, nil
+	return loans, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]datatransfers.LoanResponse, error) {
+func (l *loanClient) GetLoansByStatus(ctx context.Context, status string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoLoan.GetLoansByStatusRequest{
-		Status: status,
+		Status:   status,
+		Page:     int32(page),
+		PageSize: int32(pageSize),
 	}
 
 	extra := map[string]interface{}{
 		"loan_status": status,
+		"page":        page,
+		"page_size":   pageSize,
 	}
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetLoansByStatus request to Loan Service", extra, nil)
@@ -315,7 +345,7 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]dat
 	resp, err := l.client.GetLoansByStatus(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetLoansByStatus request failed", extra, err)
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	var loans []datatransfers.LoanResponse
@@ -339,9 +369,11 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string) ([]dat
 	}
 
 	extra["loans_count"] = len(loans)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetLoansByStatus request succeeded", extra, nil)
 
-	return loans, nil
+	return loans, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
 func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error) {

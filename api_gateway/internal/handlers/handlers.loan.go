@@ -8,6 +8,7 @@ import (
 	"api_gateway/pkg/utils"
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -174,21 +175,40 @@ func (l *LoanHandler) ListUserLoansHandler(c *fiber.Ctx) error {
 
 	userId := c.Locals("userID").(string)
 	status := c.Query("status")
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
 
 	extra := map[string]interface{}{
-		"method":  c.Method(),
-		"url":     c.OriginalURL(),
-		"user_id": userId,
-		"status":  status,
+		"method":    c.Method(),
+		"url":       c.OriginalURL(),
+		"user_id":   userId,
+		"status":    status,
+		"page":      page,
+		"page_size": pageSize,
 	}
 
-	var resp []datatransfers.LoanResponse
-	var err error
+	var (
+		loans      []datatransfers.LoanResponse
+		totalItems int
+		totalPages int
+		err        error
+	)
 
 	if status != "" {
-		resp, err = l.client.GetUserLoansByStatus(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userId, status)
+		loans, totalItems, totalPages, err = l.client.GetUserLoansByStatus(
+			context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+			userId,
+			status,
+			page,
+			pageSize,
+		)
 	} else {
-		resp, err = l.client.ListUserLoans(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userId)
+		loans, totalItems, totalPages, err = l.client.ListUserLoans(
+			context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+			userId,
+			page,
+			pageSize,
+		)
 	}
 
 	if err != nil {
@@ -196,9 +216,19 @@ func (l *LoanHandler) ListUserLoansHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to list loans", err))
 	}
 
+	extra["loans_count"] = len(loans)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "List user loans fetched successfully", extra, nil)
-
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("List user loans fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("List user loans fetched successfully", map[string]interface{}{
+		"loans": loans,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
@@ -209,20 +239,37 @@ func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
 	}
 
 	status := c.Query("status")
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
 
 	extra := map[string]interface{}{
-		"method": c.Method(),
-		"url":    c.OriginalURL(),
-		"status": status,
+		"method":    c.Method(),
+		"url":       c.OriginalURL(),
+		"status":    status,
+		"page":      page,
+		"page_size": pageSize,
 	}
 
-	var resp []datatransfers.LoanResponse
-	var err error
+	var (
+		loans      []datatransfers.LoanResponse
+		totalItems int
+		totalPages int
+		err        error
+	)
 
 	if status != "" {
-		resp, err = l.client.GetLoansByStatus(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), status)
+		loans, totalItems, totalPages, err = l.client.GetLoansByStatus(
+			context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+			status,
+			page,
+			pageSize,
+		)
 	} else {
-		resp, err = l.client.ListLoans(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
+		loans, totalItems, totalPages, err = l.client.ListLoans(
+			context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+			page,
+			pageSize,
+		)
 	}
 
 	if err != nil {
@@ -230,7 +277,17 @@ func (l *LoanHandler) ListLoansHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to list loans", err))
 	}
 
+	extra["loans_count"] = len(loans)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "List loans fetched successfully", extra, nil)
-
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("List loans fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("List loans fetched successfully", map[string]interface{}{
+		"loans": loans,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }

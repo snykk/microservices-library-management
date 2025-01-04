@@ -21,6 +21,10 @@ type LoanRepository interface {
 	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, error)
 	GetLoansByStatus(ctx context.Context, status string) ([]*models.LoanRecord, error)
 	ReturnLoan(ctx context.Context, id string) (*models.LoanRecord, error)
+	CountLoans(ctx context.Context) (int, error)
+	CountLoansByUserId(ctx context.Context, userId string) (int, error)
+	CountLoansByStatus(ctx context.Context, status string) (int, error)
+	CountLoansByUserIdAndStatus(ctx context.Context, userId string, status string) (int, error)
 }
 
 type loanRepository struct {
@@ -225,4 +229,56 @@ func (r *loanRepository) ReturnLoan(ctx context.Context, id string) (*models.Loa
 
 	log.Printf("[%s] Loan returned successfully: %+v\n", utils.GetLocation(), loan)
 	return loan, nil
+}
+
+// CountLoans returns the total number of loans
+func (r *loanRepository) CountLoans(ctx context.Context) (int, error) {
+	log.Printf("Counting total loans")
+	query := `SELECT COUNT(*) FROM loans`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting loans: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
+}
+
+// CountsLoansByUserId returns the total number of loans by user ID
+func (r *loanRepository) CountLoansByUserId(ctx context.Context, userId string) (int, error) {
+	log.Printf("Counting total loans by user ID: %s\n", userId)
+	query := `SELECT COUNT(*) FROM loans WHERE user_id = $1`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query, userId).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting loans: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
+}
+
+// CountLoansByStatus returns the total number of loans by status
+func (r *loanRepository) CountLoansByStatus(ctx context.Context, status string) (int, error) {
+	log.Printf("Counting total loans by status: %s\n", status)
+	query := `SELECT COUNT(*) FROM loans WHERE status = $1`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query, status).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting loans: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
+}
+
+// CountLoansByUserIdAndStatus returns the total number of loans by user ID and status
+func (r *loanRepository) CountLoansByUserIdAndStatus(ctx context.Context, userId string, status string) (int, error) {
+	log.Printf("Counting total loans by category ID: %s and by status : %s\n", userId, status)
+	query := `SELECT COUNT(*) FROM loans WHERE user_id = $1 AND status = $2`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query, userId, status).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting loans: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
 }

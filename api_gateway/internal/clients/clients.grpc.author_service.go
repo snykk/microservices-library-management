@@ -18,7 +18,7 @@ import (
 type AuthorClient interface {
 	CreateAuthor(ctx context.Context, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error)
 	GetAuthor(ctx context.Context, id string) (datatransfers.AuthorResponse, error)
-	ListAuthors(ctx context.Context) ([]datatransfers.AuthorResponse, error)
+	ListAuthors(ctx context.Context, page int, pageSize int) ([]datatransfers.AuthorResponse, int, int, error)
 	UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error)
 	DeleteAuthor(ctx context.Context, id string) error
 }
@@ -105,16 +105,25 @@ func (a *authorClient) GetAuthor(ctx context.Context, id string) (datatransfers.
 	}, nil
 }
 
-func (a *authorClient) ListAuthors(ctx context.Context) ([]datatransfers.AuthorResponse, error) {
+func (a *authorClient) ListAuthors(ctx context.Context, page int, pageSize int) ([]datatransfers.AuthorResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
-	reqProto := protoAuthor.ListAuthorsRequest{}
-	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListAuthors request to Author Service", nil, nil)
+	reqProto := protoAuthor.ListAuthorsRequest{
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	}
+
+	extra := map[string]interface{}{
+		"page":      page,
+		"page_size": pageSize,
+	}
+
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListAuthors request to Author Service", extra, nil)
 
 	resp, err := a.client.ListAuthors(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
-		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListAuthors request failed", nil, err)
-		return nil, err
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListAuthors request failed", extra, err)
+		return nil, 0, 0, err
 	}
 
 	var authors []datatransfers.AuthorResponse
@@ -127,9 +136,12 @@ func (a *authorClient) ListAuthors(ctx context.Context) ([]datatransfers.AuthorR
 			UpdatedAt: time.Unix(author.UpdatedAt, 0),
 		})
 	}
-	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListAuthors request succeeded", map[string]interface{}{"author_count": len(authors)}, nil)
 
-	return authors, nil
+	extra["authors_count"] = len(authors)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
+	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListAuthors request succeeded", map[string]interface{}{"author_count": len(authors)}, nil)
+	return authors, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
 func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error) {

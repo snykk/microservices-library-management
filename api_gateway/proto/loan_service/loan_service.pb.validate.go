@@ -822,6 +822,28 @@ func (m *ListUserLoansRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetPage() < 1 {
+		err := ListUserLoansRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := ListUserLoansRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return ListUserLoansRequestMultiError(errors)
 	}
@@ -923,6 +945,28 @@ func (m *ListLoansRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	if m.GetPage() < 1 {
+		err := ListLoansRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := ListLoansRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return ListLoansRequestMultiError(errors)
@@ -1197,6 +1241,10 @@ func (m *ListLoansResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for TotalItems
+
+	// no validation rules for TotalPages
+
 	if len(errors) > 0 {
 		return ListLoansResponseMultiError(errors)
 	}
@@ -1321,6 +1369,28 @@ func (m *GetUserLoansByStatusRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetPage() < 1 {
+		err := GetUserLoansByStatusRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := GetUserLoansByStatusRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return GetUserLoansByStatusRequestMultiError(errors)
 	}
@@ -1428,6 +1498,28 @@ func (m *GetLoansByStatusRequest) validate(all bool) error {
 		err := GetLoansByStatusRequestValidationError{
 			field:  "Status",
 			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPage() < 1 {
+		err := GetLoansByStatusRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := GetLoansByStatusRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err

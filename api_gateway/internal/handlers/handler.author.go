@@ -8,6 +8,7 @@ import (
 	"api_gateway/pkg/utils"
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -91,10 +92,18 @@ func (a *AuthorHandler) GetAuthorByIdHandler(c *fiber.Ctx) error {
 
 	// If includeBooks query param is true, get books for the author
 	if includeBooks {
-		books, err := a.bookClient.GetBooksByAuthorId(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), resp.Id)
-		if err == nil {
-			resp.Books = &books
+		books, totalItems, _, err := a.bookClient.GetBooksByAuthorId(
+			context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), resp.Id,
+			1,
+			5,
+		)
+		if err != nil {
+			a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get books by author ID", extra, err)
+			return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get books by author ID", err))
 		}
+
+		resp.SampleBooks = &books
+		resp.TotalBooks = &totalItems
 	}
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Author data fetched successfully", extra, nil)
@@ -109,15 +118,24 @@ func (a *AuthorHandler) GetAllAuthorsHandler(c *fiber.Ctx) error {
 		requestID = "unknown"
 	}
 
+	includeBooks := c.Query("includeBooks", "false") == "true"
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
+
 	extra := map[string]interface{}{
-		"method": c.Method(),
-		"url":    c.OriginalURL(),
+		"method":       c.Method(),
+		"url":          c.OriginalURL(),
+		"includeBooks": includeBooks,
+		"page":         page,
+		"page_size":    pageSize,
 	}
 
-	includeBooks := c.Query("includeBooks", "false") == "true"
-
 	// Call client to get all authors
-	resp, err := a.client.ListAuthors(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
+	authors, totalItems, totalPages, err := a.client.ListAuthors(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		page,
+		pageSize,
+	)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get author list", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get author list", err))
@@ -125,17 +143,35 @@ func (a *AuthorHandler) GetAllAuthorsHandler(c *fiber.Ctx) error {
 
 	// If includeBooks query param is true, get books for each author
 	if includeBooks {
-		for i := range resp {
-			books, err := a.bookClient.GetBooksByAuthorId(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), resp[i].Id)
-			if err == nil {
-				resp[i].Books = &books
+		for i := range authors {
+			books, totalItems, _, err := a.bookClient.GetBooksByAuthorId(
+				context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authors[i].Id,
+				1,
+				5,
+			)
+			if err != nil {
+				a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get books by author ID", extra, err)
+				return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get books by author ID", err))
 			}
+
+			authors[i].SampleBooks = &books
+			authors[i].TotalBooks = &totalItems
 		}
 	}
 
+	extra["authors_count"] = len(authors)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "All authors data fetched successfully", extra, nil)
-
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Author data fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Author data fetched successfully", map[string]interface{}{
+		"authors": authors,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (a *AuthorHandler) UpdateAuthorByIdHandler(c *fiber.Ctx) error {

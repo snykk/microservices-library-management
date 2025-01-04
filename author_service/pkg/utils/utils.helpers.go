@@ -42,3 +42,17 @@ func GetRequestIDFromMetadataContext(ctx context.Context) string {
 	}
 	return requestId
 }
+
+// CalculateTotalPages calculates the total number of pages based on total items and page size.
+func CalculateTotalPages(totalItems, pageSize int) int {
+	if totalItems == 0 || pageSize == 0 {
+		return 0
+	}
+
+	totalPages := totalItems / pageSize
+	if totalItems%pageSize > 0 {
+		totalPages++
+	}
+
+	return totalPages
+}

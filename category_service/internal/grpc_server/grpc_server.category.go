@@ -90,7 +90,7 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	categories, err := s.categoryService.ListCategories(ctx)
+	categories, totalItems, err := s.categoryService.ListCategories(ctx, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve categories list", nil, err)
 		return nil, status.Error(codes.Internal, "failed to retrieve category list")
@@ -110,6 +110,8 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 
 	return &protoCategory.ListCategoriesResponse{
 		Categories: protoCategories,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 

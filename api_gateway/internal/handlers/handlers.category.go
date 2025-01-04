@@ -7,6 +7,7 @@ import (
 	"api_gateway/pkg/utils"
 	"context"
 	"fmt"
+	"strconv"
 
 	"api_gateway/internal/constants"
 
@@ -89,10 +90,18 @@ func (c *CategoryHandler) GetCategoryByIdHandler(ctx *fiber.Ctx) error {
 
 	// If includeBooks query param is true, get books for the category
 	if includeBooks {
-		books, err := c.bookClient.GetBooksByCategoryId(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), resp.Id)
-		if err == nil {
-			resp.Books = &books
+		books, totalItems, _, err := c.bookClient.GetBooksByCategoryId(
+			context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), resp.Id,
+			1,
+			10,
+		)
+		if err != nil {
+			c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to include books", extra, err)
+			return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to include books", err))
 		}
+
+		resp.SampleBooks = &books
+		resp.TotalBooks = &totalItems
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Category data fetched successfully", extra, nil)
@@ -107,13 +116,23 @@ func (c *CategoryHandler) GetAllCategoriesHandler(ctx *fiber.Ctx) error {
 	}
 
 	includeBooks := ctx.Query("includeBooks", "false") == "true"
+	page, _ := strconv.Atoi(ctx.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.Query("pageSize", "10"))
+
 	extra := map[string]interface{}{
-		"method": ctx.Method(),
-		"url":    ctx.OriginalURL(),
+		"method":       ctx.Method(),
+		"url":          ctx.OriginalURL(),
+		"includeBooks": includeBooks,
+		"page":         page,
+		"page_size":    pageSize,
 	}
 
 	// Call client to get all categories
-	resp, err := c.client.ListCategories(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID))
+	categories, totalItems, totalPages, err := c.client.ListCategories(
+		context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID),
+		1,
+		5,
+	)
 	if err != nil {
 		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to list categories", extra, err)
 		return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to list categories", err))
@@ -121,16 +140,35 @@ func (c *CategoryHandler) GetAllCategoriesHandler(ctx *fiber.Ctx) error {
 
 	// If includeBooks query param is true, get books for each category
 	if includeBooks {
-		for i := range resp {
-			books, err := c.bookClient.GetBooksByCategoryId(context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), resp[i].Id)
-			if err == nil {
-				resp[i].Books = &books
+		for i := range categories {
+			books, totalItems, _, err := c.bookClient.GetBooksByCategoryId(
+				context.WithValue(ctx.Context(), constants.ContextRequestIDKey, requestID), categories[i].Id,
+				1,
+				10,
+			)
+			if err != nil {
+				c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to include books", extra, err)
+				return ctx.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to include books", err))
 			}
+
+			categories[i].SampleBooks = &books
+			categories[i].TotalBooks = &totalItems
 		}
 	}
 
+	extra["categories_count"] = len(categories)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched all categories successfully", extra, nil)
-	return ctx.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Category data fetched successfully", resp))
+	return ctx.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Category data fetched successfully", map[string]interface{}{
+		"categories": categories,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (c *CategoryHandler) UpdateCategoryByIdHandler(ctx *fiber.Ctx) error {

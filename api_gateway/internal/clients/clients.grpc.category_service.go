@@ -19,7 +19,7 @@ import (
 type CategoryClient interface {
 	CreateCategory(ctx context.Context, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error)
 	GetCategory(ctx context.Context, id string) (datatransfers.CategoryResponse, error)
-	ListCategories(ctx context.Context) ([]datatransfers.CategoryResponse, error)
+	ListCategories(ctx context.Context, page int, pageSize int) ([]datatransfers.CategoryResponse, int, int, error)
 	UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error)
 	DeleteCategory(ctx context.Context, id string) error
 }
@@ -103,17 +103,25 @@ func (c *categoryClient) GetCategory(ctx context.Context, id string) (datatransf
 	}, nil
 }
 
-func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.CategoryResponse, error) {
+func (c *categoryClient) ListCategories(ctx context.Context, page int, pageSize int) ([]datatransfers.CategoryResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
-	reqProto := protoCategory.ListCategoriesRequest{}
+	reqProto := protoCategory.ListCategoriesRequest{
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	}
 
-	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListCategories request to Category Service", nil, nil)
+	extra := map[string]interface{}{
+		"page":      page,
+		"page_size": pageSize,
+	}
+
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListCategories request to Category Service", extra, nil)
 
 	resp, err := c.client.ListCategories(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
-		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Sending ListCategories request to Category Service", nil, err)
-		return nil, err
+		c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Sending ListCategories request to Category Service", extra, err)
+		return nil, 0, 0, err
 	}
 
 	var categories []datatransfers.CategoryResponse
@@ -126,9 +134,12 @@ func (c *categoryClient) ListCategories(ctx context.Context) ([]datatransfers.Ca
 		})
 	}
 
-	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListCategories request succeeded", map[string]interface{}{"categories_count": len(categories)}, nil)
+	extra["categories_count"] = len(categories)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
+	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListCategories request succeeded", extra, nil)
 
-	return categories, nil
+	return categories, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
 func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error) {

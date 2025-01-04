@@ -22,10 +22,10 @@ type LoanService interface {
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error)
 	GetBorrowedLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error)
 	UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
-	ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, codes.Code, error)
-	ListLoans(ctx context.Context) ([]*models.LoanRecord, codes.Code, error)
-	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, codes.Code, error)
-	GetLoansByStatus(ctx context.Context, status string) ([]*models.LoanRecord, codes.Code, error)
+	ListUserLoans(ctx context.Context, userId string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
+	ListLoans(ctx context.Context, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
+	GetUserLoansByStatus(ctx context.Context, userId, status string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
+	GetLoansByStatus(ctx context.Context, status string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
 }
 
 type loanService struct {
@@ -208,54 +208,78 @@ func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, r
 	return updatedLoan, codes.OK, nil
 }
 
-func (s *loanService) ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, codes.Code, error) {
-	log.Printf("[%s] Fetching all loans for user %s\n", utils.GetLocation(), userId)
+func (s *loanService) ListUserLoans(ctx context.Context, userId string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error) {
+	log.Printf("[%s] Fetching all loans for user %s with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), userId, page, pageSize)
 
-	loans, err := s.repo.ListUserLoans(ctx, userId)
+	loans, err = s.repo.ListUserLoans(ctx, userId)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch loans for user %s: %v\n", utils.GetLocation(), userId, err)
-		return nil, codes.Internal, errors.New("failed to fetch loans")
+		return nil, codes.Internal, 0, errors.New("failed to fetch loans")
+	}
+
+	totalItems, err = s.repo.CountLoansByUserId(ctx, userId)
+	if err != nil {
+		log.Printf("[%s] Failed to count loans for user %s: %v\n", utils.GetLocation(), userId, err)
+		return nil, codes.Internal, 0, err
 	}
 
 	log.Printf("[%s] Found %d loans for user %s\n", utils.GetLocation(), len(loans), userId)
-	return loans, codes.OK, nil
+	return loans, codes.OK, totalItems, nil
 }
 
-func (s *loanService) ListLoans(ctx context.Context) ([]*models.LoanRecord, codes.Code, error) {
-	log.Printf("[%s] Fetching all loans\n", utils.GetLocation())
+func (s *loanService) ListLoans(ctx context.Context, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error) {
+	log.Printf("[%s] Fetching list of books with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), page, pageSize)
 
-	loans, err := s.repo.ListLoans(ctx)
+	loans, err = s.repo.ListLoans(ctx)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch all loans: %v\n", utils.GetLocation(), err)
-		return nil, codes.Internal, errors.New("failed to fetch all loans")
+		return nil, codes.Internal, 0, errors.New("failed to fetch all loans")
+	}
+
+	totalItems, err = s.repo.CountLoans(ctx)
+	if err != nil {
+		log.Printf("[%s] Failed to count loans data %v\n", utils.GetLocation(), err)
+		return nil, codes.Internal, 0, err
 	}
 
 	log.Printf("[%s] Found %d loans\n", utils.GetLocation(), len(loans))
-	return loans, codes.OK, nil
+	return loans, codes.OK, totalItems, nil
 }
 
-func (s *loanService) GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, codes.Code, error) {
-	log.Printf("[%s] Fetching loans for user %s with status %s\n", utils.GetLocation(), userId, status)
+func (s *loanService) GetUserLoansByStatus(ctx context.Context, userId, status string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error) {
+	log.Printf("[%s] Fetching loans for user %s with status %s and pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), userId, status, page, pageSize)
 
-	loans, err := s.repo.GetUserLoansByStatus(ctx, userId, status)
+	loans, err = s.repo.GetUserLoansByStatus(ctx, userId, status)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch loans for user %s with status %s: %v\n", utils.GetLocation(), userId, status, err)
-		return nil, codes.Internal, errors.New("failed to fetch loans")
+		return nil, codes.Internal, 0, errors.New("failed to fetch loans")
+	}
+
+	totalItems, err = s.repo.CountLoansByUserIdAndStatus(ctx, userId, status)
+	if err != nil {
+		log.Printf("[%s] Failed to count loans for user %s with status %s: %v\n", utils.GetLocation(), userId, status, err)
+		return nil, codes.Internal, 0, err
 	}
 
 	log.Printf("[%s] Found %d loans for user %s with status %s\n", utils.GetLocation(), len(loans), userId, status)
-	return loans, codes.OK, nil
+	return loans, codes.OK, totalItems, nil
 }
 
-func (s *loanService) GetLoansByStatus(ctx context.Context, status string) ([]*models.LoanRecord, codes.Code, error) {
-	log.Printf("[%s] Fetching loans with status %s\n", utils.GetLocation(), status)
+func (s *loanService) GetLoansByStatus(ctx context.Context, status string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error) {
+	log.Printf("[%s] Fetching loans with status %s and pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), status, page, pageSize)
 
-	loans, err := s.repo.GetLoansByStatus(ctx, status)
+	loans, err = s.repo.GetLoansByStatus(ctx, status)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch loans with status %s: %v\n", utils.GetLocation(), status, err)
-		return nil, codes.Internal, errors.New("failed to fetch loans")
+		return nil, codes.Internal, 0, errors.New("failed to fetch loans")
+	}
+
+	totalItems, err = s.repo.CountLoansByStatus(ctx, status)
+	if err != nil {
+		log.Printf("[%s] Failed to count loans with status %s: %v\n", utils.GetLocation(), status, err)
+		return nil, codes.Internal, 0, err
 	}
 
 	log.Printf("[%s] Found %d loans with status %s\n", utils.GetLocation(), len(loans), status)
-	return loans, codes.OK, nil
+	return loans, codes.OK, totalItems, nil
 }

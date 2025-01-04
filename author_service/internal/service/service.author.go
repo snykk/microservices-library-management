@@ -11,7 +11,7 @@ import (
 type AuthorService interface {
 	CreateAuthor(ctx context.Context, req *models.AuthorRequest) (*models.AuthorRecord, error)
 	GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error)
-	ListAuthors(ctx context.Context) ([]*models.AuthorRecord, error)
+	ListAuthors(ctx context.Context, page int, pageSize int) (authors []*models.AuthorRecord, totalItems int, err error)
 	UpdateAuthor(ctx context.Context, id string, req *models.AuthorRequest) (*models.AuthorRecord, error)
 	DeleteAuthor(ctx context.Context, id string) error
 }
@@ -26,6 +26,7 @@ func NewAuthorService(repo repository.AuthorRepository) AuthorService {
 	}
 }
 
+// CreateAuthor creates a new author and returns the created author.
 func (s *authorService) CreateAuthor(ctx context.Context, req *models.AuthorRequest) (*models.AuthorRecord, error) {
 	log.Printf("[%s] Creating new author with name: %s\n", utils.GetLocation(), req.Name)
 	author := &models.AuthorRecord{
@@ -43,6 +44,7 @@ func (s *authorService) CreateAuthor(ctx context.Context, req *models.AuthorRequ
 	return createdAuthor, nil
 }
 
+// GetAuthor fetches an author by ID and returns the author.
 func (s *authorService) GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error) {
 	log.Printf("[%s] Fetching author with ID: %s\n", utils.GetLocation(), id)
 
@@ -56,19 +58,27 @@ func (s *authorService) GetAuthor(ctx context.Context, id string) (*models.Autho
 	return author, nil
 }
 
-func (s *authorService) ListAuthors(ctx context.Context) ([]*models.AuthorRecord, error) {
-	log.Printf("[%s] Fetching list of authors\n", utils.GetLocation())
+// ListAuthors fetches a list of authors with pagination and returns the authors.
+func (s *authorService) ListAuthors(ctx context.Context, page int, pageSize int) (authors []*models.AuthorRecord, totalItems int, err error) {
+	log.Printf("[%s] Fetching list of authors with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), page, pageSize)
 
-	authors, err := s.repo.ListAuthors(ctx)
+	authors, err = s.repo.ListAuthors(ctx, page, pageSize)
 	if err != nil {
 		log.Printf("[%s] Failed to list authors: %v\n", utils.GetLocation(), err)
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalItems, err = s.repo.CountAuthors(ctx)
+	if err != nil {
+		log.Printf("[%s] Failed to count authors: %v\n", utils.GetLocation(), err)
+		return nil, 0, err
 	}
 
 	log.Printf("[%s] Successfully fetched %d authors\n", utils.GetLocation(), len(authors))
-	return authors, nil
+	return authors, totalItems, nil
 }
 
+// UpdateAuthor updates an author and returns the updated author.
 func (s *authorService) UpdateAuthor(ctx context.Context, id string, req *models.AuthorRequest) (*models.AuthorRecord, error) {
 	log.Printf("[%s] Updating author with ID: %s\n", utils.GetLocation(), id)
 
@@ -88,6 +98,7 @@ func (s *authorService) UpdateAuthor(ctx context.Context, id string, req *models
 	return updatedAuthor, nil
 }
 
+// DeleteAuthor deletes an author by ID.
 func (s *authorService) DeleteAuthor(ctx context.Context, id string) error {
 	log.Printf("[%s] Deleting author with ID: %s\n", utils.GetLocation(), id)
 

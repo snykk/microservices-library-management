@@ -39,10 +39,15 @@ message GetAuthorResponse {
   Author author = 1;
 }
 
-message ListAuthorsRequest {}
+message ListAuthorsRequest {
+  int32 page = 1 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 2 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
+}
 
 message ListAuthorsResponse {
   repeated Author authors = 1;
+  int32 totalItems = 2;  // Total number of items
+  int32 totalPages = 3;  // Total number of pages
 }
 
 message UpdateAuthorRequest {

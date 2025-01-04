@@ -8,6 +8,7 @@ import (
 	"api_gateway/pkg/utils"
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -62,7 +63,7 @@ func (b *BookHandler) CreateBookHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to create book", err))
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Book created successfully", extra, nil)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Book created successfully", extra, nil)
 	return c.Status(fiber.StatusCreated).JSON(datatransfers.ResponseSuccess("Book created successfully", resp))
 }
 
@@ -108,7 +109,7 @@ func (b *BookHandler) GetBookByIdHandler(c *fiber.Ctx) error {
 		}
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched book data by id", extra, nil)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched book data by id", extra, nil)
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Book data with id '%s' fetched successfully", bookId), resp))
 }
 
@@ -121,6 +122,8 @@ func (b *BookHandler) GetBooksByAuthorIdHandler(c *fiber.Ctx) error {
 	authorId := c.Params("authorId")
 	includeAuthor := c.Query("includeAuthor", "false") == "true"
 	includeCategory := c.Query("includeCategory", "false") == "true"
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
 
 	extra := map[string]interface{}{
 		"method":          c.Method(),
@@ -128,10 +131,17 @@ func (b *BookHandler) GetBooksByAuthorIdHandler(c *fiber.Ctx) error {
 		"author_id":       authorId,
 		"includeAuthor":   includeAuthor,
 		"includeCategory": includeCategory,
+		"page":            page,
+		"page_size":       pageSize,
 	}
 
 	// Fetch books by author
-	resp, err := b.client.GetBooksByAuthorId(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId)
+	books, totalItems, totalPages, err := b.client.GetBooksByAuthorId(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		authorId,
+		page,
+		pageSize,
+	)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get books by author", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get books by author", err))
@@ -139,27 +149,44 @@ func (b *BookHandler) GetBooksByAuthorIdHandler(c *fiber.Ctx) error {
 
 	// If includeAuthor or includeCategory are true, fetch related data
 	if includeAuthor || includeCategory {
-		for i := range resp {
+		for i := range books {
 			if includeAuthor {
-				author, err := b.authorClient.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *resp[i].AuthorId)
-				if err == nil {
-					resp[i].Author = &author
-					resp[i].AuthorId = nil
+				author, err := b.authorClient.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *books[i].AuthorId)
+				if err != nil {
+					b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get author by ID", extra, err)
+					return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get author", err))
 				}
+
+				books[i].Author = &author
+				books[i].AuthorId = nil
 			}
 
 			if includeCategory {
-				category, err := b.categoryClient.GetCategory(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *resp[i].CategoryId)
-				if err == nil {
-					resp[i].Category = &category
-					resp[i].CategoryId = nil
+				category, err := b.categoryClient.GetCategory(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *books[i].CategoryId)
+				if err != nil {
+					b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get category by ID", extra, err)
+					return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get category", err))
 				}
+
+				books[i].Category = &category
+				books[i].CategoryId = nil
 			}
 		}
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched books by author", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Books by author '%s' fetched successfully", authorId), resp))
+	extra["books_count"] = len(books)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched books by author", extra, nil)
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Books by author '%s' fetched successfully", authorId), map[string]interface{}{
+		"books": books,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
@@ -171,6 +198,8 @@ func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
 	categoryId := c.Params("categoryId")
 	includeAuthor := c.Query("includeAuthor", "false") == "true"
 	includeCategory := c.Query("includeCategory", "false") == "true"
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
 
 	extra := map[string]interface{}{
 		"method":          c.Method(),
@@ -178,10 +207,17 @@ func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
 		"category_id":     categoryId,
 		"includeAuthor":   includeAuthor,
 		"includeCategory": includeCategory,
+		"page":            page,
+		"page_size":       pageSize,
 	}
 
 	// Fetch books by category
-	resp, err := b.client.GetBooksByCategoryId(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), categoryId)
+	books, totalItems, totalPages, err := b.client.GetBooksByCategoryId(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		categoryId,
+		page,
+		pageSize,
+	)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get books by category", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get books by category", err))
@@ -189,27 +225,44 @@ func (b *BookHandler) GetBooksByCategoryIdHandler(c *fiber.Ctx) error {
 
 	// If includeAuthor or includeCategory are true, fetch related data
 	if includeAuthor || includeCategory {
-		for i := range resp {
+		for i := range books {
 			if includeAuthor {
-				author, err := b.authorClient.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *resp[i].AuthorId)
-				if err == nil {
-					resp[i].Author = &author
-					resp[i].AuthorId = nil
+				author, err := b.authorClient.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *books[i].AuthorId)
+				if err != nil {
+					b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get author by ID", extra, err)
+					return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get author", err))
 				}
+
+				books[i].Author = &author
+				books[i].AuthorId = nil
 			}
 
 			if includeCategory {
-				category, err := b.categoryClient.GetCategory(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *resp[i].CategoryId)
-				if err == nil {
-					resp[i].Category = &category
-					resp[i].CategoryId = nil
+				category, err := b.categoryClient.GetCategory(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *books[i].CategoryId)
+				if err != nil {
+					b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get category by ID", extra, err)
+					return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get category", err))
 				}
+
+				books[i].Category = &category
+				books[i].CategoryId = nil
 			}
 		}
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched books by category", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Books under category '%s' fetched successfully", categoryId), resp))
+	extra["books_count"] = len(books)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched books by category", extra, nil)
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess(fmt.Sprintf("Books under category '%s' fetched successfully", categoryId), map[string]interface{}{
+		"books": books,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (b *BookHandler) GetAllBooksHandler(c *fiber.Ctx) error {
@@ -220,42 +273,68 @@ func (b *BookHandler) GetAllBooksHandler(c *fiber.Ctx) error {
 
 	includeAuthor := c.Query("includeAuthor", "false") == "true"
 	includeCategory := c.Query("includeCategory", "false") == "true"
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
 
 	extra := map[string]interface{}{
 		"method":          c.Method(),
 		"url":             c.OriginalURL(),
 		"includeAuthor":   includeAuthor,
 		"includeCategory": includeCategory,
+		"page":            page,
+		"page_size":       pageSize,
 	}
 
-	resp, err := b.client.ListBooks(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
+	books, totalItems, totalPages, err := b.client.ListBooks(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		page,
+		pageSize,
+	)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to list books", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to list books", err))
 	}
 
+	// If includeAuthor or includeCategory are true, fetch related data
 	if includeAuthor || includeCategory {
-		for i := range resp {
+		for i := range books {
 			if includeAuthor {
-				author, err := b.authorClient.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *resp[i].AuthorId)
-				if err == nil {
-					resp[i].Author = &author
-					resp[i].AuthorId = nil
+				author, err := b.authorClient.GetAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *books[i].AuthorId)
+				if err != nil {
+					b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get author by ID", extra, err)
+					return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get author", err))
 				}
+
+				books[i].Author = &author
+				books[i].AuthorId = nil
 			}
 
 			if includeCategory {
-				category, err := b.categoryClient.GetCategory(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *resp[i].CategoryId)
-				if err == nil {
-					resp[i].Category = &category
-					resp[i].CategoryId = nil
+				category, err := b.categoryClient.GetCategory(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), *books[i].CategoryId)
+				if err != nil {
+					b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to get category by ID", extra, err)
+					return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get category", err))
 				}
+
+				books[i].Category = &category
+				books[i].CategoryId = nil
 			}
 		}
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Fetched all books", extra, nil)
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Book data fetched successfully", resp))
+	extra["books_count"] = len(books)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched all books", extra, nil)
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Book data fetched successfully", map[string]interface{}{
+		"books": books,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
@@ -295,7 +374,7 @@ func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to update book", err))
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Book updated successfully", extra, nil)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Book updated successfully", extra, nil)
 	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("Book updated successfully", resp))
 }
 
@@ -319,6 +398,6 @@ func (b *BookHandler) DeleteBookByIdHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to delete book", err))
 	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, "info", "Book deleted successfully", extra, nil)
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Book deleted successfully", extra, nil)
 	return c.Status(fiber.StatusNoContent).JSON(datatransfers.ResponseSuccess("Book deleted successfully", nil))
 }

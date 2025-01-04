@@ -26,7 +26,7 @@ message Book {
   string category_id = 4;
   int32 stock = 5;
   int64 createdAt = 6; // unix time
-  int64 updatedAt = 7; // unit time
+  int64 updatedAt = 7; // unix time
 }
 
 message CreateBookRequest {
@@ -50,17 +50,28 @@ message GetBookResponse {
 
 message GetBooksByAuthorRequest {
   string author_id = 1 [(validate.rules).string.min_len = 1];  // Author ID must not be empty
+  int32 page = 2 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 3 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }
+
 
 message GetBooksByCategoryRequest {
   string category_id = 1 [(validate.rules).string.min_len = 1];  // Category ID must not be empty
+  int32 page = 2 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 3 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }
 
-message ListBooksRequest {}
+message ListBooksRequest {
+  int32 page = 1 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 2 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
+}
 
 message ListBooksResponse {
   repeated Book books = 1;
+  int32 totalItems = 2;  // Total number of items
+  int32 totalPages = 3;  // Total number of pages
 }
+
 
 message UpdateBookRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty

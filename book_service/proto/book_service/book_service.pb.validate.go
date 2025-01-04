@@ -697,6 +697,28 @@ func (m *GetBooksByAuthorRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetPage() < 1 {
+		err := GetBooksByAuthorRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := GetBooksByAuthorRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return GetBooksByAuthorRequestMultiError(errors)
 	}
@@ -810,6 +832,28 @@ func (m *GetBooksByCategoryRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetPage() < 1 {
+		err := GetBooksByCategoryRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := GetBooksByCategoryRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return GetBooksByCategoryRequestMultiError(errors)
 	}
@@ -911,6 +955,28 @@ func (m *ListBooksRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	if m.GetPage() < 1 {
+		err := ListBooksRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := ListBooksRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return ListBooksRequestMultiError(errors)
@@ -1045,6 +1111,10 @@ func (m *ListBooksResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for TotalItems
+
+	// no validation rules for TotalPages
 
 	if len(errors) > 0 {
 		return ListBooksResponseMultiError(errors)

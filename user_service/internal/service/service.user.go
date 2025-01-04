@@ -11,7 +11,7 @@ import (
 type UserService interface {
 	GetUserById(ctx context.Context, userId string) (*models.UserRecord, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.UserRecord, error)
-	ListUsers(ctx context.Context) ([]*models.UserRecord, error)
+	ListUsers(ctx context.Context, page int, pageSize int) (users []*models.UserRecord, totalItems int, err error)
 }
 
 type userService struct {
@@ -50,15 +50,21 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*models
 	return user, nil
 }
 
-func (s *userService) ListUsers(ctx context.Context) ([]*models.UserRecord, error) {
+func (s *userService) ListUsers(ctx context.Context, page int, pageSize int) (users []*models.UserRecord, totalItems int, err error) {
 	log.Printf("[%s] Fetching list of users\n", utils.GetLocation())
 
-	users, err := s.repo.ListUsers(ctx)
+	users, err = s.repo.ListUsers(ctx)
 	if err != nil {
 		log.Printf("[%s] Failed to fetch list of users: %v\n", utils.GetLocation(), err)
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalItems, err = s.repo.CountUsers(ctx)
+	if err != nil {
+		log.Printf("[%s] Failed to count users: %v\n", utils.GetLocation(), err)
+		return nil, 0, err
 	}
 
 	log.Printf("[%s] Successfully fetched %d users\n", utils.GetLocation(), len(users))
-	return users, nil
+	return users, totalItems, nil
 }

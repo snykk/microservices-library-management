@@ -88,7 +88,7 @@ func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.Ge
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	books, err := s.bookService.GetBookByAuthorId(ctx, req.AuthorId)
+	books, totalItems, err := s.bookService.GetBookByAuthorId(ctx, req.AuthorId, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve books by author id", nil, err)
 		return nil, status.Error(codes.Internal, "failed to retrieve books by author id")
@@ -110,7 +110,9 @@ func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.Ge
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Books retrieved successfully by author", nil, nil)
 
 	return &protoBook.ListBooksResponse{
-		Books: protoBooks,
+		Books:      protoBooks,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 
@@ -124,7 +126,7 @@ func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	books, err := s.bookService.GetBookByCategoryId(ctx, req.CategoryId)
+	books, totalItems, err := s.bookService.GetBookByCategoryId(ctx, req.CategoryId, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve books by category id", nil, err)
 		return nil, status.Error(codes.Internal, "failed to retrieve books by category id")
@@ -146,7 +148,9 @@ func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Books retrieved successfully by category", nil, nil)
 
 	return &protoBook.ListBooksResponse{
-		Books: protoBooks,
+		Books:      protoBooks,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 
@@ -191,7 +195,8 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	books, err := s.bookService.ListBooks(ctx)
+	// Retrieve books list
+	books, totalItems, err := s.bookService.ListBooks(ctx, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve books list", nil, err)
 		return nil, status.Error(codes.Internal, "failed to retrieve book list")
@@ -213,7 +218,9 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Books list retrieved successfully", nil, nil)
 
 	return &protoBook.ListBooksResponse{
-		Books: protoBooks,
+		Books:      protoBooks,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 

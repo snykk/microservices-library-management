@@ -99,7 +99,8 @@ func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.Lis
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	authors, err := s.authorService.ListAuthors(ctx)
+	// Retrieve authors list
+	authors, totalItems, err := s.authorService.ListAuthors(ctx, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve authors list", nil, err)
 		return nil, status.Error(codes.Internal, "failed to retrieve author list")
@@ -119,7 +120,9 @@ func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.Lis
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Authors list retrieved successfully", nil, nil)
 
 	return &protoAuthor.ListAuthorsResponse{
-		Authors: protoAuthors,
+		Authors:    protoAuthors,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 

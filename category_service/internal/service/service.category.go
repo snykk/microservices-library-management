@@ -11,7 +11,7 @@ import (
 type CategoryService interface {
 	CreateCategory(ctx context.Context, req *models.CategoryRequest) (*models.CategoryRecord, error)
 	GetCategory(ctx context.Context, id string) (*models.CategoryRecord, error)
-	ListCategories(ctx context.Context) ([]*models.CategoryRecord, error)
+	ListCategories(ctx context.Context, page int, pageSize int) (categories []*models.CategoryRecord, totalItems int, err error)
 	UpdateCategory(ctx context.Context, id string, req *models.CategoryRequest) (*models.CategoryRecord, error)
 	DeleteCategory(ctx context.Context, id string) error
 }
@@ -51,17 +51,23 @@ func (s *categoryService) GetCategory(ctx context.Context, id string) (*models.C
 	return category, nil
 }
 
-func (s *categoryService) ListCategories(ctx context.Context) ([]*models.CategoryRecord, error) {
-	log.Printf("[%s] Fetching list of categories\n", utils.GetLocation())
+func (s *categoryService) ListCategories(ctx context.Context, page int, pageSize int) (categories []*models.CategoryRecord, totalItems int, err error) {
+	log.Printf("[%s] Fetching list of authors with pagination (Page: %d, PageSize: %d)\n", utils.GetLocation(), page, pageSize)
 
-	categories, err := s.repo.ListCategories(ctx)
+	categories, err = s.repo.ListCategories(ctx)
 	if err != nil {
 		log.Printf("[%s] Failed to list categories: %v\n", utils.GetLocation(), err)
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalItems, err = s.repo.CountCategories(ctx)
+	if err != nil {
+		log.Printf("[%s] Failed to count authors: %v\n", utils.GetLocation(), err)
+		return nil, 0, err
 	}
 
 	log.Printf("[%s] Successfully fetched %d categories\n", utils.GetLocation(), len(categories))
-	return categories, nil
+	return categories, totalItems, nil
 }
 
 func (s *categoryService) UpdateCategory(ctx context.Context, id string, req *models.CategoryRequest) (*models.CategoryRecord, error) {

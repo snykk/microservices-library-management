@@ -16,6 +16,7 @@ type CategoryRepository interface {
 	ListCategories(ctx context.Context) ([]*models.CategoryRecord, error)
 	UpdateCategory(ctx context.Context, req *models.CategoryRecord) (*models.CategoryRecord, error)
 	DeleteCategory(ctx context.Context, id string) error
+	CountCategories(ctx context.Context) (int, error)
 }
 
 type categoryRepository struct {
@@ -26,6 +27,7 @@ func NewCategoryRepository(db *sqlx.DB) CategoryRepository {
 	return &categoryRepository{db: db}
 }
 
+// CreateCategory inserts a new category into the database and returns the created category.
 func (r *categoryRepository) CreateCategory(ctx context.Context, req *models.CategoryRecord) (*models.CategoryRecord, error) {
 	log.Printf("Executing CreateCategory with name: %s\n", req.Name)
 	query := `INSERT INTO categories (name) VALUES ($1) RETURNING id, name, created_at, updated_at`
@@ -39,6 +41,7 @@ func (r *categoryRepository) CreateCategory(ctx context.Context, req *models.Cat
 	return category, nil
 }
 
+// GetCategory fetches a category by ID and returns the category.
 func (r *categoryRepository) GetCategory(ctx context.Context, id string) (*models.CategoryRecord, error) {
 	log.Printf("Executing GetCategory for ID: %s\n", id)
 	query := `SELECT id, name, created_at, updated_at FROM categories WHERE id = $1`
@@ -56,6 +59,7 @@ func (r *categoryRepository) GetCategory(ctx context.Context, id string) (*model
 	return category, nil
 }
 
+// ListCategories fetches all categories and returns a list of categories.
 func (r *categoryRepository) ListCategories(ctx context.Context) ([]*models.CategoryRecord, error) {
 	log.Printf("Executing ListCategories")
 	query := `SELECT id, name, created_at, updated_at FROM categories`
@@ -85,6 +89,7 @@ func (r *categoryRepository) ListCategories(ctx context.Context) ([]*models.Cate
 	return categories, nil
 }
 
+// UpdateCategory updates a category and returns the updated category.
 func (r *categoryRepository) UpdateCategory(ctx context.Context, req *models.CategoryRecord) (*models.CategoryRecord, error) {
 	log.Printf("Executing UpdateCategory for ID: %s\n", req.Id)
 	query := `UPDATE categories SET name = $1 WHERE id = $2 RETURNING id, name, created_at, updated_at`
@@ -98,6 +103,7 @@ func (r *categoryRepository) UpdateCategory(ctx context.Context, req *models.Cat
 	return category, nil
 }
 
+// DeleteCategory deletes a category by ID.
 func (r *categoryRepository) DeleteCategory(ctx context.Context, id string) error {
 	log.Printf("Executing DeleteCategory for ID: %s\n", id)
 	query := `DELETE FROM categories WHERE id = $1`
@@ -108,4 +114,17 @@ func (r *categoryRepository) DeleteCategory(ctx context.Context, id string) erro
 	}
 	log.Printf("Successfully deleted category with ID: %s\n", id)
 	return nil
+}
+
+// CountCategories counts the total number of categories in the database.
+func (r *categoryRepository) CountCategories(ctx context.Context) (int, error) {
+	log.Printf("Counting total categories")
+	query := `SELECT COUNT(*) FROM categories`
+	var totalItems int
+	err := r.db.QueryRowContext(ctx, query).Scan(&totalItems)
+	if err != nil {
+		log.Printf("Error counting categories: %v\n", err)
+		return 0, err
+	}
+	return totalItems, nil
 }

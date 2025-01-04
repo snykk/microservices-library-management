@@ -54,9 +54,14 @@ message UpdateLoanStatusRequest {
 
 message ListUserLoansRequest {
     string user_id = 1 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
+    int32 page = 2 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+    int32 pageSize = 3 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }
 
-message ListLoansRequest {}
+message ListLoansRequest {
+    int32 page = 1 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+    int32 pageSize = 2 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
+}
 
 message LoanResponse {
     Loan loan = 1;
@@ -64,13 +69,19 @@ message LoanResponse {
 
 message ListLoansResponse {
     repeated Loan loans = 1 [(validate.rules).repeated.min_items = 1]; // Must contain at least one loan
+    int32 totalItems = 2;  // Total number of items
+    int32 totalPages = 3;  // Total number of pages
 }
 
 message GetUserLoansByStatusRequest {
     string user_id = 1 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
     string status = 2 [(validate.rules).string.min_len = 1];       // Status must be non-empty
+    int32 page = 3 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+    int32 pageSize = 4 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }
 
 message GetLoansByStatusRequest {
     string status = 1 [(validate.rules).string.min_len = 1];       // Status must be non-empty
+    int32 page = 2 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+    int32 pageSize = 3 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }

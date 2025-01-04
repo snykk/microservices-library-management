@@ -7,6 +7,7 @@ import (
 	"api_gateway/pkg/logger"
 	"api_gateway/pkg/utils"
 	"context"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,21 +31,40 @@ func (b *UserHandler) GetAllUsersHandler(c *fiber.Ctx) error {
 		requestID = "unknown"
 	}
 
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	pageSize, _ := strconv.Atoi(c.Query("pageSize", "10"))
+
 	extra := map[string]interface{}{
-		"method": c.Method(),
-		"url":    c.OriginalURL(),
+		"method":    c.Method(),
+		"url":       c.OriginalURL(),
+		"page":      page,
+		"page_size": pageSize,
 	}
 
 	// Call client to get all users
-	resp, err := b.client.ListUsers(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID))
+	users, totalItems, totalPages, err := b.client.ListUsers(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		page,
+		pageSize,
+	)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to get list users", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to get list users", err))
 	}
 
+	extra["users_count"] = len(users)
+	extra["total_items"] = totalItems
+	extra["total_pages"] = totalPages
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Fetched all users successfully", extra, nil)
-
-	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("User data fetched successfully", resp))
+	return c.Status(fiber.StatusOK).JSON(datatransfers.ResponseSuccess("User data fetched successfully", map[string]interface{}{
+		"users": users,
+		"pagination": map[string]interface{}{
+			"currentPage": page,
+			"page_size":   pageSize,
+			"totalItems":  totalItems,
+			"totalPages":  totalPages,
+		},
+	}))
 }
 
 func (b *UserHandler) GetMe(c *fiber.Ctx) error {

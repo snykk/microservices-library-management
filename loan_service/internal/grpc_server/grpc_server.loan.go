@@ -177,7 +177,7 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loans, code, err := s.loanService.ListUserLoans(ctx, req.UserId)
+	loans, code, totalItems, err := s.loanService.ListUserLoans(ctx, req.UserId, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve user loans", nil, err)
 		return nil, status.Error(code, err.Error())
@@ -207,7 +207,9 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "User loans retrieved successfully", nil, nil)
 
 	return &protoLoan.ListLoansResponse{
-		Loans: protoLoans,
+		Loans:      protoLoans,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 
@@ -221,7 +223,7 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loans, code, err := s.loanService.ListLoans(ctx)
+	loans, code, totalItems, err := s.loanService.ListLoans(ctx, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve loan list", nil, err)
 		return nil, status.Error(code, err.Error())
@@ -251,7 +253,9 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Loan list retrieved successfully", nil, nil)
 
 	return &protoLoan.ListLoansResponse{
-		Loans: protoLoans,
+		Loans:      protoLoans,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 
@@ -270,7 +274,7 @@ func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoa
 	}
 
 	// Mengambil pinjaman berdasarkan status pengguna
-	loans, code, err := s.loanService.GetUserLoansByStatus(ctx, req.UserId, req.Status)
+	loans, code, totalItems, err := s.loanService.GetUserLoansByStatus(ctx, req.UserId, req.Status, int(req.Page), int(req.PageSize))
 	if err != nil {
 		// Logging error pada saat mengambil data pinjaman
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve user loans by status", map[string]interface{}{"user_id": req.UserId, "status": req.Status}, err)
@@ -304,7 +308,9 @@ func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoa
 
 	// Mengembalikan respons dengan daftar pinjaman
 	return &protoLoan.ListLoansResponse{
-		Loans: protoLoans,
+		Loans:      protoLoans,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }
 
@@ -323,7 +329,7 @@ func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.Ge
 	}
 
 	// Mengambil pinjaman berdasarkan status
-	loans, code, err := s.loanService.GetLoansByStatus(ctx, req.Status)
+	loans, code, totalItems, err := s.loanService.GetLoansByStatus(ctx, req.Status, int(req.Page), int(req.PageSize))
 	if err != nil {
 		// Logging error pada saat mengambil data pinjaman
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve loans by status", map[string]interface{}{"status": req.Status}, err)
@@ -357,6 +363,8 @@ func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.Ge
 
 	// Mengembalikan respons dengan daftar pinjaman
 	return &protoLoan.ListLoansResponse{
-		Loans: protoLoans,
+		Loans:      protoLoans,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }

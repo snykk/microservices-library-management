@@ -18,9 +18,9 @@ import (
 type BookClient interface {
 	CreateBook(ctx context.Context, dto datatransfers.BookRequest) (datatransfers.BookResponse, error)
 	GetBook(ctx context.Context, id string) (datatransfers.BookResponse, error)
-	GetBooksByAuthorId(ctx context.Context, authorId string) ([]datatransfers.BookResponse, error)
-	GetBooksByCategoryId(ctx context.Context, categoryId string) ([]datatransfers.BookResponse, error)
-	ListBooks(ctx context.Context) ([]datatransfers.BookResponse, error)
+	GetBooksByAuthorId(ctx context.Context, authorId string, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error)
+	GetBooksByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error)
+	ListBooks(ctx context.Context, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error)
 	UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookRequest) (datatransfers.BookResponse, error)
 	DeleteBook(ctx context.Context, id string) error
 }
@@ -114,16 +114,24 @@ func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.Book
 	}, nil
 }
 
-func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookResponse, error) {
+func (b *bookClient) ListBooks(ctx context.Context, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
-	reqProto := protoBook.ListBooksRequest{}
+	reqProto := protoBook.ListBooksRequest{
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	}
 
-	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListBooks request to Book Service", nil, nil)
+	extra := map[string]interface{}{
+		"page":      page,
+		"page_size": pageSize,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListBooks request to Book Service", extra, nil)
 
 	resp, err := b.client.ListBooks(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
-		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListBooks request failed", nil, err)
-		return nil, err
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListBooks request failed", extra, err)
+		return nil, 0, 0, err
 	}
 
 	var books []datatransfers.BookResponse
@@ -139,13 +147,12 @@ func (b *bookClient) ListBooks(ctx context.Context) ([]datatransfers.BookRespons
 		})
 	}
 
-	extra := map[string]interface{}{
-		"books_count": len(books),
-	}
-
+	extra["books_count"] = len(books)
+	extra["total_pages"] = resp.TotalPages
+	extra["total_items"] = resp.TotalItems
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListBooks request succeeded", extra, nil)
 
-	return books, nil
+	return books, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
 func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookRequest) (datatransfers.BookResponse, error) {
@@ -210,14 +217,18 @@ func (b *bookClient) DeleteBook(ctx context.Context, id string) error {
 	return nil
 }
 
-func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string) ([]datatransfers.BookResponse, error) {
+func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.GetBooksByCategoryRequest{
 		CategoryId: categoryId,
+		Page:       int32(page),
+		PageSize:   int32(pageSize),
 	}
 
 	extra := map[string]interface{}{
 		"category_id": categoryId,
+		"page":        page,
+		"page_size":   pageSize,
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByCategory request to Book Service", extra, nil)
@@ -225,43 +236,7 @@ func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string
 	resp, err := b.client.GetBooksByCategory(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByCategory request failed", extra, err)
-		return nil, err
-	}
-
-	var books []datatransfers.BookResponse
-	for _, book := range resp.Books {
-		books = append(books, datatransfers.BookResponse{
-			Id:         book.Id,
-			Title:      book.Title,
-			AuthorId:   &book.AuthorId,
-			CategoryId: &book.CategoryId,
-			Stock:      int(book.Stock),
-			CreatedAt:  time.Unix(book.CreatedAt, 0),
-			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
-		})
-	}
-
-	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetBooksByCategory request succeeded", extra, nil)
-
-	return books, nil
-}
-
-func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string) ([]datatransfers.BookResponse, error) {
-	requestID := utils.GetRequestIDFromContext(ctx)
-	reqProto := protoBook.GetBooksByAuthorRequest{
-		AuthorId: authorId,
-	}
-
-	extra := map[string]interface{}{
-		"author_id": authorId,
-	}
-
-	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByAuthor request to Book Service", extra, nil)
-
-	resp, err := b.client.GetBooksByAuthor(utils.GetProtoContext(ctx), &reqProto)
-	if err != nil {
-		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByAuthor request failed", extra, err)
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	var books []datatransfers.BookResponse
@@ -278,8 +253,52 @@ func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string) ([
 	}
 
 	extra["books_count"] = len(books)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetBooksByCategory request succeeded", extra, nil)
 
+	return books, int(resp.TotalItems), int(resp.TotalPages), nil
+}
+
+func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+	reqProto := protoBook.GetBooksByAuthorRequest{
+		AuthorId: authorId,
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	}
+
+	extra := map[string]interface{}{
+		"author_id": authorId,
+		"page":      page,
+		"page_size": pageSize,
+	}
+
+	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending GetBooksByAuthor request to Book Service", extra, nil)
+
+	resp, err := b.client.GetBooksByAuthor(utils.GetProtoContext(ctx), &reqProto)
+	if err != nil {
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "GetBooksByAuthor request failed", extra, err)
+		return nil, 0, 0, err
+	}
+
+	var books []datatransfers.BookResponse
+	for _, book := range resp.Books {
+		books = append(books, datatransfers.BookResponse{
+			Id:         book.Id,
+			Title:      book.Title,
+			AuthorId:   &book.AuthorId,
+			CategoryId: &book.CategoryId,
+			Stock:      int(book.Stock),
+			CreatedAt:  time.Unix(book.CreatedAt, 0),
+			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
+		})
+	}
+
+	extra["books_count"] = len(books)
+	extra["total_items"] = resp.TotalItems
+	extra["total_pages"] = resp.TotalPages
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "GetBooksByAuthor request succeeded", extra, nil)
 
-	return books, nil
+	return books, int(resp.TotalItems), int(resp.TotalPages), nil
 }

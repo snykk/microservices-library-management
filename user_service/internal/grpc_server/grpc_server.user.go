@@ -97,7 +97,7 @@ func (s *userGRPCServer) ListUsers(ctx context.Context, req *protoUser.ListUsers
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	users, err := s.userService.ListUsers(ctx)
+	users, totalItems, err := s.userService.ListUsers(ctx, int(req.Page), int(req.PageSize))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to retrieve user list", nil, err)
 		return nil, status.Error(codes.Internal, "failed to retrieve user list")
@@ -120,6 +120,8 @@ func (s *userGRPCServer) ListUsers(ctx context.Context, req *protoUser.ListUsers
 	s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "User list retrieved successfully", nil, nil)
 
 	return &protoUser.ListUsersResponse{
-		Users: protoUsers,
+		Users:      protoUsers,
+		TotalItems: int32(totalItems),
+		TotalPages: int32(utils.CalculateTotalPages(totalItems, int(req.PageSize))),
 	}, nil
 }

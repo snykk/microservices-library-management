@@ -19,7 +19,7 @@ import (
 type UserClient interface {
 	GetUserById(ctx context.Context, userId string) (datatransfers.UserResponse, error)
 	GetUserByEmail(ctx context.Context, email string) (datatransfers.UserResponse, error)
-	ListUsers(ctx context.Context) ([]datatransfers.UserResponse, error)
+	ListUsers(ctx context.Context, page int, pageSize int) ([]datatransfers.UserResponse, int, int, error)
 }
 
 type userClient struct {
@@ -107,17 +107,25 @@ func (u *userClient) GetUserByEmail(ctx context.Context, email string) (datatran
 	}, nil
 }
 
-func (u *userClient) ListUsers(ctx context.Context) ([]datatransfers.UserResponse, error) {
+func (u *userClient) ListUsers(ctx context.Context, page int, pageSize int) ([]datatransfers.UserResponse, int, int, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
-	reqProto := protoUser.ListUsersRequest{}
+	reqProto := protoUser.ListUsersRequest{
+		Page:     int32(page),
+		PageSize: int32(pageSize),
+	}
 
-	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUsers request to User Service", nil, nil)
+	extra := map[string]interface{}{
+		"page":      page,
+		"page_size": pageSize,
+	}
+
+	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ListUsers request to User Service", extra, nil)
 
 	resp, err := u.client.ListUsers(utils.GetProtoContext(ctx), &reqProto)
 	if err != nil {
-		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUsers request failed", nil, err)
-		return nil, err
+		u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "ListUsers request failed", extra, err)
+		return nil, 0, 0, err
 	}
 
 	var users []datatransfers.UserResponse
@@ -133,7 +141,10 @@ func (u *userClient) ListUsers(ctx context.Context) ([]datatransfers.UserRespons
 		})
 	}
 
+	extra["users_count"] = len(users)
+	extra["total_pages"] = resp.TotalPages
+	extra["total_items"] = resp.TotalItems
 	u.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "ListUsers request succeeded", nil, nil)
 
-	return users, nil
+	return users, int(resp.TotalItems), int(resp.TotalPages), nil
 }

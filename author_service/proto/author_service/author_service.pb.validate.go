@@ -662,6 +662,28 @@ func (m *ListAuthorsRequest) validate(all bool) error {
 
 	var errors []error
 
+	if m.GetPage() < 1 {
+		err := ListAuthorsRequestValidationError{
+			field:  "Page",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() < 1 {
+		err := ListAuthorsRequestValidationError{
+			field:  "PageSize",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return ListAuthorsRequestMultiError(errors)
 	}
@@ -797,6 +819,10 @@ func (m *ListAuthorsResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for TotalItems
+
+	// no validation rules for TotalPages
 
 	if len(errors) > 0 {
 		return ListAuthorsResponseMultiError(errors)
