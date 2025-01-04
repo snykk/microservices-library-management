@@ -40,42 +40,42 @@ build_gateway:
 
 build_author:
 	@echo "Building author binary..."
-	cd ../author_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTHOR_BINARY} ./cmd
+	cd ../services/author_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTHOR_BINARY} ./cmd
 	@echo "Done!"
 
 build_book:
 	@echo "Building book binary..."
-	cd ../book_service && env GOOS=linux CGO_ENABLED=0 go build -o ${BOOK_BINARY} ./cmd
+	cd ../services/book_service && env GOOS=linux CGO_ENABLED=0 go build -o ${BOOK_BINARY} ./cmd
 	@echo "Done!"
 
 build_category:
 	@echo "Building category binary..."
-	cd ../category_service && env GOOS=linux CGO_ENABLED=0 go build -o ${CATEGORY_BINARY} ./cmd
+	cd ../services/category_service && env GOOS=linux CGO_ENABLED=0 go build -o ${CATEGORY_BINARY} ./cmd
 	@echo "Done!"
 
 build_user:
 	@echo "Building user binary..."
-	cd ../user_service && env GOOS=linux CGO_ENABLED=0 go build -o ${USER_BINARY} ./cmd
+	cd ../services/user_service && env GOOS=linux CGO_ENABLED=0 go build -o ${USER_BINARY} ./cmd
 	@echo "Done!"
 
 build_auth:
 	@echo "Building auth binary..."
-	cd ../auth_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd
+	cd ../services/auth_service && env GOOS=linux CGO_ENABLED=0 go build -o ${AUTH_BINARY} ./cmd
 	@echo "Done!"
 
 build_loan:
 	@echo "Building loan binary..."
-	cd ../loan_service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOAN_BINARY} ./cmd
+	cd ../services/loan_service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOAN_BINARY} ./cmd
 	@echo "Done!"
 
 build_mailer:
 	@echo "Building mailer binary..."
-	cd ../mailer_service && env GOOS=linux CGO_ENABLED=0 go build -o ${MAILER_BINARY} ./cmd
+	cd ../services/mailer_service && env GOOS=linux CGO_ENABLED=0 go build -o ${MAILER_BINARY} ./cmd
 	@echo "Done!"
 
 build_logger:
 	@echo "Building logger binary..."
-	cd ../logger_service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd
+	cd ../services/logger_service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_BINARY} ./cmd
 	@echo "Done!"
 
 # Restart the application

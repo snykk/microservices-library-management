@@ -3,6 +3,7 @@ PROTO_DIR = shared_proto
 
 # Target directories for generated proto files
 API_GATEWAY_PROTO = api_gateway/proto
+SERVICES_DIR = services
 
 # List of services to generate
 SERVICES = auth_service user_service author_service category_service book_service loan_service
@@ -42,10 +43,10 @@ generate-proto:
 
 	@# Create target directories if they don't exist
 	@mkdir -p $(API_GATEWAY_PROTO)/$(SERVICE)
-	@mkdir -p $(SERVICE)/proto/${SERVICE}
+	@mkdir -p $(SERVICES_DIR)/$(SERVICE)/proto/${SERVICE}
 
 	@# Generate proto files for both API Gateway and Service Directory
-	@for TARGET_DIR in $(API_GATEWAY_PROTO)/$(SERVICE) $(SERVICE)/proto/${SERVICE}; do \
+	@for TARGET_DIR in $(API_GATEWAY_PROTO)/$(SERVICE) $(SERVICES_DIR)/$(SERVICE)/proto/${SERVICE}; do \
 		echo "Generating files in $$TARGET_DIR..."; \
 		protoc \
 		-I $(PROTO_DIR) \
@@ -63,34 +64,34 @@ generate-proto:
 	@echo "Proto files generated for $(SERVICE)."
 
 # Generate proto files for a specific service to a specific project
-.PHONY: generate-proto-to-project
-generate-proto-to-project:
-	@echo "Generating proto files for $(SERVICE) to $(PROJECT)..."
-	@if [ -z "$(SERVICE)" ] || [ -z "$(PROJECT)" ]; then \
-		echo "Error: SERVICE and PROJECT flags are required. Usage: make generate-proto-to-project SERVICE=<service_name> PROJECT=<project_name>"; \
+.PHONY: generate-proto-to-service
+generate-proto-to-service:
+	@echo "Generating proto files for $(PROTO) to $(SERVICE)..."
+	@if [ -z "$(PROTO)" ] || [ -z "$(SERVICE)" ]; then \
+		echo "Error: PROTO and SERVICE flags are required. Usage: make generate-proto-to-project PROTO=<service_name> SERVICE=<project_name>"; \
 		exit 1; \
 	fi
-	@if ! echo "$(SERVICES)" | grep -q -w "$(SERVICE)"; then \
-		echo "Error: Unknown service '$(SERVICE)'. Available services: $(SERVICES)"; \
+	@if ! echo "$(SERVICES)" | grep -q -w "$(PROTO)"; then \
+		echo "Error: Unknown service '$(PROTO)'. Available services: $(SERVICES)"; \
 		exit 1; \
 	fi
 
 	@# Create target directory if it doesn't exist
-	@mkdir -p $(PROJECT)/proto/${SERVICE}
+	@mkdir -p $(SERVICES_DIR)/$(SERVICE)/proto/${PROTO}
 
 	@# Generate proto files to the specific project directory
 	@protoc \
 		-I $(PROTO_DIR) \
 		-I $(PROTO_DIR)/validate \
 		--proto_path=$(PROTO_DIR) \
-		--go_out=$(PROJECT)/proto/${SERVICE} \
+		--go_out=$(SERVICES_DIR)/$(SERVICE)/proto/${PROTO} \
 		--go_opt=paths=source_relative \
-		--go-grpc_out=$(PROJECT)/proto/${SERVICE} \
+		--go-grpc_out=$(SERVICES_DIR)/$(SERVICE)/proto/${PROTO} \
 		--go-grpc_opt=paths=source_relative \
-		--validate_out="lang=go,paths=source_relative:$$TARGET_DIR
-		$(PROTO_DIR)/$(SERVICE).proto
+		--validate_out="lang=go,paths=source_relative:$(SERVICES_DIR)/$(SERVICE)/proto/${PROTO}" \
+		$(PROTO_DIR)/$(PROTO).proto
 
 	@# Copy original proto file to the target directory
-	@cp $(PROTO_DIR)/$(SERVICE).proto $(PROJECT)/proto/${SERVICE}/$(SERVICE).proto
+	@cp $(PROTO_DIR)/$(PROTO).proto $(SERVICES_DIR)/$(SERVICE)/proto/${PROTO}/$(PROTO).proto
 
-	@echo "Proto files for $(SERVICE) have been generated in $(PROJECT)."
+	@echo "Proto files for $(PROTO) have been generated in $(SERVICE)."
