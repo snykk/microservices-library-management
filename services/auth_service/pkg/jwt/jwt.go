@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	driJWT "github.com/dgrijalva/jwt-go"
+	golangJWT "github.com/golang-jwt/jwt/v5"
 )
 
 type JWTService interface {
@@ -19,7 +19,7 @@ type JwtCustomClaim struct {
 	Role      string
 	Email     string
 	TokenType string
-	driJWT.StandardClaims
+	golangJWT.RegisteredClaims
 }
 
 type jwtService struct {
@@ -45,13 +45,13 @@ func (j *jwtService) GenerateToken(userID string, Role string, email string) (t 
 		Role:      Role,
 		Email:     email,
 		TokenType: constants.TokenAccess,
-		StandardClaims: driJWT.StandardClaims{
-			ExpiresAt: time.Now().Add(j.expiredAccessToken).Unix(),
+		RegisteredClaims: golangJWT.RegisteredClaims{
+			ExpiresAt: golangJWT.NewNumericDate(time.Now().Add(j.expiredAccessToken)),
 			Issuer:    j.issuer,
-			IssuedAt:  time.Now().Unix(),
+			IssuedAt:  golangJWT.NewNumericDate(time.Now()),
 		},
 	}
-	token := driJWT.NewWithClaims(driJWT.SigningMethodHS256, claims)
+	token := golangJWT.NewWithClaims(golangJWT.SigningMethodHS256, claims)
 	t, err = token.SignedString([]byte(j.secretKey))
 	return
 }
@@ -62,20 +62,20 @@ func (j *jwtService) GenerateRefreshToken(userID string, Role string, email stri
 		Role:      Role,
 		Email:     email,
 		TokenType: constants.TokenRefresh,
-		StandardClaims: driJWT.StandardClaims{
-			ExpiresAt: time.Now().Add(j.expiredRefreshToken).Unix(),
+		RegisteredClaims: golangJWT.RegisteredClaims{
+			ExpiresAt: golangJWT.NewNumericDate(time.Now().Add(j.expiredRefreshToken)),
 			Issuer:    j.issuer,
-			IssuedAt:  time.Now().Unix(),
+			IssuedAt:  golangJWT.NewNumericDate(time.Now()),
 		},
 	}
-	token := driJWT.NewWithClaims(driJWT.SigningMethodHS256, claims)
+	token := golangJWT.NewWithClaims(golangJWT.SigningMethodHS256, claims)
 	t, err = token.SignedString([]byte(j.secretKey))
 	return
 }
 
 // ParseToken parses and validates the JWT token, extracting the claims.
 func (j *jwtService) ParseToken(tokenString string, expectedType string) (claims JwtCustomClaim, err error) {
-	token, err := driJWT.ParseWithClaims(tokenString, &claims, func(token *driJWT.Token) (interface{}, error) {
+	token, err := golangJWT.ParseWithClaims(tokenString, &claims, func(token *golangJWT.Token) (interface{}, error) {
 		return []byte(j.secretKey), nil
 	})
 	if err != nil || !token.Valid {
