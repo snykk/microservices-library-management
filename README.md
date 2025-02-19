@@ -1,18 +1,3 @@
 # microservices-library-management
 
-A simple library management system built with Go to manage books, authors, categories, and loans.
-
-## Features (in develop)
-
--   [x] Authentication System
--   [x] Author Management
--   [x] Category Management
--   [x] Book Management
--   [x] Book Stock Management
--   [x] Loan (Borrowing and Returning) Book
--   [ ] Search Feature using Elasticsearch
--   [x] Logger Service (Improve logging across services, including internal logs)
--   [ ] Unit Test
--   [x] Email Notification (RabbitMQ Integration)
--   [ ] Tidy and Refactor Code
--   [ ] API Documentation (APISpec)
+A microservices-based library management system that enables users to borrow and return books seamlessly. Inter-service communication is handled via gRPC, while RabbitMQ facilitates asynchronous processes such as logging and email notifications. The API Gateway (GoFiber) serves as the sole entry point, enforcing JWT authentication, request throttling, and security at the edge to safeguard internal services. Each service operates with its own PostgreSQL database, while MongoDB is leveraged for distributed logging. This architecture ensures scalability, security, and efficiency in managing digital library operations.
