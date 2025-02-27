@@ -1,12 +1,16 @@
 package datatransfers
 
-import "time"
-
 type LoanRequest struct {
-	BookId string `json:"book_id" validate:"required,uuid4"`
+	BookId      string `json:"book_id" validate:"required,uuid4"`
+	BookVersion int    `json:"book_version" validate:"required,min=1"`
 }
 
 type LoanStatusUpdateRequest struct {
-	Status     string `json:"status" validate:"required,oneof=BORROWED RETURNED OVERDUE LOST"`
-	ReturnDate time.Time
+	Status  string `json:"status" validate:"required,oneof=BORROWED RETURNED OVERDUE LOST"`
+	Version int    `json:"version" validate:"required,min=1"`
+}
+
+type LoanReturnRequest struct {
+	Version     int `json:"version" validate:"required,min=1"`
+	BookVersion int `json:"book_version" validate:"required,min=1"`
 }

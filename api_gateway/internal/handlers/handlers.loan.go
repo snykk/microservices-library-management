@@ -57,7 +57,12 @@ func (l *LoanHandler) CreateLoanHandler(c *fiber.Ctx) error {
 
 	extra["loan_book_id"] = req.BookId
 
-	resp, err := l.client.CreateLoan(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), userID, userEmail, req)
+	resp, err := l.client.CreateLoan(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		userID,
+		userEmail,
+		req,
+	)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to create loan", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to create loan", err))
@@ -87,7 +92,27 @@ func (l *LoanHandler) ReturnLoanHandler(c *fiber.Ctx) error {
 		"user_email": userEmail,
 	}
 
-	resp, err := l.client.ReturnLoan(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), loanId, userID, userEmail, time.Now())
+	// Parse the request body
+	var req datatransfers.LoanReturnRequest
+	if err := c.BodyParser(&req); err != nil {
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse return loan request body", extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
+	resp, err := l.client.ReturnLoan(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		loanId,
+		userID,
+		userEmail,
+		time.Now(),
+		req,
+	)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to return loan", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to return loan", err))
@@ -152,10 +177,13 @@ func (l *LoanHandler) UpdateLoanStatusHandler(c *fiber.Ctx) error {
 	}
 
 	extra["loan_status"] = req.Status
-	extra["loan_return_date"] = req.ReturnDate
 
-	req.ReturnDate = time.Now()
-	resp, err := l.client.UpdateLoanStatus(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), loanId, req.Status, req.ReturnDate)
+	resp, err := l.client.UpdateLoanStatus(
+		context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID),
+		loanId,
+		req.Status,
+		req.Version,
+	)
 	if err != nil {
 		l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to update loan status", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to update loan status", err))

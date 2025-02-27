@@ -11,9 +11,9 @@ import (
 
 type BookClient interface {
 	GetBook(ctx context.Context, id string) (*BookResponse, error)
-	UpdateBookStock(ctx context.Context, id string, newStock int) error
-	IncrementBookStock(ctx context.Context, id string) error
-	DecrementBookStock(ctx context.Context, id string) error
+	UpdateBookStock(ctx context.Context, id string, newStock, version int) error
+	IncrementBookStock(ctx context.Context, id string, version int) error
+	DecrementBookStock(ctx context.Context, id string, version int) error
 }
 
 type bookClient struct {
@@ -55,19 +55,21 @@ func (a *bookClient) GetBook(ctx context.Context, id string) (*BookResponse, err
 	}, nil
 }
 
-func (a *bookClient) UpdateBookStock(ctx context.Context, id string, newStock int) error {
+func (a *bookClient) UpdateBookStock(ctx context.Context, id string, newStock, version int) error {
 	reqProto := protoBook.UpdateBookStockRequest{
-		Id:    id,
-		Stock: int32(newStock),
+		Id:      id,
+		Stock:   int32(newStock),
+		Version: int32(version),
 	}
 	_, err := a.client.UpdateBookStock(ctx, &reqProto)
 
 	return err
 }
 
-func (a *bookClient) IncrementBookStock(ctx context.Context, id string) error {
+func (a *bookClient) IncrementBookStock(ctx context.Context, id string, version int) error {
 	reqProto := protoBook.IncrementBookStockRequest{
-		Id: id,
+		Id:      id,
+		Version: int32(version),
 	}
 
 	_, err := a.client.IncrementBookStock(ctx, &reqProto)
@@ -75,9 +77,10 @@ func (a *bookClient) IncrementBookStock(ctx context.Context, id string) error {
 	return err
 }
 
-func (a *bookClient) DecrementBookStock(ctx context.Context, id string) error {
+func (a *bookClient) DecrementBookStock(ctx context.Context, id string, version int) error {
 	reqProto := protoBook.DecrementBookStockRequest{
-		Id: id,
+		Id:      id,
+		Version: int32(version),
 	}
 
 	_, err := a.client.DecrementBookStock(ctx, &reqProto)

@@ -25,14 +25,16 @@ message Loan {
     int64 loan_date = 4;   // unix time
     int64 return_date = 5; // unix time
     string status = 6;     // Loan status (e.g., BORROWED, RETURNED, LOST)
-    int64 createdAt = 7;   // unix time
-    int64 updatedAt = 8;   // unit time
+    int32 version = 7;
+    int64 createdAt = 8;   // unix time
+    int64 updatedAt = 9;   // unit time
 }
 
 message CreateLoanRequest {
     string user_id = 1 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
     string book_id = 2 [(validate.rules).string.min_len = 1];      // Book ID must be non-empty
     string email = 3 [(validate.rules).string.min_len = 1, (validate.rules).string.email = true]; // Must be a valid email address
+    int32 book_version = 4 [(validate.rules).int32.gte = 1];       // Book version must be >= 1
 }
 
 message ReturnLoanRequest {
@@ -40,6 +42,8 @@ message ReturnLoanRequest {
     string user_id = 2 [(validate.rules).string.min_len = 1];      // User ID must be non-empty
     string email = 3 [(validate.rules).string.email = true];       // Must be a valid email address
     int64 return_date = 4 [(validate.rules).int64.gte = 0];        // Return date must be >= 0
+    int32 version = 5 [(validate.rules).int32.gte = 1];            // Version must be >= 1
+    int32 book_version = 6 [(validate.rules).int32.gte = 1];       // Book version must be >= 1
 }
 
 message GetLoanRequest {
@@ -49,7 +53,7 @@ message GetLoanRequest {
 message UpdateLoanStatusRequest {
     string id = 1 [(validate.rules).string.min_len = 1];           // ID must be non-empty
     string status = 2 [(validate.rules).string.min_len = 1];       // Status must be non-empty
-    int64 return_date = 3 [(validate.rules).int64.gte = 0];        // Return date must be >= 0
+    int32 version = 3 [(validate.rules).int32.gte = 1];            // Version must be >= 1
 }
 
 message ListUserLoansRequest {

@@ -68,6 +68,8 @@ func (m *Loan) validate(all bool) error {
 
 	// no validation rules for Status
 
+	// no validation rules for Version
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt
@@ -209,6 +211,17 @@ func (m *CreateLoanRequest) validate(all bool) error {
 			field:  "Email",
 			reason: "value must be a valid email address",
 			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetBookVersion() < 1 {
+		err := CreateLoanRequestValidationError{
+			field:  "BookVersion",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err
@@ -406,6 +419,28 @@ func (m *ReturnLoanRequest) validate(all bool) error {
 		err := ReturnLoanRequestValidationError{
 			field:  "ReturnDate",
 			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetVersion() < 1 {
+		err := ReturnLoanRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetBookVersion() < 1 {
+		err := ReturnLoanRequestValidationError{
+			field:  "BookVersion",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err
@@ -698,10 +733,10 @@ func (m *UpdateLoanStatusRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetReturnDate() < 0 {
+	if m.GetVersion() < 1 {
 		err := UpdateLoanStatusRequestValidationError{
-			field:  "ReturnDate",
-			reason: "value must be greater than or equal to 0",
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err

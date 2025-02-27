@@ -4,6 +4,8 @@ package book_service;
 
 option go_package = "/book_service";
 
+import "validate/validate.proto";
+
 service BookService {
   rpc CreateBook(CreateBookRequest) returns (CreateBookResponse);
   rpc GetBook(GetBookRequest) returns (GetBookResponse);
@@ -17,22 +19,22 @@ service BookService {
   rpc DecrementBookStock(DecrementBookStockRequest) returns (DecrementBookStockResponse);
 }
 
-
 message Book {
   string id = 1;
   string title = 2;
   string author_id = 3;
   string category_id = 4;
   int32 stock = 5;
-  int64 createdAt = 6; // unix time
-  int64 updatedAt = 7; // unit time
+  int32 version = 6;
+  int64 createdAt = 7; // unix time
+  int64 updatedAt = 8; // unix time
 }
 
 message CreateBookRequest {
-  string title = 1;
-  string author_id = 2;
-  string category_id = 3;
-  int32 stock = 4;
+  string title = 1 [(validate.rules).string.min_len = 1];
+  string author_id = 2 [(validate.rules).string.min_len = 1];
+  string category_id = 3 [(validate.rules).string.min_len = 1];
+  int32 stock = 4 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
 }
 
 message CreateBookResponse {
@@ -40,7 +42,7 @@ message CreateBookResponse {
 }
 
 message GetBookRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
 }
 
 message GetBookResponse {
@@ -48,25 +50,37 @@ message GetBookResponse {
 }
 
 message GetBooksByAuthorRequest {
-  string author_id = 1;
+  string author_id = 1 [(validate.rules).string.min_len = 1];  // Author ID must not be empty
+  int32 page = 2 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 3 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }
+
 
 message GetBooksByCategoryRequest {
-  string category_id = 1;
+  string category_id = 1 [(validate.rules).string.min_len = 1];  // Category ID must not be empty
+  int32 page = 2 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 3 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
 }
 
-message ListBooksRequest {}
+message ListBooksRequest {
+  int32 page = 1 [(validate.rules).int32.gte = 1];  // Page must be >= 1
+  int32 pageSize = 2 [(validate.rules).int32.gte = 1];  // Page size must be >= 1
+}
 
 message ListBooksResponse {
   repeated Book books = 1;
+  int32 totalItems = 2;  // Total number of items
+  int32 totalPages = 3;  // Total number of pages
 }
 
+
 message UpdateBookRequest {
-  string id = 1;
-  string title = 2;
-  string author_id = 3;
-  string category_id = 4;
-  int32 stock = 5;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  string title = 2 [(validate.rules).string.min_len = 1];
+  string author_id = 3 [(validate.rules).string.min_len = 1];
+  string category_id = 4 [(validate.rules).string.min_len = 1];
+  int32 stock = 5 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
+  int32 version = 6 [(validate.rules).int32.gte = 1];
 }
 
 message UpdateBookResponse {
@@ -74,26 +88,27 @@ message UpdateBookResponse {
 }
 
 message UpdateBookStockRequest {
-  string id = 1;
-  int32 stock = 2;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 stock = 2 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
+  int32 version = 3 [(validate.rules).int32.gte = 1];
 }
-
 
 message UpdateBookStockResponse {
   string message = 1;
 }
 
 message DeleteBookRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message DeleteBookResponse {
   string message = 1;
 }
 
-
 message IncrementBookStockRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message IncrementBookStockResponse {
@@ -101,7 +116,8 @@ message IncrementBookStockResponse {
 }
 
 message DecrementBookStockRequest {
-  string id = 1;
+  string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message DecrementBookStockResponse {

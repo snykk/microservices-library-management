@@ -17,11 +17,11 @@ import (
 )
 
 type LoanService interface {
-	CreateLoan(ctx context.Context, userId, email, bookId string) (*models.LoanRecord, codes.Code, error)
-	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
+	CreateLoan(ctx context.Context, userId, email, bookId string, book_version int) (*models.LoanRecord, codes.Code, error)
+	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time, version, book_version int) (*models.LoanRecord, codes.Code, error)
 	GetLoan(ctx context.Context, id string) (*models.LoanRecord, codes.Code, error)
 	GetBorrowedLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, codes.Code, error)
-	UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error)
+	UpdateLoanStatus(ctx context.Context, id, status string, version int) (*models.LoanRecord, codes.Code, error)
 	ListUserLoans(ctx context.Context, userId string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
 	ListLoans(ctx context.Context, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string, page int, pageSize int) (loans []*models.LoanRecord, code codes.Code, totalItems int, err error)
@@ -42,7 +42,7 @@ func NewLoanService(repo repository.LoanRepository, bookClient clients.BookClien
 	}
 }
 
-func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId string) (*models.LoanRecord, codes.Code, error) {
+func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId string, book_version int) (*models.LoanRecord, codes.Code, error) {
 	// Get requestID from context
 	requestID := utils.GetRequestIDFromContext(ctx)
 
@@ -67,7 +67,7 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId stri
 	}
 
 	// Decrease book stock
-	err := s.bookClient.DecrementBookStock(ctx, book.Id)
+	err := s.bookClient.DecrementBookStock(ctx, book.Id, book_version)
 	if err != nil {
 		log.Printf("[%s] Failed to decrement stock for book %s: %v\n", utils.GetLocation(), book.Id, err)
 		return nil, codes.Internal, fmt.Errorf("failed when updating stock for book '%s'", book.Id)
@@ -103,7 +103,7 @@ func (s *loanService) CreateLoan(ctx context.Context, userId, email, bookId stri
 	return createdLoan, codes.OK, nil
 }
 
-func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
+func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time, version, book_version int) (*models.LoanRecord, codes.Code, error) {
 	// Get requestID from context
 	requestID := utils.GetRequestIDFromContext(ctx)
 
@@ -132,14 +132,14 @@ func (s *loanService) ReturnLoan(ctx context.Context, id, userId, email string, 
 	}
 
 	// Return the loan
-	returnedLoan, err := s.repo.ReturnLoan(ctx, id)
+	returnedLoan, err := s.repo.ReturnLoan(ctx, id, version)
 	if err != nil {
 		log.Printf("[%s] Failed to return loan with ID %s: %v\n", utils.GetLocation(), id, err)
 		return nil, codes.Internal, fmt.Errorf("failed to return loan with id %s", id)
 	}
 
 	// Increment book stock
-	err = s.bookClient.IncrementBookStock(ctx, book.Id)
+	err = s.bookClient.IncrementBookStock(ctx, book.Id, book_version)
 	if err != nil {
 		log.Printf("[%s] Failed to increment stock for book %s: %v\n", utils.GetLocation(), book.Id, err)
 		return nil, codes.Internal, fmt.Errorf("failed when updating stock for book '%s'", book.Id)
@@ -186,7 +186,7 @@ func (s *loanService) GetBorrowedLoanByBookIdAndUserId(ctx context.Context, book
 	return loan, codes.OK, nil
 }
 
-func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, returnDate time.Time) (*models.LoanRecord, codes.Code, error) {
+func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, version int) (*models.LoanRecord, codes.Code, error) {
 	log.Printf("[%s] Updating status of loan with ID %s to %s\n", utils.GetLocation(), id, status)
 
 	loan, err := s.repo.GetLoan(ctx, id)
@@ -196,7 +196,7 @@ func (s *loanService) UpdateLoanStatus(ctx context.Context, id, status string, r
 	}
 
 	loan.Status = status
-	loan.ReturnDate = &returnDate
+	loan.Version = version
 
 	updatedLoan, err := s.repo.UpdateLoanStatus(ctx, loan)
 	if err != nil {

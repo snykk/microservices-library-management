@@ -9,6 +9,7 @@ type LoanResponse struct {
 	LoanDate   time.Time  `json:"loan_date"`
 	ReturnDate *time.Time `json:"return_date"`
 	Status     string     `json:"status"`
+	Version    int        `json:"version"`
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 }

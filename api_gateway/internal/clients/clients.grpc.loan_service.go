@@ -19,12 +19,12 @@ import (
 type LoanClient interface {
 	CreateLoan(ctx context.Context, userId, email string, dto datatransfers.LoanRequest) (datatransfers.LoanResponse, error)
 	GetLoan(ctx context.Context, id string) (datatransfers.LoanResponse, error)
-	UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error)
+	UpdateLoanStatus(ctx context.Context, loanId, status string, version int) (datatransfers.LoanResponse, error)
 	ListUserLoans(ctx context.Context, userId string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
 	ListLoans(ctx context.Context, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
 	GetLoansByStatus(ctx context.Context, status string, page int, pageSize int) ([]datatransfers.LoanResponse, int, int, error)
-	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error)
+	ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time, dto datatransfers.LoanReturnRequest) (datatransfers.LoanResponse, error)
 }
 
 type loanClient struct {
@@ -52,15 +52,17 @@ func (l *loanClient) CreateLoan(ctx context.Context, userId, email string, dto d
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoLoan.CreateLoanRequest{
-		UserId: userId,
-		BookId: dto.BookId,
-		Email:  email,
+		UserId:      userId,
+		BookId:      dto.BookId,
+		Email:       email,
+		BookVersion: int32(dto.BookVersion),
 	}
 
 	extra := map[string]interface{}{
-		"user_id": userId,
-		"book_id": dto.BookId,
-		"email":   email,
+		"user_id":      userId,
+		"book_id":      dto.BookId,
+		"email":        email,
+		"book_version": dto.BookVersion,
 	}
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending CreateLoan request to Loan Service", extra, nil)
@@ -82,6 +84,7 @@ func (l *loanClient) CreateLoan(ctx context.Context, userId, email string, dto d
 		LoanDate:   time.Unix(resp.Loan.LoanDate, 0),
 		ReturnDate: nil,
 		Status:     resp.Loan.Status,
+		Version:    int(resp.Loan.Version),
 		CreatedAt:  time.Unix(resp.Loan.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Loan.UpdatedAt, 0),
 	}, nil
@@ -113,6 +116,7 @@ func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.Loan
 		BookId:    resp.Loan.BookId,
 		LoanDate:  time.Unix(resp.Loan.LoanDate, 0),
 		Status:    resp.Loan.Status,
+		Version:   int(resp.Loan.Version),
 		CreatedAt: time.Unix(resp.Loan.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Loan.UpdatedAt, 0),
 	}
@@ -127,19 +131,18 @@ func (l *loanClient) GetLoan(ctx context.Context, id string) (datatransfers.Loan
 	return loanResponse, nil
 }
 
-func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string, version int) (datatransfers.LoanResponse, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoLoan.UpdateLoanStatusRequest{
-		Id:         loanId,
-		Status:     status,
-		ReturnDate: returnDate.Unix(),
+		Id:      loanId,
+		Status:  status,
+		Version: int32(version),
 	}
 
 	extra := map[string]interface{}{
-		"loan_id":          loanId,
-		"loan_status":      status,
-		"loan_return_date": returnDate,
+		"loan_id":     loanId,
+		"loan_status": status,
 	}
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateLoanStatus request to Loan Service", extra, nil)
@@ -156,6 +159,7 @@ func (l *loanClient) UpdateLoanStatus(ctx context.Context, loanId, status string
 		BookId:    resp.Loan.BookId,
 		LoanDate:  time.Unix(resp.Loan.LoanDate, 0),
 		Status:    resp.Loan.Status,
+		Version:   int(resp.Loan.Version),
 		CreatedAt: time.Unix(resp.Loan.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Loan.UpdatedAt, 0),
 	}
@@ -202,6 +206,7 @@ func (l *loanClient) ListUserLoans(ctx context.Context, userId string, page int,
 			BookId:    loan.BookId,
 			LoanDate:  time.Unix(loan.LoanDate, 0),
 			Status:    loan.Status,
+			Version:   int(loan.Version),
 			CreatedAt: time.Unix(loan.CreatedAt, 0),
 			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
 		}
@@ -252,6 +257,7 @@ func (l *loanClient) ListLoans(ctx context.Context, page int, pageSize int) ([]d
 			BookId:    loan.BookId,
 			LoanDate:  time.Unix(loan.LoanDate, 0),
 			Status:    loan.Status,
+			Version:   int(loan.Version),
 			CreatedAt: time.Unix(loan.CreatedAt, 0),
 			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
 		}
@@ -305,6 +311,7 @@ func (l *loanClient) GetUserLoansByStatus(ctx context.Context, userId, status st
 			BookId:    loan.BookId,
 			LoanDate:  time.Unix(loan.LoanDate, 0),
 			Status:    loan.Status,
+			Version:   int(loan.Version),
 			CreatedAt: time.Unix(loan.CreatedAt, 0),
 			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
 		}
@@ -356,6 +363,7 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string, page i
 			BookId:    loan.BookId,
 			LoanDate:  time.Unix(loan.LoanDate, 0),
 			Status:    loan.Status,
+			Version:   int(loan.Version),
 			CreatedAt: time.Unix(loan.CreatedAt, 0),
 			UpdatedAt: time.Unix(loan.UpdatedAt, 0),
 		}
@@ -376,14 +384,16 @@ func (l *loanClient) GetLoansByStatus(ctx context.Context, status string, page i
 	return loans, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time) (datatransfers.LoanResponse, error) {
+func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, returnDate time.Time, dto datatransfers.LoanReturnRequest) (datatransfers.LoanResponse, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoLoan.ReturnLoanRequest{
-		Id:         id,
-		Email:      email,
-		UserId:     userId,
-		ReturnDate: returnDate.Unix(),
+		Id:          id,
+		Email:       email,
+		UserId:      userId,
+		ReturnDate:  returnDate.Unix(),
+		Version:     int32(dto.Version),
+		BookVersion: int32(dto.BookVersion),
 	}
 
 	extra := map[string]interface{}{
@@ -391,6 +401,8 @@ func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, r
 		"email":            email,
 		"user_id":          userId,
 		"loan_return_date": returnDate,
+		"version":          dto.Version,
+		"book_version":     dto.BookVersion,
 	}
 
 	l.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending ReturnLoan request to Loan Service", extra, nil)
@@ -407,6 +419,7 @@ func (l *loanClient) ReturnLoan(ctx context.Context, id, userId, email string, r
 		BookId:    resp.Loan.BookId,
 		LoanDate:  time.Unix(resp.Loan.LoanDate, 0),
 		Status:    resp.Loan.Status,
+		Version:   int(resp.Loan.Version),
 		CreatedAt: time.Unix(resp.Loan.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Loan.UpdatedAt, 0),
 	}

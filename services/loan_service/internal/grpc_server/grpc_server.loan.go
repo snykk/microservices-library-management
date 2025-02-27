@@ -36,7 +36,13 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loan, code, err := s.loanService.CreateLoan(context.WithValue(ctx, constants.ContextRequestIDKey, requestID), req.UserId, req.Email, req.BookId)
+	loan, code, err := s.loanService.CreateLoan(
+		context.WithValue(ctx, constants.ContextRequestIDKey, requestID),
+		req.UserId,
+		req.Email,
+		req.BookId,
+		int(req.BookVersion),
+	)
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to create loan", nil, err)
 		return nil, status.Error(code, err.Error())
@@ -51,6 +57,7 @@ func (s *loanGRPCServer) CreateLoan(ctx context.Context, req *protoLoan.CreateLo
 			BookId:    loan.BookId,
 			LoanDate:  loan.LoanDate.Unix(),
 			Status:    loan.Status,
+			Version:   int32(loan.Version),
 			CreatedAt: loan.CreatedAt.Unix(),
 			UpdatedAt: loan.UpdatedAt.Unix(),
 		},
@@ -67,7 +74,15 @@ func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLo
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loan, code, err := s.loanService.ReturnLoan(context.WithValue(ctx, constants.ContextRequestIDKey, requestID), req.Id, req.UserId, req.Email, time.Unix(req.ReturnDate, 0))
+	loan, code, err := s.loanService.ReturnLoan(
+		context.WithValue(ctx, constants.ContextRequestIDKey, requestID),
+		req.Id,
+		req.UserId,
+		req.Email,
+		time.Unix(req.ReturnDate, 0),
+		int(req.Version),
+		int(req.BookVersion),
+	)
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to return loan", nil, err)
 		return nil, status.Error(code, err.Error())
@@ -83,6 +98,7 @@ func (s *loanGRPCServer) ReturnLoan(ctx context.Context, req *protoLoan.ReturnLo
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: loan.ReturnDate.Unix(),
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		},
@@ -122,6 +138,7 @@ func (s *loanGRPCServer) GetLoan(ctx context.Context, req *protoLoan.GetLoanRequ
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: returnDate,
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		},
@@ -138,7 +155,7 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, time.Unix(req.ReturnDate, 0))
+	loan, code, err := s.loanService.UpdateLoanStatus(ctx, req.Id, req.Status, int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to update loan status", nil, err)
 		return nil, status.Error(code, err.Error())
@@ -161,6 +178,7 @@ func (s *loanGRPCServer) UpdateLoanStatus(ctx context.Context, req *protoLoan.Up
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: returnDate,
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		},
@@ -199,6 +217,7 @@ func (s *loanGRPCServer) ListUserLoans(ctx context.Context, req *protoLoan.ListU
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: returnDate,
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		})
@@ -245,6 +264,7 @@ func (s *loanGRPCServer) ListLoans(ctx context.Context, req *protoLoan.ListLoans
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: returnDate,
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		})
@@ -298,6 +318,7 @@ func (s *loanGRPCServer) GetUserLoansByStatus(ctx context.Context, req *protoLoa
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: returnDate,
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		})
@@ -353,6 +374,7 @@ func (s *loanGRPCServer) GetLoansByStatus(ctx context.Context, req *protoLoan.Ge
 			LoanDate:   loan.LoanDate.Unix(),
 			ReturnDate: returnDate,
 			Status:     loan.Status,
+			Version:    int32(loan.Version),
 			CreatedAt:  loan.CreatedAt.Unix(),
 			UpdatedAt:  loan.UpdatedAt.Unix(),
 		})

@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"loan_service/internal/models"
 	"loan_service/pkg/utils"
 	"log"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -20,7 +22,7 @@ type LoanRepository interface {
 	ListLoans(ctx context.Context) ([]*models.LoanRecord, error)
 	GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, error)
 	GetLoansByStatus(ctx context.Context, status string) ([]*models.LoanRecord, error)
-	ReturnLoan(ctx context.Context, id string) (*models.LoanRecord, error)
+	ReturnLoan(ctx context.Context, id string, version int) (*models.LoanRecord, error)
 	CountLoans(ctx context.Context) (int, error)
 	CountLoansByUserId(ctx context.Context, userId string) (int, error)
 	CountLoansByStatus(ctx context.Context, status string) (int, error)
@@ -37,9 +39,12 @@ func NewLoanRepository(db *sqlx.DB) LoanRepository {
 
 func (r *loanRepository) CreateLoan(ctx context.Context, req *models.LoanRecord) (*models.LoanRecord, error) {
 	query := `
-		INSERT INTO loans (user_id, book_id, loan_date, status)
-		VALUES (:user_id, :book_id, :loan_date, :status)
-		RETURNING id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
+		INSERT INTO 
+			loans (user_id, book_id, loan_date, status)
+		VALUES 
+			(:user_id, :book_id, :loan_date, :status)
+		RETURNING 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
 	`
 
 	log.Printf("[%s] Executing query to create loan: %s with parameters: %+v\n", utils.GetLocation(), query, req)
@@ -64,9 +69,12 @@ func (r *loanRepository) CreateLoan(ctx context.Context, req *models.LoanRecord)
 
 func (r *loanRepository) GetLoan(ctx context.Context, id string) (*models.LoanRecord, error) {
 	query := `
-		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-		FROM loans
-		WHERE id = $1
+		SELECT 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+		FROM 
+			loans
+		WHERE 
+			id = $1
 	`
 
 	log.Printf("[%s] Executing query to get loan with ID: %s\n", utils.GetLocation(), id)
@@ -90,9 +98,12 @@ func (r *loanRepository) GetLoan(ctx context.Context, id string) (*models.LoanRe
 
 func (r *loanRepository) GetBorrowedLoanByBookIdAndUserId(ctx context.Context, bookId, userId string) (*models.LoanRecord, error) {
 	query := `
-		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-		FROM loans
-		WHERE book_id = $1 AND user_id = $2 AND status = 'BORROWED'
+		SELECT 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+		FROM 
+			loans
+		WHERE 
+			book_id = $1 AND user_id = $2 AND status = 'BORROWED'
 	`
 
 	log.Printf("[%s] Executing query to get borrowed loan for book ID: %s and user ID: %s\n", utils.GetLocation(), bookId, userId)
@@ -115,31 +126,80 @@ func (r *loanRepository) GetBorrowedLoanByBookIdAndUserId(ctx context.Context, b
 }
 
 func (r *loanRepository) UpdateLoanStatus(ctx context.Context, req *models.LoanRecord) (*models.LoanRecord, error) {
-	query := `
-		UPDATE loans
-		SET status = :status
-		WHERE id = :id
-		RETURNING id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-	`
-
 	log.Printf("[%s] Executing query to update loan status for loan ID: %s\n", utils.GetLocation(), req.Id)
 
-	loan := &models.LoanRecord{}
-	err := r.db.GetContext(ctx, loan, query, req)
-	if err != nil {
-		log.Printf("[%s] Error executing UpdateLoanStatus query: %v\n", utils.GetLocation(), err)
-		return nil, err
-	}
+	const maxRetries = 3
+	resultChan := make(chan *models.LoanRecord, 1)
+	errChan := make(chan error, 1)
 
-	log.Printf("[%s] Loan status updated successfully: %+v\n", utils.GetLocation(), loan)
-	return loan, nil
+	go func() {
+		defer close(resultChan)
+		defer close(errChan)
+
+		for attempt := range maxRetries {
+			query := `
+				UPDATE 
+					loans
+				SET 
+					status = :status
+				WHERE 
+					id = :id AND version = :version
+				RETURNING 
+					id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+			`
+
+			loan := &models.LoanRecord{}
+			err := r.db.GetContext(ctx, loan, query, req)
+
+			if err == nil {
+				log.Printf("[%s] Loan status updated successfully on attempt %d: %+v\n", utils.GetLocation(), attempt+1, loan)
+				resultChan <- loan
+				return
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Printf("[%s] Optimistic locking failed for loan ID %s, retrying... (attempt %d)\n", utils.GetLocation(), req.Id, attempt+1)
+				time.Sleep(time.Duration(100*(attempt+1)) * time.Millisecond) // Exponential backoff
+
+				// Fetch latest loan record
+				updatedLoan, err := r.GetLoan(ctx, req.Id)
+				if err != nil {
+					log.Printf("Error fetching latest loan record: %v\n", err)
+					errChan <- fmt.Errorf("error updating loan with ID %s: %v", req.Id, err) // always makes error be general
+					return
+				}
+				req.Version = updatedLoan.Version
+				continue
+			}
+
+			errChan <- err
+			return
+		}
+
+		errChan <- errors.New("update failed after max retries")
+	}()
+
+	select {
+	case result := <-resultChan:
+		log.Printf("[%s] Loan status updated successfully: %+v\n", utils.GetLocation(), result)
+		return result, nil
+	case err := <-errChan:
+		log.Printf("[%s] Error updating loan status: %v\n", utils.GetLocation(), err)
+		return nil, err
+	case <-ctx.Done():
+		log.Printf("[%s] Context cancelled while updating loan status\n", utils.GetLocation())
+		return nil, ctx.Err()
+	}
 }
 
 func (r *loanRepository) ListUserLoans(ctx context.Context, userId string) ([]*models.LoanRecord, error) {
 	query := `
-		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-		FROM loans
-		WHERE user_id = $1
+		SELECT 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+		FROM 
+			loans
+		WHERE 
+			user_id = $1
 	`
 
 	log.Printf("[%s] Executing query to list loans for user ID: %s\n", utils.GetLocation(), userId)
@@ -156,8 +216,10 @@ func (r *loanRepository) ListUserLoans(ctx context.Context, userId string) ([]*m
 
 func (r *loanRepository) ListLoans(ctx context.Context) ([]*models.LoanRecord, error) {
 	query := `
-		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-		FROM loans
+		SELECT 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+		FROM 
+			loans
 	`
 
 	log.Printf("[%s] Executing query to list all loans\n", utils.GetLocation())
@@ -174,9 +236,12 @@ func (r *loanRepository) ListLoans(ctx context.Context) ([]*models.LoanRecord, e
 
 func (r *loanRepository) GetUserLoansByStatus(ctx context.Context, userId, status string) ([]*models.LoanRecord, error) {
 	query := `
-		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-		FROM loans
-		WHERE user_id = $1 AND status = $2  
+		SELECT 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+		FROM 
+			loans
+		WHERE
+			user_id = $1 AND status = $2  
 	`
 
 	log.Printf("[%s] Executing query to list loans for user ID: %s with status: %s\n", utils.GetLocation(), userId, status)
@@ -193,9 +258,12 @@ func (r *loanRepository) GetUserLoansByStatus(ctx context.Context, userId, statu
 
 func (r *loanRepository) GetLoansByStatus(ctx context.Context, status string) ([]*models.LoanRecord, error) {
 	query := `
-		SELECT id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-		FROM loans
-		WHERE status = $1
+		SELECT 
+			id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+		FROM 
+			loans
+		WHERE 
+			status = $1
 	`
 
 	log.Printf("[%s] Executing query to list loans with status: %s\n", utils.GetLocation(), status)
@@ -210,25 +278,71 @@ func (r *loanRepository) GetLoansByStatus(ctx context.Context, status string) ([
 	return loans, nil
 }
 
-func (r *loanRepository) ReturnLoan(ctx context.Context, id string) (*models.LoanRecord, error) {
-	query := `
-		UPDATE loans
-		SET status = 'RETURNED', return_date = NOW()
-		WHERE id = $1
-		RETURNING id, user_id, book_id, loan_date, return_date, status, created_at, updated_at
-	`
-
+func (r *loanRepository) ReturnLoan(ctx context.Context, id string, version int) (*models.LoanRecord, error) {
 	log.Printf("[%s] Executing query to return loan with ID: %s\n", utils.GetLocation(), id)
 
-	loan := &models.LoanRecord{}
-	err := r.db.GetContext(ctx, loan, query, id)
-	if err != nil {
-		log.Printf("[%s] Error executing ReturnLoan query: %v\n", utils.GetLocation(), err)
-		return nil, err
-	}
+	const maxRetries = 3
+	resultChan := make(chan *models.LoanRecord, 1)
+	errChan := make(chan error, 1)
 
-	log.Printf("[%s] Loan returned successfully: %+v\n", utils.GetLocation(), loan)
-	return loan, nil
+	go func() {
+		defer close(resultChan)
+		defer close(errChan)
+
+		for attempt := range maxRetries {
+			query := `
+				UPDATE 
+					loans
+				SET 
+					status = 'RETURNED', return_date = NOW()
+				WHERE 
+					id = $1 AND version = $2
+				RETURNING 
+					id, user_id, book_id, loan_date, return_date, status, version, created_at, updated_at
+			`
+
+			loan := &models.LoanRecord{}
+			err := r.db.GetContext(ctx, loan, query, id, version)
+
+			if err == nil {
+				log.Printf("[%s] Loan status returned successfully on attempt %d: %+v\n", utils.GetLocation(), attempt+1, loan)
+				resultChan <- loan
+				return
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Printf("[%s] Optimistic locking failed for loan ID %s, retrying... (attempt %d)\n", utils.GetLocation(), id, attempt+1)
+				time.Sleep(time.Duration(100*(attempt+1)) * time.Millisecond) // Exponential backoff
+
+				// Fetch latest loan record
+				updatedLoan, err := r.GetLoan(ctx, id)
+				if err != nil {
+					log.Printf("Error fetching latest loan record: %v\n", err)
+					errChan <- fmt.Errorf("error returning loan with ID %s: %v", id, err) // always makes error be general
+					return
+				}
+				version = updatedLoan.Version
+				continue
+			}
+
+			errChan <- err
+			return
+		}
+
+		errChan <- errors.New("return failed after max retries")
+	}()
+
+	select {
+	case result := <-resultChan:
+		log.Printf("[%s] Loan status returned successfully: %+v\n", utils.GetLocation(), result)
+		return result, nil
+	case err := <-errChan:
+		log.Printf("[%s] Error returning loan status: %v\n", utils.GetLocation(), err)
+		return nil, err
+	case <-ctx.Done():
+		log.Printf("[%s] Context cancelled while returning loan status\n", utils.GetLocation())
+		return nil, ctx.Err()
+	}
 }
 
 // CountLoans returns the total number of loans
