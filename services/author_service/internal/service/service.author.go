@@ -9,11 +9,11 @@ import (
 )
 
 type AuthorService interface {
-	CreateAuthor(ctx context.Context, req *models.AuthorRequest) (*models.AuthorRecord, error)
+	CreateAuthor(ctx context.Context, req *models.AuthorCreateRequest) (*models.AuthorRecord, error)
 	GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error)
 	ListAuthors(ctx context.Context, page int, pageSize int) (authors []*models.AuthorRecord, totalItems int, err error)
-	UpdateAuthor(ctx context.Context, id string, req *models.AuthorRequest) (*models.AuthorRecord, error)
-	DeleteAuthor(ctx context.Context, id string) error
+	UpdateAuthor(ctx context.Context, id string, req *models.AuthorUpdateRequest) (*models.AuthorRecord, error)
+	DeleteAuthor(ctx context.Context, id string, version int) error
 }
 
 type authorService struct {
@@ -27,7 +27,7 @@ func NewAuthorService(repo repository.AuthorRepository) AuthorService {
 }
 
 // CreateAuthor creates a new author and returns the created author.
-func (s *authorService) CreateAuthor(ctx context.Context, req *models.AuthorRequest) (*models.AuthorRecord, error) {
+func (s *authorService) CreateAuthor(ctx context.Context, req *models.AuthorCreateRequest) (*models.AuthorRecord, error) {
 	log.Printf("[%s] Creating new author with name: %s\n", utils.GetLocation(), req.Name)
 	author := &models.AuthorRecord{
 		Name:      req.Name,
@@ -79,13 +79,14 @@ func (s *authorService) ListAuthors(ctx context.Context, page int, pageSize int)
 }
 
 // UpdateAuthor updates an author and returns the updated author.
-func (s *authorService) UpdateAuthor(ctx context.Context, id string, req *models.AuthorRequest) (*models.AuthorRecord, error) {
+func (s *authorService) UpdateAuthor(ctx context.Context, id string, req *models.AuthorUpdateRequest) (*models.AuthorRecord, error) {
 	log.Printf("[%s] Updating author with ID: %s\n", utils.GetLocation(), id)
 
 	author := &models.AuthorRecord{
 		Id:        id,
 		Name:      req.Name,
 		Biography: req.Biography,
+		Version:   req.Version,
 	}
 
 	updatedAuthor, err := s.repo.UpdateAuthor(ctx, author)
@@ -99,10 +100,10 @@ func (s *authorService) UpdateAuthor(ctx context.Context, id string, req *models
 }
 
 // DeleteAuthor deletes an author by ID.
-func (s *authorService) DeleteAuthor(ctx context.Context, id string) error {
+func (s *authorService) DeleteAuthor(ctx context.Context, id string, version int) error {
 	log.Printf("[%s] Deleting author with ID: %s\n", utils.GetLocation(), id)
 
-	err := s.repo.DeleteAuthor(ctx, id)
+	err := s.repo.DeleteAuthor(ctx, id, version)
 	if err != nil {
 		log.Printf("[%s] Failed to delete author with ID %s: %v\n", utils.GetLocation(), id, err)
 		return err

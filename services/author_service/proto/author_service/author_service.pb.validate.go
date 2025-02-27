@@ -959,6 +959,17 @@ func (m *UpdateAuthorRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetVersion() < 1 {
+		err := UpdateAuthorRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return UpdateAuthorRequestMultiError(errors)
 	}
@@ -1196,6 +1207,17 @@ func (m *DeleteAuthorRequest) validate(all bool) error {
 		err := DeleteAuthorRequestValidationError{
 			field:  "Id",
 			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetVersion() < 1 {
+		err := DeleteAuthorRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err

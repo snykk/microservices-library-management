@@ -1,6 +1,12 @@
 package models
 
-type AuthorRequest struct {
+type AuthorCreateRequest struct {
 	Name      string
 	Biography string
+}
+
+type AuthorUpdateRequest struct {
+	Name      string
+	Biography string
+	Version   int
 }

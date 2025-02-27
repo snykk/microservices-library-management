@@ -20,7 +20,7 @@ type AuthorClient interface {
 	GetAuthor(ctx context.Context, id string) (datatransfers.AuthorResponse, error)
 	ListAuthors(ctx context.Context, page int, pageSize int) ([]datatransfers.AuthorResponse, int, int, error)
 	UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error)
-	DeleteAuthor(ctx context.Context, id string) error
+	DeleteAuthor(ctx context.Context, id string, version int) error
 }
 
 type authorClient struct {
@@ -151,11 +151,14 @@ func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto da
 		Id:        authorId,
 		Name:      dto.Name,
 		Biography: dto.Biography,
+		Version:   int32(dto.Version),
 	}
 
 	extra := map[string]interface{}{
 		"author_id": authorId,
 		"name":      dto.Name,
+		"biography": dto.Biography,
+		"version":   dto.Version,
 	}
 
 	a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateAuthor request to Author Service", extra, nil)
@@ -177,11 +180,12 @@ func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto da
 	}, nil
 }
 
-func (a *authorClient) DeleteAuthor(ctx context.Context, id string) error {
+func (a *authorClient) DeleteAuthor(ctx context.Context, id string, version int) error {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoAuthor.DeleteAuthorRequest{
-		Id: id,
+		Id:      id,
+		Version: int32(version),
 	}
 
 	extra := map[string]interface{}{

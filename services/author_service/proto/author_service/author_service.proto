@@ -54,6 +54,7 @@ message UpdateAuthorRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
   string name = 2 [(validate.rules).string.min_len = 3];
   string biography = 3 [(validate.rules).string.min_len = 1];
+  int32 version = 4 [(validate.rules).int32.gte = 1];
 }
 
 message UpdateAuthorResponse {
@@ -62,6 +63,7 @@ message UpdateAuthorResponse {
 
 message DeleteAuthorRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message DeleteAuthorResponse {

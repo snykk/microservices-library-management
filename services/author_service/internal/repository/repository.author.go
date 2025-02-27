@@ -5,7 +5,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -16,7 +18,7 @@ type AuthorRepository interface {
 	GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error)
 	ListAuthors(ctx context.Context, page int, pageSize int) ([]*models.AuthorRecord, error)
 	UpdateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error)
-	DeleteAuthor(ctx context.Context, id string) error
+	DeleteAuthor(ctx context.Context, id string, version int) error
 	CountAuthors(ctx context.Context) (int, error)
 }
 
@@ -60,13 +62,14 @@ func (r *authorRepository) CreateAuthor(ctx context.Context, req *models.AuthorR
 
 // GetAuthor retrieves an author by their ID.
 func (r *authorRepository) GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error) {
-	query := `SELECT id, name, biography, created_at, updated_at FROM authors WHERE id = $1`
+	query := `SELECT id, name, biography, version, created_at, updated_at FROM authors WHERE id = $1`
 
 	author := &models.AuthorRecord{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&author.Id,
 		&author.Name,
 		&author.Biography,
+		&author.Version,
 		&author.CreatedAt,
 		&author.UpdatedAt,
 	)
@@ -88,7 +91,7 @@ func (r *authorRepository) ListAuthors(ctx context.Context, page int, pageSize i
 	log.Printf("Listing authors with pagination (Page: %d, PageSize: %d)", page, pageSize)
 
 	offset := (page - 1) * pageSize
-	query := `SELECT id, name, biography, created_at, updated_at FROM authors LIMIT $1 OFFSET $2`
+	query := `SELECT id, name, biography, version, created_at, updated_at FROM authors LIMIT $1 OFFSET $2`
 	rows, err := r.db.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
 		log.Printf("Error listing authors: %v\n", err)
@@ -103,6 +106,7 @@ func (r *authorRepository) ListAuthors(ctx context.Context, page int, pageSize i
 			&author.Id,
 			&author.Name,
 			&author.Biography,
+			&author.Version,
 			&author.CreatedAt,
 			&author.UpdatedAt,
 		); err != nil {
@@ -123,36 +127,97 @@ func (r *authorRepository) ListAuthors(ctx context.Context, page int, pageSize i
 
 // UpdateAuthor updates an existing author's data.
 func (r *authorRepository) UpdateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error) {
-	query := `UPDATE authors SET name = $1, biography = $2 WHERE id = $3 RETURNING id, name, biography, created_at, updated_at`
+	const maxRetries = 3
+	resultChan := make(chan *models.AuthorRecord, 1)
+	errorChan := make(chan error, 1)
 
-	author := &models.AuthorRecord{}
-	err := r.db.QueryRowContext(ctx, query, req.Name, req.Biography, req.Id).Scan(
-		&author.Id,
-		&author.Name,
-		&author.Biography,
-		&author.CreatedAt,
-		&author.UpdatedAt,
-	)
-	if err != nil {
-		log.Printf("Error updating author with ID %s: %v\n", req.Id, err)
+	go func() {
+		defer close(resultChan)
+		defer close(errorChan)
+
+		for attempt := range maxRetries {
+			query := `UPDATE 
+						authors 
+					  SET 
+					  	name = $1, biography = $2
+                      WHERE 
+					  	id = $3 AND version = $4 
+                      RETURNING 
+					  	id, name, biography, created_at, updated_at, version`
+
+			author := &models.AuthorRecord{}
+			err := r.db.QueryRowContext(ctx, query, req.Name, req.Biography, req.Id, req.Version).Scan(
+				&author.Id,
+				&author.Name,
+				&author.Biography,
+				&author.CreatedAt,
+				&author.UpdatedAt,
+				&author.Version,
+			)
+
+			if err == nil {
+				log.Printf("Updated author with ID %s successfully on attempt %d\n", req.Id, attempt+1)
+				resultChan <- author
+				return
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Printf("Optimistic locking failed for author ID %s, retrying... (attempt %d)\n", req.Id, attempt+1)
+				time.Sleep(time.Duration(100*(attempt+1)) * time.Millisecond) // Exponential backoff
+
+				// Fetch latest author record
+				updatedAuthor, err := r.GetAuthor(ctx, req.Id)
+				if err != nil {
+					log.Printf("Error fetching latest author record: %v\n", err)
+					errorChan <- fmt.Errorf("error updating author with ID %s: %v", req.Id, err) // always makes error be general
+					return
+				}
+
+				// Update request with newest version
+				req.Version = updatedAuthor.Version
+				continue
+			}
+
+			log.Printf("Error updating author with ID %s: %v\n", req.Id, err)
+			errorChan <- err
+			return
+		}
+
+		errorChan <- errors.New("update failed after max retries")
+	}()
+
+	select {
+	case author := <-resultChan:
+		return author, nil
+	case err := <-errorChan:
 		return nil, err
+	case <-ctx.Done():
+		return nil, errors.New("request timed out")
 	}
-
-	log.Printf("Updated author with ID %s\n", req.Id)
-	return author, nil
 }
 
 // DeleteAuthor deletes an author from the database by their ID.
-func (r *authorRepository) DeleteAuthor(ctx context.Context, id string) error {
-	query := `DELETE FROM authors WHERE id = $1`
+func (r *authorRepository) DeleteAuthor(ctx context.Context, id string, version int) error {
+	query := `DELETE FROM authors WHERE id = $1 AND version = $2`
 
-	_, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db.ExecContext(ctx, query, id, version)
 	if err != nil {
 		log.Printf("Error deleting author with ID %s: %v\n", id, err)
 		return err
 	}
 
-	log.Printf("Deleted author with ID: %s\n", id)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error fetching rows affected for delete operation: %v\n", err)
+		return err
+	}
+
+	if rowsAffected == 0 {
+		log.Printf("Optimistic locking failed, no rows deleted for author ID %s with version %d\n", id, version)
+		return errors.New("delete failed due to wrong id or concurrent modification")
+	}
+
+	log.Printf("Deleted author with ID: %s and version: %d\n", id, version)
 	return nil
 }
 

@@ -38,7 +38,7 @@ func (s *authorGRPCServer) CreateAuthor(ctx context.Context, req *protoAuthor.Cr
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	createdAuthor, err := s.authorService.CreateAuthor(ctx, &models.AuthorRequest{
+	createdAuthor, err := s.authorService.CreateAuthor(ctx, &models.AuthorCreateRequest{
 		Name:      req.Name,
 		Biography: req.Biography,
 	})
@@ -136,9 +136,10 @@ func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.Up
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	updatedAuthor, err := s.authorService.UpdateAuthor(ctx, req.Id, &models.AuthorRequest{
+	updatedAuthor, err := s.authorService.UpdateAuthor(ctx, req.Id, &models.AuthorUpdateRequest{
 		Name:      req.Name,
 		Biography: req.Biography,
+		Version:   int(req.Version),
 	})
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to update author with id '%s'", req.Id), nil, err)
@@ -168,7 +169,7 @@ func (s *authorGRPCServer) DeleteAuthor(ctx context.Context, req *protoAuthor.De
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	err := s.authorService.DeleteAuthor(ctx, req.Id)
+	err := s.authorService.DeleteAuthor(ctx, req.Id, int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to delete author with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete author with id '%s'", req.Id))

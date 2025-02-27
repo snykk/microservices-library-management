@@ -204,6 +204,7 @@ func (a *AuthorHandler) UpdateAuthorByIdHandler(c *fiber.Ctx) error {
 
 	extra["author_name"] = req.Name
 	extra["author_biography"] = req.Biography
+	extra["author_version"] = req.Version
 
 	// Call client to update author by id
 	resp, err := a.client.UpdateAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId, req)
@@ -232,8 +233,21 @@ func (a *AuthorHandler) DeleteAuthorByIdHandler(c *fiber.Ctx) error {
 		"author_id": authorId,
 	}
 
+	// Parse the request body
+	var req datatransfers.AuthorDeleteRequest
+	if err := c.BodyParser(&req); err != nil {
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update author request body", extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
+	}
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
 	// Call client to delete author by id
-	err := a.client.DeleteAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId)
+	err := a.client.DeleteAuthor(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), authorId, req.Version)
 	if err != nil {
 		a.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to delete author", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to delete author", err))
