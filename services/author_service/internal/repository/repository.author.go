@@ -36,7 +36,12 @@ func NewAuthorRepository(db *sqlx.DB) AuthorRepository {
 
 // CreateAuthor inserts a new author into the database and returns the created author.
 func (r *authorRepository) CreateAuthor(ctx context.Context, req *models.AuthorRecord) (*models.AuthorRecord, error) {
-	query := `INSERT INTO authors (name, biography) VALUES ($1, $2) RETURNING id, name, biography, created_at, updated_at`
+	query := `INSERT INTO 
+				authors (name, biography) 
+			  VALUES 
+			  	($1, $2) 
+			  RETURNING 
+			  	id, name, biography, created_at, updated_at`
 
 	author := &models.AuthorRecord{}
 	err := r.db.QueryRowContext(
@@ -62,7 +67,12 @@ func (r *authorRepository) CreateAuthor(ctx context.Context, req *models.AuthorR
 
 // GetAuthor retrieves an author by their ID.
 func (r *authorRepository) GetAuthor(ctx context.Context, id string) (*models.AuthorRecord, error) {
-	query := `SELECT id, name, biography, version, created_at, updated_at FROM authors WHERE id = $1`
+	query := `SELECT 
+				id, name, biography, version, created_at, updated_at 
+			  FROM 
+			  	authors 
+			  WHERE 
+			  	id = $1`
 
 	author := &models.AuthorRecord{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -91,7 +101,12 @@ func (r *authorRepository) ListAuthors(ctx context.Context, page int, pageSize i
 	log.Printf("Listing authors with pagination (Page: %d, PageSize: %d)", page, pageSize)
 
 	offset := (page - 1) * pageSize
-	query := `SELECT id, name, biography, version, created_at, updated_at FROM authors LIMIT $1 OFFSET $2`
+	query := `SELECT 
+				id, name, biography, version, created_at, updated_at 
+			  FROM 
+			  	authors 
+			  LIMIT 
+			  	$1 OFFSET $2`
 	rows, err := r.db.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
 		log.Printf("Error listing authors: %v\n", err)

@@ -19,7 +19,7 @@ type AuthorClient interface {
 	CreateAuthor(ctx context.Context, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error)
 	GetAuthor(ctx context.Context, id string) (datatransfers.AuthorResponse, error)
 	ListAuthors(ctx context.Context, page int, pageSize int) ([]datatransfers.AuthorResponse, int, int, error)
-	UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error)
+	UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorUpdateRequest) (datatransfers.AuthorResponse, error)
 	DeleteAuthor(ctx context.Context, id string, version int) error
 }
 
@@ -70,6 +70,7 @@ func (a *authorClient) CreateAuthor(ctx context.Context, dto datatransfers.Autho
 		Id:        resp.Author.Id,
 		Name:      resp.Author.Name,
 		Biography: resp.Author.Biography,
+		Version:   int(resp.Author.Version),
 		CreatedAt: time.Unix(resp.Author.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Author.UpdatedAt, 0),
 	}, nil
@@ -100,6 +101,7 @@ func (a *authorClient) GetAuthor(ctx context.Context, id string) (datatransfers.
 		Id:        resp.Author.Id,
 		Name:      resp.Author.Name,
 		Biography: resp.Author.Biography,
+		Version:   int(resp.Author.Version),
 		CreatedAt: time.Unix(resp.Author.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Author.UpdatedAt, 0),
 	}, nil
@@ -132,6 +134,7 @@ func (a *authorClient) ListAuthors(ctx context.Context, page int, pageSize int) 
 			Id:        author.Id,
 			Name:      author.Name,
 			Biography: author.Biography,
+			Version:   int(author.Version),
 			CreatedAt: time.Unix(author.CreatedAt, 0),
 			UpdatedAt: time.Unix(author.UpdatedAt, 0),
 		})
@@ -144,7 +147,7 @@ func (a *authorClient) ListAuthors(ctx context.Context, page int, pageSize int) 
 	return authors, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorRequest) (datatransfers.AuthorResponse, error) {
+func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto datatransfers.AuthorUpdateRequest) (datatransfers.AuthorResponse, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoAuthor.UpdateAuthorRequest{
@@ -175,6 +178,7 @@ func (a *authorClient) UpdateAuthor(ctx context.Context, authorId string, dto da
 		Id:        resp.Author.Id,
 		Name:      resp.Author.Name,
 		Biography: resp.Author.Biography,
+		Version:   int(resp.Author.Version),
 		CreatedAt: time.Unix(resp.Author.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Author.UpdatedAt, 0),
 	}, nil

@@ -83,6 +83,7 @@ func (s *authorGRPCServer) GetAuthor(ctx context.Context, req *protoAuthor.GetAu
 			Id:        author.Id,
 			Name:      author.Name,
 			Biography: author.Biography,
+			Version:   int32(author.Version),
 			CreatedAt: author.CreatedAt.Unix(),
 			UpdatedAt: author.UpdatedAt.Unix(),
 		},
@@ -112,6 +113,7 @@ func (s *authorGRPCServer) ListAuthors(ctx context.Context, req *protoAuthor.Lis
 			Id:        author.Id,
 			Name:      author.Name,
 			Biography: author.Biography,
+			Version:   int32(author.Version),
 			CreatedAt: author.CreatedAt.Unix(),
 			UpdatedAt: author.UpdatedAt.Unix(),
 		})
@@ -153,6 +155,7 @@ func (s *authorGRPCServer) UpdateAuthor(ctx context.Context, req *protoAuthor.Up
 			Id:        updatedAuthor.Id,
 			Name:      updatedAuthor.Name,
 			Biography: updatedAuthor.Biography,
+			Version:   req.Version,
 			CreatedAt: updatedAuthor.CreatedAt.Unix(),
 			UpdatedAt: updatedAuthor.UpdatedAt.Unix(),
 		},

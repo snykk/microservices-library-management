@@ -18,8 +18,9 @@ message Author {
   string id = 1;
   string name = 2;
   string biography = 3;
-  int64 createdAt = 4; // unix time
-  int64 updatedAt = 5; // unit time
+  int32 version = 4;
+  int64 createdAt = 5; // unix time
+  int64 updatedAt = 6; // unit time
 }
 
 message CreateAuthorRequest {

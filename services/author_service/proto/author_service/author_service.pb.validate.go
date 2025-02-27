@@ -62,6 +62,8 @@ func (m *Author) validate(all bool) error {
 
 	// no validation rules for Biography
 
+	// no validation rules for Version
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt
