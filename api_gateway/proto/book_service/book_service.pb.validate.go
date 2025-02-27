@@ -66,6 +66,8 @@ func (m *Book) validate(all bool) error {
 
 	// no validation rules for Stock
 
+	// no validation rules for Version
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt
@@ -1273,6 +1275,17 @@ func (m *UpdateBookRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetVersion() < 1 {
+		err := UpdateBookRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return UpdateBookRequestMultiError(errors)
 	}
@@ -1528,6 +1541,17 @@ func (m *UpdateBookStockRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetVersion() < 1 {
+		err := UpdateBookStockRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return UpdateBookStockRequestMultiError(errors)
 	}
@@ -1738,6 +1762,17 @@ func (m *DeleteBookRequest) validate(all bool) error {
 		err := DeleteBookRequestValidationError{
 			field:  "Id",
 			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetVersion() < 1 {
+		err := DeleteBookRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err
@@ -1962,6 +1997,17 @@ func (m *IncrementBookStockRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetVersion() < 1 {
+		err := IncrementBookStockRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return IncrementBookStockRequestMultiError(errors)
 	}
@@ -2172,6 +2218,17 @@ func (m *DecrementBookStockRequest) validate(all bool) error {
 		err := DecrementBookStockRequestValidationError{
 			field:  "Id",
 			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetVersion() < 1 {
+		err := DecrementBookStockRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err

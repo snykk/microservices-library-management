@@ -72,6 +72,7 @@ func (s *bookGRPCServer) CreateBook(ctx context.Context, req *protoBook.CreateBo
 			AuthorId:   createdBook.AuthorId,
 			CategoryId: createdBook.CategoryId,
 			Stock:      int32(createdBook.Stock),
+			Version:    int32(createdBook.Version),
 			CreatedAt:  createdBook.CreatedAt.Unix(),
 			UpdatedAt:  createdBook.UpdatedAt.Unix(),
 		},
@@ -102,6 +103,7 @@ func (s *bookGRPCServer) GetBooksByAuthor(ctx context.Context, req *protoBook.Ge
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int32(book.Stock),
+			Version:    int32(book.Version),
 			CreatedAt:  book.CreatedAt.Unix(),
 			UpdatedAt:  book.UpdatedAt.Unix(),
 		})
@@ -140,6 +142,7 @@ func (s *bookGRPCServer) GetBooksByCategory(ctx context.Context, req *protoBook.
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int32(book.Stock),
+			Version:    int32(book.Version),
 			CreatedAt:  book.CreatedAt.Unix(),
 			UpdatedAt:  book.UpdatedAt.Unix(),
 		})
@@ -179,6 +182,7 @@ func (s *bookGRPCServer) GetBook(ctx context.Context, req *protoBook.GetBookRequ
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int32(book.Stock),
+			Version:    int32(book.Version),
 			CreatedAt:  book.CreatedAt.Unix(),
 			UpdatedAt:  book.UpdatedAt.Unix(),
 		},
@@ -210,6 +214,7 @@ func (s *bookGRPCServer) ListBooks(ctx context.Context, req *protoBook.ListBooks
 			AuthorId:   book.AuthorId,
 			CategoryId: book.CategoryId,
 			Stock:      int32(book.Stock),
+			Version:    int32(book.Version),
 			CreatedAt:  book.CreatedAt.Unix(),
 			UpdatedAt:  book.UpdatedAt.Unix(),
 		})
@@ -253,6 +258,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 		AuthorId:   req.AuthorId,
 		CategoryId: req.CategoryId,
 		Stock:      int(req.Stock),
+		Version:    int(req.Version),
 	})
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to update book with id '%s'", req.Id), nil, err)
@@ -268,6 +274,7 @@ func (s *bookGRPCServer) UpdateBook(ctx context.Context, req *protoBook.UpdateBo
 			AuthorId:   updatedBook.AuthorId,
 			CategoryId: updatedBook.CategoryId,
 			Stock:      int32(updatedBook.Stock),
+			Version:    int32(updatedBook.Version),
 			CreatedAt:  updatedBook.CreatedAt.Unix(),
 			UpdatedAt:  updatedBook.UpdatedAt.Unix(),
 		},
@@ -284,7 +291,7 @@ func (s *bookGRPCServer) DeleteBook(ctx context.Context, req *protoBook.DeleteBo
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	err := s.bookService.DeleteBook(ctx, req.Id)
+	err := s.bookService.DeleteBook(ctx, req.Id, int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to delete book with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete book with id '%s'", req.Id))
@@ -307,7 +314,7 @@ func (s *bookGRPCServer) UpdateBookStock(ctx context.Context, req *protoBook.Upd
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	err := s.bookService.UpdateBookStock(ctx, req.Id, int(req.Stock))
+	err := s.bookService.UpdateBookStock(ctx, req.Id, int(req.Stock), int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to update stock for book with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update stock for book with id '%s'", req.Id))
@@ -330,7 +337,7 @@ func (s *bookGRPCServer) IncrementBookStock(ctx context.Context, req *protoBook.
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	err := s.bookService.IncrementBookStock(ctx, req.Id)
+	err := s.bookService.IncrementBookStock(ctx, req.Id, int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to increment stock for book with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to increment stock for book with id '%s'", req.Id))
@@ -353,7 +360,7 @@ func (s *bookGRPCServer) DecrementBookStock(ctx context.Context, req *protoBook.
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	err := s.bookService.DecrementBookStock(ctx, req.Id)
+	err := s.bookService.DecrementBookStock(ctx, req.Id, int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to decrement stock for book with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to decrement stock for book with id '%s'", req.Id))

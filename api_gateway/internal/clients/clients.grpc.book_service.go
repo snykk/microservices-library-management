@@ -21,8 +21,8 @@ type BookClient interface {
 	GetBooksByAuthorId(ctx context.Context, authorId string, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error)
 	GetBooksByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error)
 	ListBooks(ctx context.Context, page int, pageSize int) ([]datatransfers.BookResponse, int, int, error)
-	UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookRequest) (datatransfers.BookResponse, error)
-	DeleteBook(ctx context.Context, id string) error
+	UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookUpdateRequest) (datatransfers.BookResponse, error)
+	DeleteBook(ctx context.Context, id string, version int) error
 }
 
 type bookClient struct {
@@ -78,6 +78,7 @@ func (b *bookClient) CreateBook(ctx context.Context, dto datatransfers.BookReque
 		AuthorId:   &resp.Book.AuthorId,
 		CategoryId: &resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
+		Version:    int(resp.Book.Version),
 		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
 	}, nil
@@ -109,6 +110,7 @@ func (b *bookClient) GetBook(ctx context.Context, id string) (datatransfers.Book
 		AuthorId:   &resp.Book.AuthorId,
 		CategoryId: &resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
+		Version:    int(resp.Book.Version),
 		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
 	}, nil
@@ -142,6 +144,7 @@ func (b *bookClient) ListBooks(ctx context.Context, page int, pageSize int) ([]d
 			AuthorId:   &book.AuthorId,
 			CategoryId: &book.CategoryId,
 			Stock:      int(book.Stock),
+			Version:    int(book.Version),
 			CreatedAt:  time.Unix(book.CreatedAt, 0),
 			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
 		})
@@ -155,7 +158,7 @@ func (b *bookClient) ListBooks(ctx context.Context, page int, pageSize int) ([]d
 	return books, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookRequest) (datatransfers.BookResponse, error) {
+func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatransfers.BookUpdateRequest) (datatransfers.BookResponse, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.UpdateBookRequest{
 		Id:         bookId,
@@ -163,6 +166,7 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 		AuthorId:   dto.AuthorId,
 		CategoryId: dto.CategoryId,
 		Stock:      int32(dto.Stock),
+		Version:    int32(dto.Version),
 	}
 
 	extra := map[string]interface{}{
@@ -171,6 +175,7 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 		"author_id":   dto.AuthorId,
 		"category_id": dto.CategoryId,
 		"stock":       dto.Stock,
+		"version":     dto.Version,
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateBook request to Book Service", extra, nil)
@@ -189,19 +194,22 @@ func (b *bookClient) UpdateBook(ctx context.Context, bookId string, dto datatran
 		AuthorId:   &resp.Book.AuthorId,
 		CategoryId: &resp.Book.CategoryId,
 		Stock:      int(resp.Book.Stock),
+		Version:    int(resp.Book.Version),
 		CreatedAt:  time.Unix(resp.Book.CreatedAt, 0),
 		UpdatedAt:  time.Unix(resp.Book.UpdatedAt, 0),
 	}, nil
 }
 
-func (b *bookClient) DeleteBook(ctx context.Context, id string) error {
+func (b *bookClient) DeleteBook(ctx context.Context, id string, version int) error {
 	requestID := utils.GetRequestIDFromContext(ctx)
 	reqProto := protoBook.DeleteBookRequest{
-		Id: id,
+		Id:      id,
+		Version: int32(version),
 	}
 
 	extra := map[string]interface{}{
-		"id": id,
+		"id":      id,
+		"version": version,
 	}
 
 	b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteBook request to Book Service", extra, nil)
@@ -247,6 +255,7 @@ func (b *bookClient) GetBooksByCategoryId(ctx context.Context, categoryId string
 			AuthorId:   &book.AuthorId,
 			CategoryId: &book.CategoryId,
 			Stock:      int(book.Stock),
+			Version:    int(book.Version),
 			CreatedAt:  time.Unix(book.CreatedAt, 0),
 			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
 		})
@@ -290,6 +299,7 @@ func (b *bookClient) GetBooksByAuthorId(ctx context.Context, authorId string, pa
 			AuthorId:   &book.AuthorId,
 			CategoryId: &book.CategoryId,
 			Stock:      int(book.Stock),
+			Version:    int(book.Version),
 			CreatedAt:  time.Unix(book.CreatedAt, 0),
 			UpdatedAt:  time.Unix(book.UpdatedAt, 0),
 		})

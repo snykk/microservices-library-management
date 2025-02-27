@@ -351,7 +351,7 @@ func (b *BookHandler) UpdateBookByIdHandler(c *fiber.Ctx) error {
 		"book_id": bookId,
 	}
 
-	var req datatransfers.BookRequest
+	var req datatransfers.BookUpdateRequest
 	if err := c.BodyParser(&req); err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to parse update book request", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
@@ -392,7 +392,22 @@ func (b *BookHandler) DeleteBookByIdHandler(c *fiber.Ctx) error {
 		"book_id": bookId,
 	}
 
-	err := b.client.DeleteBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), bookId)
+	// Parse the request body
+	var req datatransfers.BookDeleteRequest
+	if err := c.BodyParser(&req); err != nil {
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update author request body", extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
+	}
+
+	extra["book_version"] = req.Version
+
+	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
+		extra["errors"] = errorsMap
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
+		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
+	}
+
+	err := b.client.DeleteBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), bookId, req.Version)
 	if err != nil {
 		b.logger.LogMessage(utils.GetLocation(), requestID, "error", "Failed to delete book", extra, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(datatransfers.ResponseError("Failed to delete book", err))

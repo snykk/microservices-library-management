@@ -25,8 +25,9 @@ message Book {
   string author_id = 3;
   string category_id = 4;
   int32 stock = 5;
-  int64 createdAt = 6; // unix time
-  int64 updatedAt = 7; // unix time
+  int32 version = 6;
+  int64 createdAt = 7; // unix time
+  int64 updatedAt = 8; // unix time
 }
 
 message CreateBookRequest {
@@ -79,6 +80,7 @@ message UpdateBookRequest {
   string author_id = 3 [(validate.rules).string.min_len = 1];
   string category_id = 4 [(validate.rules).string.min_len = 1];
   int32 stock = 5 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
+  int32 version = 6 [(validate.rules).int32.gte = 1];
 }
 
 message UpdateBookResponse {
@@ -88,6 +90,7 @@ message UpdateBookResponse {
 message UpdateBookStockRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
   int32 stock = 2 [(validate.rules).int32.gte = 0];  // Stock must be >= 0
+  int32 version = 3 [(validate.rules).int32.gte = 1];
 }
 
 message UpdateBookStockResponse {
@@ -96,6 +99,7 @@ message UpdateBookStockResponse {
 
 message DeleteBookRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message DeleteBookResponse {
@@ -104,6 +108,7 @@ message DeleteBookResponse {
 
 message IncrementBookStockRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message IncrementBookStockResponse {
@@ -112,6 +117,7 @@ message IncrementBookStockResponse {
 
 message DecrementBookStockRequest {
   string id = 1 [(validate.rules).string.min_len = 1];  // ID must not be empty
+  int32 version = 2 [(validate.rules).int32.gte = 1];
 }
 
 message DecrementBookStockResponse {

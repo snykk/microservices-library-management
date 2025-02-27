@@ -10,6 +10,7 @@ type BookResponse struct {
 	CategoryId *string           `json:"category_id,omitempty"`
 	Category   *CategoryResponse `json:"category,omitempty"`
 	Stock      int               `json:"stock"`
+	Version    int               `json:"version"`
 	CreatedAt  time.Time         `json:"created_at"`
 	UpdatedAt  time.Time         `json:"updated_at"`
 }

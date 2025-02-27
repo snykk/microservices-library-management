@@ -17,10 +17,10 @@ type BookService interface {
 	GetBookByCategoryId(ctx context.Context, categoryId string, page int, pageSize int) (books []*models.BookRecord, totalItems int, err error)
 	ListBooks(ctx context.Context, page int, pageSize int) (books []*models.BookRecord, totalItems int, err error)
 	UpdateBook(ctx context.Context, id string, req *models.BookRequest) (*models.BookRecord, error)
-	DeleteBook(ctx context.Context, id string) error
-	UpdateBookStock(ctx context.Context, id string, newStock int) error
-	IncrementBookStock(ctx context.Context, id string) error
-	DecrementBookStock(ctx context.Context, id string) error
+	DeleteBook(ctx context.Context, id string, version int) error
+	UpdateBookStock(ctx context.Context, id string, newStock, versiont int) error
+	IncrementBookStock(ctx context.Context, id string, version int) error
+	DecrementBookStock(ctx context.Context, id string, version int) error
 
 	ValidateAuthorExistence(ctx context.Context, authorId string) error
 	ValidateCategoryExistence(ctx context.Context, categoryId string) error
@@ -138,6 +138,7 @@ func (s *bookService) UpdateBook(ctx context.Context, id string, req *models.Boo
 		AuthorId:   req.AuthorId,
 		CategoryId: req.CategoryId,
 		Stock:      int(req.Stock),
+		Version:    req.Version,
 	}
 
 	updatedBook, err := s.repo.UpdateBook(ctx, book)
@@ -150,10 +151,10 @@ func (s *bookService) UpdateBook(ctx context.Context, id string, req *models.Boo
 	return updatedBook, nil
 }
 
-func (s *bookService) DeleteBook(ctx context.Context, id string) error {
+func (s *bookService) DeleteBook(ctx context.Context, id string, version int) error {
 	log.Printf("[%s] Deleting book with ID: %s\n", utils.GetLocation(), id)
 
-	err := s.repo.DeleteBook(ctx, id)
+	err := s.repo.DeleteBook(ctx, id, version)
 	if err != nil {
 		log.Printf("[%s] Failed to delete book with ID %s: %v\n", utils.GetLocation(), id, err)
 		return err
@@ -163,10 +164,10 @@ func (s *bookService) DeleteBook(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *bookService) UpdateBookStock(ctx context.Context, id string, newStock int) error {
+func (s *bookService) UpdateBookStock(ctx context.Context, id string, newStock, version int) error {
 	log.Printf("[%s] Updating stock for book with ID: %s\n", utils.GetLocation(), id)
 
-	err := s.repo.UpdateBookStock(ctx, id, newStock)
+	err := s.repo.UpdateBookStock(ctx, id, newStock, version)
 	if err != nil {
 		log.Printf("[%s] Failed to update stock for book with ID %s: %v\n", utils.GetLocation(), id, err)
 		return err
@@ -176,10 +177,10 @@ func (s *bookService) UpdateBookStock(ctx context.Context, id string, newStock i
 	return nil
 }
 
-func (s *bookService) IncrementBookStock(ctx context.Context, id string) error {
+func (s *bookService) IncrementBookStock(ctx context.Context, id string, versiont int) error {
 	log.Printf("[%s] Incrementing stock for book with ID: %s\n", utils.GetLocation(), id)
 
-	err := s.repo.IncrementBookStock(ctx, id)
+	err := s.repo.IncrementBookStock(ctx, id, versiont)
 	if err != nil {
 		log.Printf("[%s] Failed to increment stock for book with ID %s: %v\n", utils.GetLocation(), id, err)
 		return err
@@ -189,10 +190,10 @@ func (s *bookService) IncrementBookStock(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *bookService) DecrementBookStock(ctx context.Context, id string) error {
+func (s *bookService) DecrementBookStock(ctx context.Context, id string, version int) error {
 	log.Printf("[%s] Decrementing stock for book with ID: %s\n", utils.GetLocation(), id)
 
-	err := s.repo.DecrementBookStock(ctx, id)
+	err := s.repo.DecrementBookStock(ctx, id, version)
 	if err != nil {
 		log.Printf("[%s] Failed to decrement stock for book with ID %s: %v\n", utils.GetLocation(), id, err)
 		return err

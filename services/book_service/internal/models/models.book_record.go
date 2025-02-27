@@ -8,6 +8,7 @@ type BookRecord struct {
 	AuthorId   string    `db:"author_id"`
 	CategoryId string    `db:"category_id"`
 	Stock      int       `db:"stock"`
+	Version    int       `db:"version" json:"version"` // Field version untuk optimistic locking
 	CreatedAt  time.Time `db:"created_at"`
 	UpdatedAt  time.Time `db:"updated_at"`
 }

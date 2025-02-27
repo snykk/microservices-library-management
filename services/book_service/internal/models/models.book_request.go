@@ -5,4 +5,5 @@ type BookRequest struct {
 	AuthorId   string
 	CategoryId string
 	Stock      int
+	Version    int
 }
