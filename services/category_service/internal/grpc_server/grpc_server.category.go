@@ -48,6 +48,7 @@ func (s *categoryGRPCServer) CreateCategory(ctx context.Context, req *protoCateg
 		Category: &protoCategory.Category{
 			Id:        createdCategory.Id,
 			Name:      createdCategory.Name,
+			Version:   int32(createdCategory.Version),
 			CreatedAt: createdCategory.CreatedAt.Unix(),
 			UpdatedAt: createdCategory.UpdatedAt.Unix(),
 		},
@@ -75,6 +76,7 @@ func (s *categoryGRPCServer) GetCategory(ctx context.Context, req *protoCategory
 		Category: &protoCategory.Category{
 			Id:        category.Id,
 			Name:      category.Name,
+			Version:   int32(category.Version),
 			CreatedAt: category.CreatedAt.Unix(),
 			UpdatedAt: category.UpdatedAt.Unix(),
 		},
@@ -101,6 +103,7 @@ func (s *categoryGRPCServer) ListCategories(ctx context.Context, req *protoCateg
 		protoCategories = append(protoCategories, &protoCategory.Category{
 			Id:        category.Id,
 			Name:      category.Name,
+			Version:   int32(category.Version),
 			CreatedAt: category.CreatedAt.Unix(),
 			UpdatedAt: category.UpdatedAt.Unix(),
 		})
@@ -124,7 +127,10 @@ func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCateg
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	updatedCategory, err := s.categoryService.UpdateCategory(ctx, req.Id, &models.CategoryRequest{Name: req.Name})
+	updatedCategory, err := s.categoryService.UpdateCategory(ctx, req.Id, &models.CategoryRequest{
+		Name:    req.Name,
+		Version: int(req.Version),
+	})
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to update category with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to update category with id '%s'", req.Id))
@@ -136,6 +142,7 @@ func (s *categoryGRPCServer) UpdateCategory(ctx context.Context, req *protoCateg
 		Category: &protoCategory.Category{
 			Id:        updatedCategory.Id,
 			Name:      updatedCategory.Name,
+			Version:   req.Version,
 			CreatedAt: updatedCategory.CreatedAt.Unix(),
 			UpdatedAt: updatedCategory.UpdatedAt.Unix(),
 		},
@@ -151,7 +158,7 @@ func (s *categoryGRPCServer) DeleteCategory(ctx context.Context, req *protoCateg
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid request: %v", err)
 	}
 
-	err := s.categoryService.DeleteCategory(ctx, req.Id)
+	err := s.categoryService.DeleteCategory(ctx, req.Id, int(req.Version))
 	if err != nil {
 		s.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, fmt.Sprintf("Failed to delete category with id '%s'", req.Id), nil, err)
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to delete category with id '%s'", req.Id))

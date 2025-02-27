@@ -61,6 +61,8 @@ func (m *Category) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for Version
+
 	// no validation rules for CreatedAt
 
 	// no validation rules for UpdatedAt
@@ -938,6 +940,17 @@ func (m *UpdateCategoryRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetVersion() < 1 {
+		err := UpdateCategoryRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return UpdateCategoryRequestMultiError(errors)
 	}
@@ -1175,6 +1188,17 @@ func (m *DeleteCategoryRequest) validate(all bool) error {
 		err := DeleteCategoryRequestValidationError{
 			field:  "Id",
 			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetVersion() < 1 {
+		err := DeleteCategoryRequestValidationError{
+			field:  "Version",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err

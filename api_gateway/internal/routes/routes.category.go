@@ -36,7 +36,7 @@ func (r *categoryRoutes) Routes() {
 	// Admin routes (authentication and authorization required)
 	adminOnly := r.authMiddleware.HasAuthority([]string{"admin"})
 	route.Post("", adminOnly, r.handler.CreateCategoryHandler)
-	route.Put("/:id", adminOnly, r.handler.UpdateCategoryByIdHandler)
-	route.Delete("/:id", adminOnly, r.handler.DeleteCategoryByIdHandler)
+	route.Put("/:id", adminOnly, r.handler.UpdateCategoryHandler)
+	route.Delete("/:id", adminOnly, r.handler.DeleteCategoryHandler)
 
 }

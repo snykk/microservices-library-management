@@ -395,17 +395,17 @@ func (b *BookHandler) DeleteBookByIdHandler(c *fiber.Ctx) error {
 	// Parse the request body
 	var req datatransfers.BookDeleteRequest
 	if err := c.BodyParser(&req); err != nil {
-		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update author request body", extra, err)
+		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelError, "Failed to parse update book request body", extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError("Invalid request body", err))
 	}
-
-	extra["book_version"] = req.Version
 
 	if errorsMap, err := utils.ValidatePayloads(req); err != nil {
 		extra["errors"] = errorsMap
 		b.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, constants.ErrValidationMessage, extra, err)
 		return c.Status(fiber.StatusBadRequest).JSON(datatransfers.ResponseError(constants.ErrValidationMessage, errorsMap))
 	}
+
+	extra["book_version"] = req.Version
 
 	err := b.client.DeleteBook(context.WithValue(c.Context(), constants.ContextRequestIDKey, requestID), bookId, req.Version)
 	if err != nil {

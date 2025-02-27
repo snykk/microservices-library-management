@@ -13,7 +13,7 @@ type CategoryService interface {
 	GetCategory(ctx context.Context, id string) (*models.CategoryRecord, error)
 	ListCategories(ctx context.Context, page int, pageSize int) (categories []*models.CategoryRecord, totalItems int, err error)
 	UpdateCategory(ctx context.Context, id string, req *models.CategoryRequest) (*models.CategoryRecord, error)
-	DeleteCategory(ctx context.Context, id string) error
+	DeleteCategory(ctx context.Context, id string, version int) error
 }
 
 type categoryService struct {
@@ -74,8 +74,9 @@ func (s *categoryService) UpdateCategory(ctx context.Context, id string, req *mo
 	log.Printf("[%s] Updating category with ID: %s\n", utils.GetLocation(), id)
 
 	category := &models.CategoryRecord{
-		Id:   id,
-		Name: req.Name,
+		Id:      id,
+		Name:    req.Name,
+		Version: req.Version,
 	}
 
 	updatedCategory, err := s.repo.UpdateCategory(ctx, category)
@@ -88,10 +89,10 @@ func (s *categoryService) UpdateCategory(ctx context.Context, id string, req *mo
 	return updatedCategory, nil
 }
 
-func (s *categoryService) DeleteCategory(ctx context.Context, id string) error {
+func (s *categoryService) DeleteCategory(ctx context.Context, id string, version int) error {
 	log.Printf("[%s] Deleting category with ID: %s\n", utils.GetLocation(), id)
 
-	err := s.repo.DeleteCategory(ctx, id)
+	err := s.repo.DeleteCategory(ctx, id, version)
 	if err != nil {
 		log.Printf("[%s] Failed to delete category with ID %s: %v\n", utils.GetLocation(), id, err)
 		return err

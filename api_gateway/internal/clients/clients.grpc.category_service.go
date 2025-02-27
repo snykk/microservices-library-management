@@ -20,8 +20,8 @@ type CategoryClient interface {
 	CreateCategory(ctx context.Context, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error)
 	GetCategory(ctx context.Context, id string) (datatransfers.CategoryResponse, error)
 	ListCategories(ctx context.Context, page int, pageSize int) ([]datatransfers.CategoryResponse, int, int, error)
-	UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error)
-	DeleteCategory(ctx context.Context, id string) error
+	UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryUpdateRequest) (datatransfers.CategoryResponse, error)
+	DeleteCategory(ctx context.Context, id string, version int) error
 }
 
 type categoryClient struct {
@@ -69,6 +69,7 @@ func (c *categoryClient) CreateCategory(ctx context.Context, dto datatransfers.C
 	return datatransfers.CategoryResponse{
 		Id:        resp.Category.Id,
 		Name:      resp.Category.Name,
+		Version:   int(resp.Category.Version),
 		CreatedAt: time.Unix(resp.Category.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Category.UpdatedAt, 0),
 	}, nil
@@ -98,6 +99,7 @@ func (c *categoryClient) GetCategory(ctx context.Context, id string) (datatransf
 	return datatransfers.CategoryResponse{
 		Id:        resp.Category.Id,
 		Name:      resp.Category.Name,
+		Version:   int(resp.Category.Version),
 		CreatedAt: time.Unix(resp.Category.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Category.UpdatedAt, 0),
 	}, nil
@@ -129,6 +131,7 @@ func (c *categoryClient) ListCategories(ctx context.Context, page int, pageSize 
 		categories = append(categories, datatransfers.CategoryResponse{
 			Id:        category.Id,
 			Name:      category.Name,
+			Version:   int(category.Version),
 			CreatedAt: time.Unix(category.CreatedAt, 0),
 			UpdatedAt: time.Unix(category.UpdatedAt, 0),
 		})
@@ -142,17 +145,19 @@ func (c *categoryClient) ListCategories(ctx context.Context, page int, pageSize 
 	return categories, int(resp.TotalItems), int(resp.TotalPages), nil
 }
 
-func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryRequest) (datatransfers.CategoryResponse, error) {
+func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, dto datatransfers.CategoryUpdateRequest) (datatransfers.CategoryResponse, error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoCategory.UpdateCategoryRequest{
-		Id:   categoryId,
-		Name: dto.Name,
+		Id:      categoryId,
+		Name:    dto.Name,
+		Version: int32(dto.Version),
 	}
 
 	extra := map[string]interface{}{
-		"category_id":   categoryId,
-		"category_name": dto.Name,
+		"category_id":      categoryId,
+		"category_name":    dto.Name,
+		"category_version": dto.Version,
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending UpdateCategory request to Category Service", extra, nil)
@@ -168,20 +173,23 @@ func (c *categoryClient) UpdateCategory(ctx context.Context, categoryId string, 
 	return datatransfers.CategoryResponse{
 		Id:        resp.Category.Id,
 		Name:      resp.Category.Name,
+		Version:   int(resp.Category.Version),
 		CreatedAt: time.Unix(resp.Category.CreatedAt, 0),
 		UpdatedAt: time.Unix(resp.Category.UpdatedAt, 0),
 	}, nil
 }
 
-func (c *categoryClient) DeleteCategory(ctx context.Context, id string) error {
+func (c *categoryClient) DeleteCategory(ctx context.Context, id string, version int) error {
 	requestID := utils.GetRequestIDFromContext(ctx)
 
 	reqProto := protoCategory.DeleteCategoryRequest{
-		Id: id,
+		Id:      id,
+		Version: int32(version),
 	}
 
 	extra := map[string]interface{}{
-		"category_id": id,
+		"category_id":      id,
+		"category_version": version,
 	}
 
 	c.logger.LogMessage(utils.GetLocation(), requestID, constants.LogLevelInfo, "Sending DeleteCategory request to Category Service", extra, nil)

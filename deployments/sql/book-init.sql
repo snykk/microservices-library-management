@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS books (
 );
 
 -- Membuat fungsi trigger untuk memperbarui kolom updated_at dan menaikkan version
-CREATE OR REPLACE FUNCTION update_updated_at_and_version_authors()
+CREATE OR REPLACE FUNCTION update_updated_at_and_version_books()
 RETURNS TRIGGER AS $$
 BEGIN
    NEW.updated_at = NOW();
@@ -22,7 +22,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Membuat trigger yang memanggil fungsi di atas sebelum pembaruan baris
-CREATE TRIGGER set_updated_at_and_version_authors
+CREATE TRIGGER set_updated_at_and_version_books
 BEFORE UPDATE ON books
 FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_and_version_authors();
+EXECUTE FUNCTION update_updated_at_and_version_books();
